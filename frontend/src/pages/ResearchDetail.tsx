@@ -165,6 +165,24 @@ export const ResearchDetail: React.FC<ResearchDetailProps> = ({ jobs, onNavigate
 
   const currentSectionData = job.sections[activeSection];
 
+  const sectionConfidence = currentSectionData?.confidence ?? null;
+  const sectionConfidenceLabel =
+    sectionConfidence === null
+      ? 'N/A'
+      : sectionConfidence >= 0.75
+      ? 'HIGH'
+      : sectionConfidence >= 0.5
+      ? 'MEDIUM'
+      : 'LOW';
+  const sectionConfidenceColor =
+    sectionConfidence === null
+      ? 'text-slate-400 bg-slate-100 border-slate-200'
+      : sectionConfidence >= 0.75
+      ? 'text-emerald-700 bg-emerald-50 border-emerald-100'
+      : sectionConfidence >= 0.5
+      ? 'text-amber-700 bg-amber-50 border-amber-100'
+      : 'text-rose-700 bg-rose-50 border-rose-100';
+
   // Dummy data for charts
   const chartData = [
     { name: '2020', value: 4000 },
@@ -282,9 +300,12 @@ export const ResearchDetail: React.FC<ResearchDetailProps> = ({ jobs, onNavigate
                <h2 className="text-lg font-bold text-slate-800 flex items-center gap-2">
                  {SECTIONS_CONFIG.find(s => s.id === activeSection)?.title}
                </h2>
-               {currentSectionData?.updatedAt && (
-                 <span className="text-xs text-slate-400">Updated just now</span>
-               )}
+               <span
+                 className={`text-xs font-semibold px-3 py-1 rounded-full border ${sectionConfidenceColor}`}
+                 title="Section-level confidence"
+               >
+                 Confidence: {sectionConfidenceLabel}
+               </span>
             </div>
 
             {/* Scrollable Content Area */}
