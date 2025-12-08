@@ -7,6 +7,7 @@ import express from 'express';
 import cors from 'cors';
 import rateLimit from 'express-rate-limit';
 import dotenv from 'dotenv';
+import { PrismaClient } from '@prisma/client';
 
 // Load environment variables
 dotenv.config();
@@ -23,6 +24,7 @@ import { listResearch } from './api/research/list';
 
 const app = express();
 const PORT = process.env.PORT || 3000;
+const prisma = new PrismaClient();
 
 // ============================================================================
 // MIDDLEWARE
@@ -60,11 +62,34 @@ app.use((req, res, next) => {
 
 // Health check
 app.get('/health', (req, res) => {
-  res.json({
-    status: 'ok',
-    timestamp: new Date().toISOString(),
-    uptime: process.uptime(),
-    environment: process.env.NODE_ENV || 'development'
+  (async () => {
+    let dbHealthy = true;
+    try {
+      await prisma.$queryRaw`SELECT 1`;
+    } catch (err) {
+      dbHealthy = false;
+      console.error('Health check DB error:', err);
+    }
+
+    const status = dbHealthy ? 'ok' : 'degraded';
+
+    res.json({
+      status,
+      timestamp: new Date().toISOString(),
+      uptime: process.uptime(),
+      environment: process.env.NODE_ENV || 'development',
+      model: process.env.CLAUDE_MODEL || 'unknown',
+      db: dbHealthy
+    });
+  })().catch((err) => {
+    console.error('Health check error:', err);
+    res.status(500).json({
+      status: 'error',
+      timestamp: new Date().toISOString(),
+      environment: process.env.NODE_ENV || 'development',
+      model: process.env.CLAUDE_MODEL || 'unknown',
+      db: false
+    });
   });
 });
 

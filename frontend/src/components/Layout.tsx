@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Search, Home, FileText, Plus, Bell, PanelLeftClose, PanelLeftOpen } from 'lucide-react';
 
 interface LayoutProps {
@@ -9,6 +9,45 @@ interface LayoutProps {
 
 export const Layout: React.FC<LayoutProps> = ({ children, onNavigate, activePath }) => {
   const [isCollapsed, setIsCollapsed] = useState(false);
+  const [healthStatus, setHealthStatus] = useState<'checking' | 'ok' | 'degraded' | 'down'>('checking');
+  const [healthModel, setHealthModel] = useState<string>('Sonnet 4.5');
+
+  // Build health endpoint from API base (strip trailing /api)
+  const apiBase = (import.meta as any).env?.VITE_API_BASE_URL || '/api';
+  const healthBase = apiBase.replace(/\/api\/?$/, '') || '';
+  const healthUrl = `${healthBase.replace(/\/$/, '') || ''}/health`;
+
+  useEffect(() => {
+    let timer: ReturnType<typeof setInterval> | null = null;
+
+    const checkHealth = async () => {
+      try {
+        const res = await fetch(healthUrl);
+        if (!res.ok) throw new Error(`Health check failed: ${res.status}`);
+        const data = await res.json();
+        const status = (data.status as string) || 'degraded';
+        const model = (data.model as string) || 'Sonnet 4.5';
+        if (status === 'ok') setHealthStatus('ok');
+        else setHealthStatus('degraded');
+        setHealthModel(model);
+      } catch (err) {
+        console.error('Health check error', err);
+        setHealthStatus('down');
+      }
+    };
+
+    checkHealth();
+    timer = setInterval(checkHealth, 60000);
+
+    return () => {
+      if (timer) clearInterval(timer);
+    };
+  }, [healthUrl]);
+
+  const statusColor =
+    healthStatus === 'ok' ? 'bg-emerald-500' : healthStatus === 'degraded' ? 'bg-amber-500' : 'bg-rose-500';
+  const statusText =
+    healthStatus === 'ok' ? 'System Operational' : healthStatus === 'degraded' ? 'Degraded' : healthStatus === 'checking' ? 'Checking...' : 'Offline';
 
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900 flex flex-col md:flex-row">
@@ -59,16 +98,16 @@ export const Layout: React.FC<LayoutProps> = ({ children, onNavigate, activePath
 
         <div className="p-4 border-t border-slate-100 mt-auto">
           {isCollapsed ? (
-             <div className="flex justify-center">
-                <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" title="System Operational"></div>
+            <div className="flex justify-center">
+                <div className={`w-2 h-2 rounded-full ${statusColor} animate-pulse`} title={statusText}></div>
              </div>
           ) : (
             <div className="bg-slate-50 rounded-lg p-3">
                <div className="flex items-center gap-2 mb-2">
-                  <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></div>
-                  <span className="text-xs font-semibold text-slate-600">System Operational</span>
+                  <div className={`w-2 h-2 rounded-full ${statusColor} animate-pulse`}></div>
+                  <span className="text-xs font-semibold text-slate-600">{statusText}</span>
                </div>
-               <p className="text-xs text-slate-400">Gemini 2.5 Flash Enabled</p>
+               <p className="text-xs text-slate-400">{healthStatus === 'ok' ? `${healthModel} Enabled` : 'API unreachable'}</p>
             </div>
           )}
         </div>
