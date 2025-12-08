@@ -9,23 +9,50 @@ interface NewResearchProps {
   onNavigate: (path: string) => void;
 }
 
+const normalizeInput = (value: string) => value.trim().replace(/\s+/g, ' ').replace(/^"+|"+$/g, '');
+const toTitleLike = (value: string) =>
+  value
+    .split(' ')
+    .filter(Boolean)
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(' ');
+const hasMeaningfulChars = (value: string) => /[A-Za-z0-9]/.test(value);
+
 export const NewResearch: React.FC<NewResearchProps> = ({ createJob, runJob, jobs, onNavigate }) => {
   const [step, setStep] = useState<'input' | 'processing'>('input');
   const [formData, setFormData] = useState({ company: '', geo: '', industry: '' });
   const [currentJobId, setCurrentJobId] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   const activeJob = jobs.find(j => j.id === currentJobId);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formData.company) return;
-    
-    const id = await createJob(formData.company, formData.geo, formData.industry);
+
+    const company = normalizeInput(formData.company);
+    const geo = normalizeInput(formData.geo);
+    const industry = normalizeInput(formData.industry);
+
+    if (!company || company.length < 2 || !hasMeaningfulChars(company)) {
+      setError('Please enter a valid company name (letters or numbers required).');
+      return;
+    }
+
+    const normalized = {
+      company: toTitleLike(company),
+      geo: geo ? toTitleLike(geo) : '',
+      industry: industry ? toTitleLike(industry) : ''
+    };
+
+    setFormData(normalized);
+    setError(null);
+
+    const id = await createJob(normalized.company, normalized.geo, normalized.industry);
     setCurrentJobId(id);
     setStep('processing');
     
     // Start the process, passing the company name explicitly to avoid stale state issues
-    await runJob(id, formData.company);
+    await runJob(id, normalized.company);
   };
 
   // Redirect when done
@@ -64,6 +91,7 @@ export const NewResearch: React.FC<NewResearchProps> = ({ createJob, runJob, job
                 value={formData.company}
                 onChange={e => setFormData({...formData, company: e.target.value})}
               />
+              {error && <p className="text-sm text-rose-500 mt-2">{error}</p>}
             </div>
             
             <div className="grid grid-cols-2 gap-6">

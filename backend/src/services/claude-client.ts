@@ -223,6 +223,13 @@ export class ClaudeClient {
   }
 
   /**
+   * Expose configured model name for downstream accounting
+   */
+  getModelName(): string {
+    return this.model;
+  }
+
+  /**
    * Build messages array with optional prompt caching
    * Claude supports cache_control on text blocks; we only enable when configured.
    */

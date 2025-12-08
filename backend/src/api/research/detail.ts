@@ -38,7 +38,10 @@ export async function getResearchDetail(req: Request, res: Response) {
             confidence: true,
             sourcesUsed: true,
             lastError: true,
-            completedAt: true
+            completedAt: true,
+            promptTokens: true,
+            completionTokens: true,
+            costUsd: true
           }
         }
       }
@@ -112,6 +115,9 @@ export async function getResearchDetail(req: Request, res: Response) {
         industry: job.industry,
         overallConfidence: job.overallConfidence,
         overallConfidenceScore: job.overallConfidenceScore,
+        promptTokens: job.promptTokens,
+        completionTokens: job.completionTokens,
+        costUsd: job.costUsd,
         createdAt: job.createdAt,
         updatedAt: job.updatedAt,
         completedAt: job.completedAt
@@ -125,7 +131,10 @@ export async function getResearchDetail(req: Request, res: Response) {
         confidence: subJob.confidence,
         sourcesUsed: subJob.sourcesUsed,
         lastError: subJob.lastError,
-        completedAt: subJob.completedAt
+        completedAt: subJob.completedAt,
+        promptTokens: subJob.promptTokens,
+        completionTokens: subJob.completionTokens,
+        costUsd: subJob.costUsd
       })),
       overallConfidence: job.overallConfidence,
       overallConfidenceScore: job.overallConfidenceScore,

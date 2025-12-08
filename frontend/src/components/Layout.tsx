@@ -56,12 +56,16 @@ export const Layout: React.FC<LayoutProps> = ({ children, onNavigate, activePath
         <div className={`p-6 border-b border-slate-100 flex items-center ${isCollapsed ? 'justify-center' : 'justify-between'} transition-all`}>
           {!isCollapsed && (
             <div className="flex items-center gap-3 cursor-pointer overflow-hidden" onClick={() => onNavigate('/')}>
-              <div className="w-8 h-8 bg-brand-600 rounded-lg flex-shrink-0 flex items-center justify-center text-white font-bold">I</div>
-              <span className="font-bold text-lg tracking-tight text-slate-800 whitespace-nowrap">Intellectra</span>
+              <div className="w-8 h-8 bg-white border border-slate-200 rounded-lg flex-shrink-0 flex items-center justify-center">
+                <img src="/SSA%20Logo%20Square.svg" alt="SSA Intelligence" className="w-7 h-7 object-contain" />
+              </div>
+              <span className="font-bold text-lg tracking-tight text-slate-800 whitespace-nowrap">SSA Intelligence</span>
             </div>
           )}
           {isCollapsed && (
-             <div className="w-8 h-8 bg-brand-600 rounded-lg flex-shrink-0 flex items-center justify-center text-white font-bold cursor-pointer" onClick={() => onNavigate('/')}>I</div>
+             <div className="w-8 h-8 bg-white border border-slate-200 rounded-lg flex-shrink-0 flex items-center justify-center cursor-pointer" onClick={() => onNavigate('/')}>
+               <img src="/SSA%20Logo%20Square.svg" alt="SSA Intelligence" className="w-7 h-7 object-contain" />
+             </div>
           )}
         </div>
         

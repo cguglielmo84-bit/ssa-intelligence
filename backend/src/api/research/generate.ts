@@ -17,19 +17,43 @@ interface GenerateRequestBody {
   requestedBy?: string;
 }
 
+// Normalize and validate user-provided text inputs to avoid empty/garbage jobs
+const normalizeInput = (value: string | undefined | null) => {
+  if (!value) return '';
+  // Trim, collapse whitespace, strip surrounding quotes
+  const collapsed = value.trim().replace(/\s+/g, ' ');
+  return collapsed.replace(/^"+|"+$/g, '');
+};
+
+const toTitleLike = (value: string) => {
+  if (!value) return value;
+  return value
+    .split(' ')
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(' ');
+};
+
+const hasMeaningfulChars = (value: string) => /[A-Za-z0-9]/.test(value);
+
 export async function generateResearch(req: Request, res: Response) {
   try {
     const body = req.body as GenerateRequestBody;
 
     // Validate required fields
-    if (!body.companyName) {
+    const normalizedCompany = normalizeInput(body.companyName);
+    const normalizedGeo = normalizeInput(body.geography || 'Global');
+    const normalizedIndustry = normalizeInput(body.industry || '');
+
+    if (!normalizedCompany || normalizedCompany.length < 2 || !hasMeaningfulChars(normalizedCompany)) {
       return res.status(400).json({
-        error: 'Missing required field: companyName'
+        error: 'Missing or invalid companyName. Please provide a valid company name.'
       });
     }
 
     // Default geography to 'Global' if not provided
-    const geography = body.geography || 'Global';
+    const geography = normalizedGeo && hasMeaningfulChars(normalizedGeo) ? toTitleLike(normalizedGeo) : 'Global';
+    const industry = normalizedIndustry && hasMeaningfulChars(normalizedIndustry) ? toTitleLike(normalizedIndustry) : undefined;
+    const companyName = toTitleLike(normalizedCompany);
 
     // For demo purposes, use a default user
     // In production, get this from auth middleware
@@ -40,9 +64,9 @@ export async function generateResearch(req: Request, res: Response) {
 
     // Create and start job
     const job = await orchestrator.createJob({
-      companyName: body.companyName,
+      companyName,
       geography,
-      industry: body.industry,
+      industry,
       focusAreas: body.focusAreas,
       userId
     });

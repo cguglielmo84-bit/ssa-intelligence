@@ -48,6 +48,11 @@ model ResearchJob {
   user              User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   userId            String
   
+  // Token usage and cost tracking
+  promptTokens      Int       @default(0)
+  completionTokens  Int       @default(0)
+  costUsd           Float     @default(0)
+  
   // Timestamps
   createdAt         DateTime  @default(now())
   updatedAt         DateTime  @updatedAt
@@ -75,6 +80,9 @@ model ResearchSubJob {
   attempts     Int         @default(0)
   maxAttempts  Int         @default(3)
   lastError    String?
+  promptTokens     Int     @default(0)
+  completionTokens Int     @default(0)
+  costUsd          Float   @default(0)
   
   // Output data
   output       Json?       // Section-specific output

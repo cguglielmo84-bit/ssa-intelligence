@@ -24,7 +24,10 @@ export async function getJobStatus(req: Request, res: Response) {
             lastError: true,
             attempts: true,
             startedAt: true,
-            completedAt: true
+            completedAt: true,
+            promptTokens: true,
+            completionTokens: true,
+            costUsd: true
           }
         }
       }
@@ -54,6 +57,9 @@ export async function getJobStatus(req: Request, res: Response) {
       geography: job.geography,
       overallConfidence: job.overallConfidence,
       overallConfidenceScore: job.overallConfidenceScore,
+      promptTokens: (job as any).promptTokens,
+      completionTokens: (job as any).completionTokens,
+      costUsd: (job as any).costUsd,
       error: job.status === 'failed' ? 'Job execution failed' : null,
       jobs: job.subJobs,
       summary: {

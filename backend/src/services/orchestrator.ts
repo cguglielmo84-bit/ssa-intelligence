@@ -7,6 +7,7 @@ import { PrismaClient } from '@prisma/client';
 import { getClaudeClient } from './claude-client';
 import { createSourceCatalog, type SourceCatalogManager } from './source-resolver';
 import type { FoundationOutput } from '../types/prompts';
+import type { ClaudeResponse } from './claude-client';
 
 // Import prompt builders (these will be renamed section files)
 import { buildFoundationPrompt } from '../../prompts/foundation-prompt';
@@ -183,6 +184,11 @@ export const STAGE_CONFIGS: Record<StageId, StageConfig> = {
 export class ResearchOrchestrator {
   private prisma: PrismaClient;
   private claudeClient;
+  private modelPricing: Record<string, { prompt: number; completion: number }> = {
+    // USD per 1M tokens (set to 0 by default; adjust if pricing changes)
+    'claude-sonnet-4-5': { prompt: 3, completion: 15 },
+    default: { prompt: 0, completion: 0 }
+  };
 
   constructor(prisma: PrismaClient) {
     this.prisma = prisma;
@@ -365,6 +371,8 @@ export class ResearchOrchestrator {
         response,
         config.validationSchema
       );
+
+      await this.recordTokenUsage(jobId, stageId, response);
 
       // Save output
       await this.saveStageOutput(jobId, stageId, output);
@@ -657,5 +665,38 @@ export class ResearchOrchestrator {
     if (score >= 0.75) return 'HIGH';
     if (score >= 0.5) return 'MEDIUM';
     return 'LOW';
+  }
+
+  /**
+   * Track token usage and estimated cost for each call
+   */
+  private async recordTokenUsage(jobId: string, stageId: StageId, response: ClaudeResponse) {
+    const inputTokens = response.usage?.inputTokens || 0;
+    const outputTokens = response.usage?.outputTokens || 0;
+    const model = typeof this.claudeClient.getModelName === 'function'
+      ? this.claudeClient.getModelName()
+      : process.env.CLAUDE_MODEL || 'claude-sonnet-4-5';
+
+    const pricing = this.modelPricing[model] || this.modelPricing.default;
+    const costUsd = ((inputTokens * pricing.prompt) + (outputTokens * pricing.completion)) / 1_000_000;
+
+    await this.prisma.$transaction([
+      this.prisma.researchSubJob.updateMany({
+        where: { researchId: jobId, stage: stageId },
+        data: {
+          promptTokens: { increment: inputTokens },
+          completionTokens: { increment: outputTokens },
+          costUsd: { increment: costUsd }
+        }
+      }),
+      this.prisma.researchJob.update({
+        where: { id: jobId },
+        data: {
+          promptTokens: { increment: inputTokens },
+          completionTokens: { increment: outputTokens },
+          costUsd: { increment: costUsd }
+        }
+      })
+    ]);
   }
 }
