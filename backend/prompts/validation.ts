@@ -155,7 +155,9 @@ export const financialMetricSchema = z.object({
   metric: z.string(),
   company: z.union([z.number(), z.string()]),
   industry_avg: z.union([z.number(), z.string()]),
-  source: z.string()
+  source: z.string(),
+  unit: z.string().optional(),
+  value_type: z.enum(['currency', 'percent', 'ratio', 'number']).optional()
 });
 
 export const derivedMetricSchema = z.object({

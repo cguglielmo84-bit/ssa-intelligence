@@ -133,6 +133,8 @@ export interface FinancialMetric {
   company: number | string;
   industry_avg: number | string;
   source: string;
+  unit?: string;
+  value_type?: 'currency' | 'percent' | 'ratio' | 'number';
 }
 
 export interface SegmentFinancialMetric {

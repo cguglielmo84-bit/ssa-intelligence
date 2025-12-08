@@ -1,4 +1,4 @@
-export function buildFinancialSnapshotPrompt(input) {
+﻿export function buildFinancialSnapshotPrompt(input) {
     const { foundation, companyName, geography } = input;
     const foundationJson = JSON.stringify(foundation, null, 2);
     return `# Section 2: Financial Snapshot - Research Prompt
@@ -107,7 +107,7 @@ interface Section2Output {
   kpi_table: {
     metrics: Array<{
       metric: string;           // Exact name from style guide Section 8
-      company: number | string; // Number value or "–" if unavailable
+      company: number | string; // Number value or "â€“" if unavailable
       industry_avg: number | string;
       source: string;           // "S1, S3" format
     }>;
@@ -131,7 +131,7 @@ interface Section2Output {
 
 ## REQUIRED METRICS FOR KPI TABLE
 
-**The table MUST include these metrics (use "–" if unavailable):**
+**The table MUST include these metrics (use "â€“" if unavailable):**
 
 1. Revenue (Latest Period)
 2. Revenue Growth (YoY)
@@ -152,6 +152,12 @@ interface Section2Output {
 **Table format MUST match style guide Section 8:**
 \`\`\`
 | Metric | Company | Industry Avg | Source |
+
+For **every KPI row**, also include:
+- `unit` (e.g., "USD millions", "%", "bps", "days") so values align to the stated unit.
+- `value_type` ("currency" | "percent" | "ratio" | "number") to clarify formatting.
+- Ensure `company` and `industry_avg` are numeric in the stated unit (e.g., if unit is "USD millions", values should be in millions, not raw dollars).
+
 \`\`\`
 
 ---
@@ -190,13 +196,13 @@ Industry average source: {A/B/C}
 
 **Every metric discussion must emphasize ${geography}:**
 
-✅ **CORRECT patterns:**
+âœ… **CORRECT patterns:**
 - "**${geography}** revenue grew 15% vs 12% globally..."
 - "${geography} EBITDA margin of 19.2% exceeds company average of 18.3%..."
 - "Regional DSO of 65 days compares favorably to 68-day company average..."
 - "${geography} facilities generated $120M free cash flow, 60% of company total..."
 
-❌ **WRONG patterns:**
+âŒ **WRONG patterns:**
 - "Company revenue grew 12% YoY..." [No geography mention]
 - "Global margins expanded 80bps..." [Not geography-specific]
 - "ROIC improved to 12.5%..." [No regional context]
@@ -225,11 +231,11 @@ Industry average source: {A/B/C}
 ## DATA QUALITY RULES (Style Guide Section 10)
 
 ### Unavailable Data
-**Use "–" (en dash) for missing metrics:**
+**Use "â€“" (en dash) for missing metrics:**
 \`\`\`json
 {
   "metric": "Gross Margin",
-  "company": "–",
+  "company": "â€“",
   "industry_avg": 42.5,
   "source": "S7"
 }
@@ -257,9 +263,9 @@ Industry average source: {A/B/C}
 \`\`\`
 
 ### Never Speculate
-- If data cannot be verified → Use "–"
-- If you must estimate → Show methodology explicitly
-- Example: "Regional revenue estimated at $1.3B* (Europe total of $2.8B × Germany's ~45% share based on facility count; S1, S3)"
+- If data cannot be verified â†’ Use "â€“"
+- If you must estimate â†’ Show methodology explicitly
+- Example: "Regional revenue estimated at $1.3B* (Europe total of $2.8B Ã— Germany's ~45% share based on facility count; S1, S3)"
 
 ---
 
@@ -268,7 +274,7 @@ Industry average source: {A/B/C}
 **ALL financial metrics MUST be in USD:**
 
 1. **First mention:** Show both currencies
-   - "€1.2B (≈$1.3B using 1.08 EUR/USD)"
+   - "â‚¬1.2B (â‰ˆ$1.3B using 1.08 EUR/USD)"
 
 2. **Subsequent mentions:** USD only
    - "$1.3B revenue"
@@ -352,14 +358,14 @@ Industry average source: {A/B/C}
 - [ ] Summary is 4-6 sentences
 - [ ] Summary emphasizes ${geography} (75-80%)
 - [ ] Summary ends with FX and industry source notes
-- [ ] All 15 required metrics in table (use "–" if unavailable)
+- [ ] All 15 required metrics in table (use "â€“" if unavailable)
 - [ ] Table uses exact metric names from style guide
 - [ ] ALL metrics cite sources (S# format)
 - [ ] Derived metrics flagged with * in table
 - [ ] Derived metrics documented in array
 - [ ] All currencies in USD
 - [ ] Geography focus maintained throughout
-- [ ] No speculation (use "–" for unavailable)
+- [ ] No speculation (use "â€“" for unavailable)
 - [ ] Sources_used array populated
 
 ---
@@ -369,7 +375,7 @@ Industry average source: {A/B/C}
 1. **Follow style guide:** ALL formatting rules apply
 2. **75-80% geography focus:** Every metric must show regional context
 3. **Source everything:** No unsourced claims
-4. **Use "–" for unavailable:** Never speculate or leave blank
+4. **Use "â€“" for unavailable:** Never speculate or leave blank
 5. **Flag derived metrics:** Asterisk + documentation
 6. **Currency in USD:** Convert all amounts
 7. **Valid JSON only:** No markdown, no prose outside JSON
@@ -419,7 +425,7 @@ export function validateSection2Output(output) {
 }
 export function formatSection2ForDocument(output) {
     let markdown = `# 2. Financial Snapshot\n\n`;
-    markdown += `**Confidence: ${output.confidence.level}** – ${output.confidence.reason}\n\n`;
+    markdown += `**Confidence: ${output.confidence.level}** â€“ ${output.confidence.reason}\n\n`;
     markdown += `## 2.1 Financial Snapshot Summary\n\n`;
     markdown += `${output.summary}\n\n`;
     markdown += `## 2.2 Current Year / LTM KPIs\n\n`;
