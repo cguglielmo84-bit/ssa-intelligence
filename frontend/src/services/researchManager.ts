@@ -238,12 +238,24 @@ const formatSectionContent = (sectionId: SectionId, data: any): string => {
     case 'trends': {
       const parts: string[] = [];
       const buildTrendBlock = (title: string, block: any) => {
-        if (!block?.trends?.length) return '';
-        return [`**${title}**`, mdTable(['Trend', 'Description', 'Direction', 'Impact', 'Geography', 'Source'], block.trends.map((t: any) => [t.trend, t.description, t.direction, t.impact_score, t.geography_relevance, t.source]))].join('\n');
+        if (!block?.trends?.length) return [];
+        const heading = `**${title}**`;
+        const table = mdTable(
+          ['Trend', 'Description', 'Direction', 'Impact', 'Geography', 'Source'],
+          block.trends.map((t: any) => [
+            t.trend,
+            t.description,
+            t.direction,
+            t.impact_score ?? t.impact ?? '',
+            t.geography_relevance ?? '',
+            t.source || '',
+          ])
+        );
+        return [heading, table];
       };
-      if (data.macro_trends) parts.push(buildTrendBlock('Macro Trends', data.macro_trends));
-      if (data.micro_trends) parts.push(buildTrendBlock('Micro Trends', data.micro_trends));
-      if (data.company_trends) parts.push(buildTrendBlock('Company Trends', data.company_trends));
+      if (data.macro_trends) parts.push(...buildTrendBlock('Macro Trends', data.macro_trends));
+      if (data.micro_trends) parts.push(...buildTrendBlock('Micro Trends', data.micro_trends));
+      if (data.company_trends) parts.push(...buildTrendBlock('Company Trends', data.company_trends));
       return parts.filter(Boolean).join('\n\n');
     }
     case 'peer_benchmarking': {
