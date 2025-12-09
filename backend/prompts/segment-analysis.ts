@@ -306,6 +306,7 @@ interface Section4Output {
 - 3-5 segment-specific competitors with ${geography} presence
 - Positioning (2-3 sentences)
 - Recent dynamics (2-3 sentences)
+- NEVER exceed 5 competitors; if you have more, pick the top 5 most relevant for ${geography}.
 
 ---
 

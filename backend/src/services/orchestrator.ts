@@ -707,9 +707,23 @@ export class ResearchOrchestrator {
       )
     );
 
+    const segments = Array.isArray(output?.segments) ? output.segments.map((seg: any) => {
+      const comp = Array.isArray(seg?.competitive_landscape?.competitors)
+        ? seg.competitive_landscape.competitors.slice(0, 5) // cap to max 5 to avoid validation failure
+        : [];
+      return {
+        ...seg,
+        competitive_landscape: {
+          ...(seg?.competitive_landscape || {}),
+          competitors: comp
+        }
+      };
+    }) : [];
+
     return {
       ...output,
-      sources_used: cleanedSources
+      sources_used: cleanedSources,
+      segments
     };
   }
 
