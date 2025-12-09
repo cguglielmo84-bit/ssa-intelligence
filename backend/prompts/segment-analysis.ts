@@ -284,6 +284,11 @@ interface Section4Output {
 }
 \`\`\`
 
+**Source formatting (STRICT):**
+- Every entry in \`sources_used\` must be an S# string (e.g., "S1", "S2").
+- Do NOT include URLs, citations, or free text in \`sources_used\`.
+- Dedupe sources; if unsure about a source ID, omit it.
+
 ---
 
 ## REQUIRED SECTIONS PER SEGMENT
@@ -503,6 +508,11 @@ interface SegmentOutput {
   sources_used: string[];
 }
 \`\`\`
+
+**Source formatting (STRICT):**
+- Every entry in \`sources_used\` must be an S# string (e.g., "S1", "S2").
+- Do NOT include URLs, citations, or free text in \`sources_used\`.
+- Dedupe sources; if unsure about a source ID, omit it.
 
 ---
 

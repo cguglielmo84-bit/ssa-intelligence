@@ -417,7 +417,18 @@ export const ResearchDetail: React.FC<ResearchDetailProps> = ({ jobs, onNavigate
                 </div>
               ) : (
                 <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 ease-out">
-                   <MarkdownText content={currentSectionData?.content || ''} />
+                  {!currentSectionData?.content?.trim() ? (
+                    <div className="bg-amber-50 border border-amber-200 rounded-lg p-6 text-amber-800">
+                      <h4 className="font-semibold mb-2">Content unavailable</h4>
+                      <p className="text-sm">
+                        {currentSectionData?.lastError
+                          ? `Generation error: ${currentSectionData.lastError}`
+                          : 'This section did not return content. Please retry once other sections are available.'}
+                      </p>
+                    </div>
+                  ) : (
+                    <MarkdownText content={currentSectionData?.content || ''} />
+                  )}
                 </div>
               )}
             </div>

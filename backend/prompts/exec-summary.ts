@@ -296,6 +296,8 @@ interface Section1Output {
 
 **Format:** 5-7 bullet points total
 
+**Bullet count (STRICT):** Return 5-7 total (target 6). If you draft more than 7, MERGE or CONSOLIDATE lowest-priority or overlapping bullets so the final list is ≤7. Never exceed 7 in the final JSON.
+
 **Required bullets (in order):**
 
 1. **Geography Headline** (Category: Geography)

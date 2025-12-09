@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { ResearchJob } from '../types';
 import { StatusPill } from '../components/StatusPill';
 import { ArrowRight, Search, TrendingUp, Building2, MapPin } from 'lucide-react';
@@ -11,13 +11,91 @@ interface HomeProps {
 export const Home: React.FC<HomeProps> = ({ jobs, onNavigate }) => {
   const completedJobs = jobs.filter(j => j.status === 'completed');
   const activeJobs = jobs.filter(j => j.status === 'running' || j.status === 'idle');
+  const heroRef = useRef<HTMLDivElement | null>(null);
+  const [shinePos, setShinePos] = useState({ x: 50, y: 40, streak: 50 });
+  const [hovered, setHovered] = useState(false);
+  const idleBaseRef = useRef({ x: 50, y: 40 });
+  const targetRef = useRef({ x: 50, y: 40 });
+  const posRef = useRef({ x: 50, y: 40 });
+
+  // Idle drift when not hovered
+  useEffect(() => {
+    let raf: number;
+    let start = performance.now();
+
+    const tick = (now: number) => {
+      if (hovered) {
+        start = now;
+      } else {
+        const t = (now - start) / 1000;
+        const base = idleBaseRef.current;
+        targetRef.current = {
+          x: base.x + Math.sin(t * 0.4) * 8,
+          y: base.y + Math.cos(t * 0.6) * 3
+        };
+      }
+      // Ease position toward target
+      posRef.current = {
+        x: posRef.current.x + (targetRef.current.x - posRef.current.x) * 0.08,
+        y: posRef.current.y + (targetRef.current.y - posRef.current.y) * 0.08
+      };
+
+      const shimmerPhase = (now - start) / 1200;
+      const streak = (posRef.current.x + Math.sin(shimmerPhase * 2) * 30) % 100;
+
+      setShinePos({
+        x: posRef.current.x,
+        y: posRef.current.y,
+        streak: streak < 0 ? streak + 100 : streak
+      });
+
+      raf = requestAnimationFrame(tick);
+    };
+
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
+  }, [hovered]);
+
+  const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (!heroRef.current) return;
+    const rect = heroRef.current.getBoundingClientRect();
+    const x = ((e.clientX - rect.left) / rect.width) * 100;
+    const y = ((e.clientY - rect.top) / rect.height) * 100;
+    const nextTarget = {
+      x: Math.min(100, Math.max(0, x)),
+      y: Math.min(100, Math.max(0, y * 0.6 + 20)), // bias toward center; slight vertical response
+    };
+    idleBaseRef.current = nextTarget;
+    targetRef.current = nextTarget;
+  };
 
   return (
     <div className="space-y-8 animate-in fade-in duration-500">
       
       {/* Hero / Action Area */}
-      <div className="bg-gradient-to-br from-brand-600 to-brand-800 rounded-2xl p-8 text-white shadow-xl relative overflow-hidden">
+      <div
+        ref={heroRef}
+        onMouseEnter={() => setHovered(true)}
+        onMouseLeave={() => setHovered(false)}
+        onMouseMove={handleMouseMove}
+        className="bg-gradient-to-br from-brand-600 to-brand-800 rounded-2xl p-8 text-white shadow-xl relative overflow-hidden"
+      >
         <div className="absolute top-0 right-0 w-64 h-64 bg-white opacity-5 rounded-full -translate-y-1/2 translate-x-1/2 blur-3xl"></div>
+        <div
+          className="pointer-events-none absolute inset-0 transition-all duration-400 ease-out"
+          style={{
+            backgroundImage: `
+              radial-gradient(80% 130% at ${shinePos.x}% ${shinePos.y}%, rgba(255,255,255,0.18), rgba(255,255,255,0.02) 50%, rgba(255,255,255,0) 70%),
+              linear-gradient(125deg, rgba(255,255,255,0.16) 0%, rgba(255,255,255,0.05) 30%, rgba(255,255,255,0) 55%),
+              linear-gradient(90deg, transparent 35%, rgba(255,255,255,0.16) 50%, transparent 65%)`,
+            backgroundSize: '160% 160%, 200% 200%, 240% 240%',
+            backgroundPosition: `${shinePos.x}% ${shinePos.y}%, ${shinePos.x}% ${shinePos.y}%, ${shinePos.streak}% ${shinePos.y}%`,
+            mixBlendMode: 'screen',
+            filter: 'blur(0px)',
+            opacity: 0.9,
+            transform: hovered ? 'translate3d(0,0,0)' : 'translate3d(0,-2px,0)',
+          }}
+        />
         <div className="relative z-10 max-w-2xl">
           <h2 className="text-3xl font-bold mb-3">Institutional-grade research in minutes.</h2>
           <p className="text-brand-100 mb-8 text-lg">

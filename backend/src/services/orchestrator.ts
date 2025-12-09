@@ -344,6 +344,7 @@ export class ResearchOrchestrator {
    * Execute a single stage
    */
   private async executeStage(jobId: string, stageId: StageId) {
+    let response: ClaudeResponse | null = null;
     try {
       // Mark as running
       await this.updateSubJobStatus(jobId, stageId, 'running');
@@ -363,14 +364,24 @@ export class ResearchOrchestrator {
       const prompt = await this.buildStagePrompt(jobId, stageId);
 
       // Execute with Claude
-      const response = await this.claudeClient.execute(prompt);
+      response = await this.claudeClient.execute(prompt);
 
       // Parse and validate
       const config = STAGE_CONFIGS[stageId];
-      const output = this.claudeClient.validateAndParse(
+      let output = this.claudeClient.validateAndParse(
         response,
         config.validationSchema
       );
+
+      // Sanitize common issues before content check/save
+      if (stageId === 'exec_summary') {
+        output = this.sanitizeExecSummary(output);
+      } else if (stageId === 'segment_analysis') {
+        output = this.sanitizeSegmentAnalysis(output);
+      }
+
+      // Guard against empty/invalid content that passed validation
+      this.ensureStageHasContent(stageId, output);
 
       await this.recordTokenUsage(jobId, stageId, response);
 
@@ -382,7 +393,8 @@ export class ResearchOrchestrator {
 
     } catch (error) {
       console.error(`Stage ${stageId} failed:`, error);
-      await this.handleStageFailure(jobId, stageId, error);
+      const rawContent = response?.content;
+      await this.handleStageFailure(jobId, stageId, error, rawContent);
     }
   }
 
@@ -511,7 +523,7 @@ export class ResearchOrchestrator {
   /**
    * Handle stage failure with retry logic
    */
-  private async handleStageFailure(jobId: string, stageId: StageId, error: unknown) {
+  private async handleStageFailure(jobId: string, stageId: StageId, error: unknown, rawContent?: string) {
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';
 
     const subJob = await this.prisma.researchSubJob.findFirst({
@@ -529,6 +541,7 @@ export class ResearchOrchestrator {
         data: {
           attempts,
           lastError: errorMessage,
+          output: rawContent ? { rawContent, error: errorMessage } : subJob.output,
           status: 'pending'
         }
       });
@@ -538,7 +551,8 @@ export class ResearchOrchestrator {
         where: { id: subJob.id },
         data: {
           status: 'failed',
-          lastError: errorMessage
+          lastError: errorMessage,
+          output: rawContent ? { rawContent, error: errorMessage } : subJob.output
         }
       });
     }
@@ -665,6 +679,61 @@ export class ResearchOrchestrator {
     if (score >= 0.75) return 'HIGH';
     if (score >= 0.5) return 'MEDIUM';
     return 'LOW';
+  }
+
+  private sanitizeExecSummary(output: any) {
+    const bullets = Array.isArray(output?.bullet_points)
+      ? output.bullet_points
+          .map((b: any) => ({
+            ...b,
+            bullet: typeof b?.bullet === 'string' ? b.bullet.trim() : String(b?.bullet ?? '').trim()
+          }))
+          .filter((b: any) => b.bullet.length > 0)
+      : [];
+
+    return {
+      ...output,
+      bullet_points: bullets
+    };
+  }
+
+  private sanitizeSegmentAnalysis(output: any) {
+    const rawSources = Array.isArray(output?.sources_used) ? output.sources_used : [];
+    const cleanedSources = Array.from(
+      new Set(
+        rawSources
+          .map((s) => (typeof s === 'string' ? s.trim() : String(s ?? '').trim()))
+          .filter((s) => /^S\d+$/.test(s))
+      )
+    );
+
+    return {
+      ...output,
+      sources_used: cleanedSources
+    };
+  }
+
+  /**
+   * Ensure a section output has meaningful content; throw if empty to force retry/failure
+   */
+  private ensureStageHasContent(stageId: StageId, output: any) {
+    if (!output || typeof output !== 'object') {
+      throw new Error(`Stage ${stageId} returned empty output`);
+    }
+
+    if (stageId === 'exec_summary') {
+      const bullets = Array.isArray(output.bullet_points) ? output.bullet_points.length : 0;
+      if (bullets < 3) {
+        throw new Error('Executive Summary missing bullet_points');
+      }
+    }
+
+    if (stageId === 'segment_analysis') {
+      const segments = Array.isArray(output.segments) ? output.segments.length : 0;
+      if (!output.overview && segments === 0) {
+        throw new Error('Segment Analysis missing overview or segments');
+      }
+    }
   }
 
   /**

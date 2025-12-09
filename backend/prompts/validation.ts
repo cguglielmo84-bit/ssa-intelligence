@@ -143,7 +143,7 @@ export const executiveBulletSchema = z.object({
 
 export const execSummaryOutputSchema = z.object({
   confidence: confidenceSchema,
-  bullet_points: z.array(executiveBulletSchema).min(5).max(7),
+  bullet_points: z.array(executiveBulletSchema).min(5).max(10),
   sources_used: z.array(z.string().regex(/^S\d+$/))
 });
 
@@ -272,7 +272,7 @@ export const segmentAnalysisOutputSchema = z.object({
   confidence: confidenceSchema,
   overview: z.string().min(100),
   segments: z.array(segmentAnalysisSchema).min(1),
-  sources_used: z.array(z.string().regex(/^S\d+$/))
+  sources_used: z.array(z.string())
 });
 
 // ============================================================================

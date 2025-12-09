@@ -64,25 +64,24 @@ export async function getResearchDetail(req: Request, res: Response) {
       }
     }
 
-    // Build sections object with resolved sources
+    // Build sections object with resolved sources (always include sections, even if missing content)
     const sections: any = {};
     
     for (const [sectionId, fieldName] of Object.entries(SECTION_FIELD_MAP)) {
       const sectionData = (job as any)[fieldName];
       const subJob = job.subJobs.find(j => j.stage === sectionId);
       
-      if (sectionData) {
-        sections[sectionId] = {
-          ...sectionData,
-          status: subJob?.status || 'pending',
-          lastError: subJob?.lastError,
-          completedAt: subJob?.completedAt,
-          // Resolve source IDs to full source details
-          sources: sourceCatalog && sectionData.sources_used
-            ? sourceCatalog.resolveSources(sectionData.sources_used)
-            : []
-        };
-      }
+      sections[sectionId] = {
+        ...(sectionData || {}),
+        status: subJob?.status || 'pending',
+        lastError: subJob?.lastError,
+        completedAt: subJob?.completedAt,
+        rawOutput: subJob?.output,
+        // Resolve source IDs to full source details
+        sources: sourceCatalog && sectionData?.sources_used
+          ? sourceCatalog.resolveSources(sectionData.sources_used)
+          : []
+      };
     }
 
     // Calculate completed sections count
