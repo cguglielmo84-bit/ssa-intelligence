@@ -138,7 +138,7 @@ interface Section3Output {
       type: 'Manufacturing' | 'R&D' | 'Distribution' | 'Office' | 'Headquarters';
       description: string;    // 1-2 sentences on capabilities
       employees?: number;
-      source: string;         // "S3, S5"
+      source: string;         // single S# (e.g., "S3")
     }>;
     regional_stats: {
       total_facilities: number;
@@ -299,11 +299,12 @@ interface Section3Output {
 
 **Follow style guide Section 5:**
 
-1. **Reuse foundation source numbers** where applicable
-2. **Add new sources** continuing sequential numbering
-3. **Source every factual claim** - no unsourced statements
-4. **Use (S#) format** in prose: "...12 facilities in ${geography} (S3, S5)."
-5. **Use S# format** in arrays: \`"source": "S3, S5"\`
+1. **Source IDs must be S# only.** Reuse IDs from \`foundation.source_catalog\`; do **not** renumber existing sources.
+2. **New sources must continue numbering** after the highest existing S#. If foundation ends at S7, your next new source is S8, then S9, etc.
+3. **One source per field.** Every \`source\` field must be a single S# (no commas or ranges). If multiple sources apply, pick the most authoritative for the field and list all relevant S# in \`sources_used\`.
+4. **Source every factual claim** - no unsourced statements.
+5. **Use (S#) format in prose** and S# strings in arrays: \`"source": "S3"\` and \`sources_used: ["S1","S3","S8"]\`.
+6. **Never invent IDs or use non-S formats.** Only S# strings are valid.
 
 ---
 

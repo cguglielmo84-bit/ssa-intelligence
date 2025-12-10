@@ -52,6 +52,8 @@ export interface Section2Output {
             company: number | string;
             industry_avg: number | string;
             source: string;
+            unit?: string;
+            value_type?: 'currency' | 'percent' | 'ratio' | 'number';
         }>;
     };
     fx_source: 'A' | 'B' | 'C';

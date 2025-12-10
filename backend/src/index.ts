@@ -8,15 +8,17 @@ import cors from 'cors';
 import rateLimit from 'express-rate-limit';
 import dotenv from 'dotenv';
 import { PrismaClient } from '@prisma/client';
+import path from 'path';
+import { fileURLToPath } from 'url';
 
 // Load environment variables
 dotenv.config();
 
 // Import API routes
-import { generateResearch } from './api/research/generate';
-import { getJobStatus } from './api/research/status';
-import { getResearchDetail } from './api/research/detail';
-import { listResearch } from './api/research/list';
+import { generateResearch } from './api/research/generate.js';
+import { getJobStatus } from './api/research/status.js';
+import { getResearchDetail } from './api/research/detail.js';
+import { listResearch } from './api/research/list.js';
 
 // ============================================================================
 // SERVER SETUP
@@ -25,6 +27,8 @@ import { listResearch } from './api/research/list';
 const app = express();
 const PORT = process.env.PORT || 3000;
 const prisma = new PrismaClient();
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 // ============================================================================
 // MIDDLEWARE
@@ -107,6 +111,17 @@ app.post('/api/research/:id/regenerate', async (req, res) => {
   });
 });
 
+// Serve built frontend if present (non-impacting dev API)
+// When compiled, __dirname is /app/backend/dist/src; frontend build lives at /app/frontend/dist
+const frontendDistPath = path.resolve(__dirname, '../../frontend/dist');
+app.use(express.static(frontendDistPath));
+app.get('*', (req, res, next) => {
+  if (req.path.startsWith('/api/')) return next();
+  res.sendFile(path.join(frontendDistPath, 'index.html'), (err) => {
+    if (err) next(err);
+  });
+});
+
 // 404 handler
 app.use((req, res) => {
   res.status(404).json({
@@ -162,3 +177,6 @@ process.on('SIGINT', () => {
 });
 
 export default app;
+
+
+

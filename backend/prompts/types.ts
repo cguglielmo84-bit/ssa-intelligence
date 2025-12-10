@@ -28,7 +28,7 @@ import {
   BulletCategory,
   FxSource,
   IndustrySource
-} from './shared-types';
+} from './shared-types.js';
 
 // ============================================================================
 // FOUNDATION OUTPUT (Phase 0)

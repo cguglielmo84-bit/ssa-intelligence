@@ -5,7 +5,7 @@
 
 import { Request, Response } from 'express';
 import { PrismaClient } from '@prisma/client';
-import { ResearchOrchestrator } from '../../services/orchestrator';
+import { ResearchOrchestrator } from '../../services/orchestrator.js';
 
 const prisma = new PrismaClient();
 

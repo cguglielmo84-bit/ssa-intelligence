@@ -153,6 +153,11 @@ interface Section4Output {
 }
 \`\`\`
 
+**Source formatting (STRICT):**
+- Every entry in \`sources_used\` must be an S# string (e.g., "S1", "S2").
+- Do NOT include URLs, citations, or free text in \`sources_used\`.
+- Dedupe sources; if unsure about a source ID, omit it.
+
 ---
 
 ## REQUIRED SECTIONS PER SEGMENT
@@ -170,6 +175,7 @@ interface Section4Output {
 - 3-5 segment-specific competitors with ${geography} presence
 - Positioning (2-3 sentences)
 - Recent dynamics (2-3 sentences)
+- NEVER exceed 5 competitors; if you have more, pick the top 5 most relevant for ${geography}.
 
 ---
 
@@ -361,6 +367,11 @@ interface SegmentOutput {
   sources_used: string[];
 }
 \`\`\`
+
+**Source formatting (STRICT):**
+- Every entry in \`sources_used\` must be an S# string (e.g., "S1", "S2").
+- Do NOT include URLs, citations, or free text in \`sources_used\`.
+- Dedupe sources; if unsure about a source ID, omit it.
 
 ---
 

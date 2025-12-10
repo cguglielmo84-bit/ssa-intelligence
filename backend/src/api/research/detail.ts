@@ -5,8 +5,8 @@
 
 import { Request, Response } from 'express';
 import { PrismaClient } from '@prisma/client';
-import { createSourceCatalog } from '../../services/source-resolver';
-import type { FoundationOutput } from '../../types/prompts';
+import { createSourceCatalog } from '../../services/source-resolver.js';
+import type { FoundationOutput } from '../../types/prompts.js';
 
 const prisma = new PrismaClient();
 
@@ -41,7 +41,8 @@ export async function getResearchDetail(req: Request, res: Response) {
             completedAt: true,
             promptTokens: true,
             completionTokens: true,
-            costUsd: true
+            costUsd: true,
+            output: true
           }
         }
       }
@@ -55,10 +56,10 @@ export async function getResearchDetail(req: Request, res: Response) {
     }
 
     // Build source catalog from foundation
-    let sourceCatalog = null;
+    let sourceCatalog: import("../../services/source-resolver.js").SourceCatalogManager | null = null;
     if (job.foundation) {
       try {
-        sourceCatalog = createSourceCatalog(job.foundation as FoundationOutput);
+        sourceCatalog = createSourceCatalog(job.foundation as unknown as FoundationOutput);
       } catch (error) {
         console.error('Error creating source catalog:', error);
       }
@@ -78,9 +79,7 @@ export async function getResearchDetail(req: Request, res: Response) {
         completedAt: subJob?.completedAt,
         rawOutput: subJob?.output,
         // Resolve source IDs to full source details
-        sources: sourceCatalog && sectionData?.sources_used
-          ? sourceCatalog.resolveSources(sectionData.sources_used)
-          : []
+        sources: sourceCatalog?.resolveSources(sectionData?.sources_used || []) || []
       };
     }
 
@@ -138,7 +137,7 @@ export async function getResearchDetail(req: Request, res: Response) {
       overallConfidence: job.overallConfidence,
       overallConfidenceScore: job.overallConfidenceScore,
       // Include full source catalog for frontend
-      sourceCatalog: sourceCatalog ? sourceCatalog.getAllSources() : []
+      sourceCatalog: sourceCatalog?.getAllSources() || []
     });
 
   } catch (error) {
@@ -150,3 +149,7 @@ export async function getResearchDetail(req: Request, res: Response) {
     });
   }
 }
+
+
+
+

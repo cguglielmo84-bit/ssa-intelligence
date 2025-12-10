@@ -1,4 +1,4 @@
-﻿export function buildFinancialSnapshotPrompt(input) {
+export function buildFinancialSnapshotPrompt(input) {
     const { foundation, companyName, geography } = input;
     const foundationJson = JSON.stringify(foundation, null, 2);
     return `# Section 2: Financial Snapshot - Research Prompt
@@ -152,13 +152,8 @@ interface Section2Output {
 **Table format MUST match style guide Section 8:**
 \`\`\`
 | Metric | Company | Industry Avg | Source |
-
-For **every KPI row**, also include:
-- `unit` (e.g., "USD millions", "%", "bps", "days") so values align to the stated unit.
-- `value_type` ("currency" | "percent" | "ratio" | "number") to clarify formatting.
-- Ensure `company` and `industry_avg` are numeric in the stated unit (e.g., if unit is "USD millions", values should be in millions, not raw dollars).
-
 \`\`\`
+
 
 ---
 

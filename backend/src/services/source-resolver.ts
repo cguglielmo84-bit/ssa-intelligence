@@ -3,7 +3,7 @@
  * Converts S# references to full source details with URLs
  */
 
-import type { FoundationOutput, SourceReference } from '../types/prompts';
+import type { FoundationOutput, SourceReference } from '../types/prompts.js';
 
 // ============================================================================
 // TYPES

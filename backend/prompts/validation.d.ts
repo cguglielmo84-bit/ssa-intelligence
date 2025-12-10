@@ -25,15 +25,15 @@ export declare const sourceReferenceSchema: z.ZodObject<{
     type: z.ZodEnum<["filing", "transcript", "analyst_report", "news", "user_provided", "government", "investor_presentation", "industry_report"]>;
     date: z.ZodString;
 }, "strip", z.ZodTypeAny, {
+    type: "filing" | "transcript" | "analyst_report" | "news" | "user_provided" | "government" | "investor_presentation" | "industry_report";
     id: string;
     citation: string;
-    type: "filing" | "transcript" | "analyst_report" | "news" | "user_provided" | "government" | "investor_presentation" | "industry_report";
     date: string;
     url?: string | undefined;
 }, {
+    type: "filing" | "transcript" | "analyst_report" | "news" | "user_provided" | "government" | "investor_presentation" | "industry_report";
     id: string;
     citation: string;
-    type: "filing" | "transcript" | "analyst_report" | "news" | "user_provided" | "government" | "investor_presentation" | "industry_report";
     date: string;
     url?: string | undefined;
 }>;
@@ -228,15 +228,15 @@ export declare const foundationOutputSchema: z.ZodObject<{
         type: z.ZodEnum<["filing", "transcript", "analyst_report", "news", "user_provided", "government", "investor_presentation", "industry_report"]>;
         date: z.ZodString;
     }, "strip", z.ZodTypeAny, {
+        type: "filing" | "transcript" | "analyst_report" | "news" | "user_provided" | "government" | "investor_presentation" | "industry_report";
         id: string;
         citation: string;
-        type: "filing" | "transcript" | "analyst_report" | "news" | "user_provided" | "government" | "investor_presentation" | "industry_report";
         date: string;
         url?: string | undefined;
     }, {
+        type: "filing" | "transcript" | "analyst_report" | "news" | "user_provided" | "government" | "investor_presentation" | "industry_report";
         id: string;
         citation: string;
-        type: "filing" | "transcript" | "analyst_report" | "news" | "user_provided" | "government" | "investor_presentation" | "industry_report";
         date: string;
         url?: string | undefined;
     }>, "many">;
@@ -295,9 +295,9 @@ export declare const foundationOutputSchema: z.ZodObject<{
         key_facts: string[];
     };
     source_catalog: {
+        type: "filing" | "transcript" | "analyst_report" | "news" | "user_provided" | "government" | "investor_presentation" | "industry_report";
         id: string;
         citation: string;
-        type: "filing" | "transcript" | "analyst_report" | "news" | "user_provided" | "government" | "investor_presentation" | "industry_report";
         date: string;
         url?: string | undefined;
     }[];
@@ -336,9 +336,9 @@ export declare const foundationOutputSchema: z.ZodObject<{
         key_facts: string[];
     };
     source_catalog: {
+        type: "filing" | "transcript" | "analyst_report" | "news" | "user_provided" | "government" | "investor_presentation" | "industry_report";
         id: string;
         citation: string;
-        type: "filing" | "transcript" | "analyst_report" | "news" | "user_provided" | "government" | "investor_presentation" | "industry_report";
         date: string;
         url?: string | undefined;
     }[];
@@ -430,16 +430,22 @@ export declare const financialMetricSchema: z.ZodObject<{
     company: z.ZodUnion<[z.ZodNumber, z.ZodString]>;
     industry_avg: z.ZodUnion<[z.ZodNumber, z.ZodString]>;
     source: z.ZodString;
+    unit: z.ZodOptional<z.ZodString>;
+    value_type: z.ZodOptional<z.ZodEnum<["currency", "percent", "ratio", "number"]>>;
 }, "strip", z.ZodTypeAny, {
     company: string | number;
     source: string;
     metric: string;
     industry_avg: string | number;
+    unit?: string | undefined;
+    value_type?: "number" | "currency" | "percent" | "ratio" | undefined;
 }, {
     company: string | number;
     source: string;
     metric: string;
     industry_avg: string | number;
+    unit?: string | undefined;
+    value_type?: "number" | "currency" | "percent" | "ratio" | undefined;
 }>;
 export declare const derivedMetricSchema: z.ZodObject<{
     metric: z.ZodString;
@@ -475,16 +481,22 @@ export declare const financialSnapshotOutputSchema: z.ZodObject<{
             company: z.ZodUnion<[z.ZodNumber, z.ZodString]>;
             industry_avg: z.ZodUnion<[z.ZodNumber, z.ZodString]>;
             source: z.ZodString;
+            unit: z.ZodOptional<z.ZodString>;
+            value_type: z.ZodOptional<z.ZodEnum<["currency", "percent", "ratio", "number"]>>;
         }, "strip", z.ZodTypeAny, {
             company: string | number;
             source: string;
             metric: string;
             industry_avg: string | number;
+            unit?: string | undefined;
+            value_type?: "number" | "currency" | "percent" | "ratio" | undefined;
         }, {
             company: string | number;
             source: string;
             metric: string;
             industry_avg: string | number;
+            unit?: string | undefined;
+            value_type?: "number" | "currency" | "percent" | "ratio" | undefined;
         }>, "many">;
     }, "strip", z.ZodTypeAny, {
         metrics: {
@@ -492,6 +504,8 @@ export declare const financialSnapshotOutputSchema: z.ZodObject<{
             source: string;
             metric: string;
             industry_avg: string | number;
+            unit?: string | undefined;
+            value_type?: "number" | "currency" | "percent" | "ratio" | undefined;
         }[];
     }, {
         metrics: {
@@ -499,6 +513,8 @@ export declare const financialSnapshotOutputSchema: z.ZodObject<{
             source: string;
             metric: string;
             industry_avg: string | number;
+            unit?: string | undefined;
+            value_type?: "number" | "currency" | "percent" | "ratio" | undefined;
         }[];
     }>;
     fx_source: z.ZodEnum<["A", "B", "C"]>;
@@ -539,6 +555,8 @@ export declare const financialSnapshotOutputSchema: z.ZodObject<{
             source: string;
             metric: string;
             industry_avg: string | number;
+            unit?: string | undefined;
+            value_type?: "number" | "currency" | "percent" | "ratio" | undefined;
         }[];
     };
     fx_source: "A" | "B" | "C";
@@ -562,6 +580,8 @@ export declare const financialSnapshotOutputSchema: z.ZodObject<{
             source: string;
             metric: string;
             industry_avg: string | number;
+            unit?: string | undefined;
+            value_type?: "number" | "currency" | "percent" | "ratio" | undefined;
         }[];
     };
     fx_source: "A" | "B" | "C";
@@ -587,42 +607,42 @@ export declare const strategicPrioritySchema: z.ZodObject<{
     priority: z.ZodString;
     description: z.ZodString;
     geography_relevance: z.ZodString;
-    geography_relevance_rating: z.ZodEnum<["High", "Medium", "Low"]>;
+    geography_relevance_rating: z.ZodOptional<z.ZodEnum<["High", "Medium", "Low"]>>;
     source: z.ZodString;
 }, "strip", z.ZodTypeAny, {
     source: string;
     description: string;
     geography_relevance: string;
     priority: string;
-    geography_relevance_rating: "High" | "Medium" | "Low";
+    geography_relevance_rating?: "High" | "Medium" | "Low" | undefined;
 }, {
     source: string;
     description: string;
     geography_relevance: string;
     priority: string;
-    geography_relevance_rating: "High" | "Medium" | "Low";
+    geography_relevance_rating?: "High" | "Medium" | "Low" | undefined;
 }>;
 export declare const executiveLeaderSchema: z.ZodObject<{
     name: z.ZodString;
     title: z.ZodString;
     background: z.ZodString;
-    tenure: z.ZodString;
+    tenure: z.ZodOptional<z.ZodString>;
     geography_relevance: z.ZodOptional<z.ZodString>;
     geography_relevance_rating: z.ZodOptional<z.ZodEnum<["High", "Medium", "Low"]>>;
 }, "strip", z.ZodTypeAny, {
     name: string;
     title: string;
     background: string;
-    tenure: string;
     geography_relevance?: string | undefined;
     geography_relevance_rating?: "High" | "Medium" | "Low" | undefined;
+    tenure?: string | undefined;
 }, {
     name: string;
     title: string;
     background: string;
-    tenure: string;
     geography_relevance?: string | undefined;
     geography_relevance_rating?: "High" | "Medium" | "Low" | undefined;
+    tenure?: string | undefined;
 }>;
 export declare const companyOverviewOutputSchema: z.ZodObject<{
     confidence: z.ZodObject<{
@@ -694,7 +714,7 @@ export declare const companyOverviewOutputSchema: z.ZodObject<{
             employees?: number | undefined;
             capabilities?: string | undefined;
         }>, "many">;
-        regional_stats: z.ZodString;
+        regional_stats: z.ZodUnion<[z.ZodString, z.ZodRecord<z.ZodString, z.ZodAny>]>;
     }, "strip", z.ZodTypeAny, {
         facilities: {
             type: "Manufacturing" | "R&D" | "Distribution" | "Office" | "Headquarters";
@@ -704,7 +724,7 @@ export declare const companyOverviewOutputSchema: z.ZodObject<{
             capabilities?: string | undefined;
         }[];
         summary: string;
-        regional_stats: string;
+        regional_stats: string | Record<string, any>;
     }, {
         facilities: {
             type: "Manufacturing" | "R&D" | "Distribution" | "Office" | "Headquarters";
@@ -714,7 +734,7 @@ export declare const companyOverviewOutputSchema: z.ZodObject<{
             capabilities?: string | undefined;
         }[];
         summary: string;
-        regional_stats: string;
+        regional_stats: string | Record<string, any>;
     }>;
     strategic_priorities: z.ZodObject<{
         summary: z.ZodString;
@@ -722,22 +742,22 @@ export declare const companyOverviewOutputSchema: z.ZodObject<{
             priority: z.ZodString;
             description: z.ZodString;
             geography_relevance: z.ZodString;
-            geography_relevance_rating: z.ZodEnum<["High", "Medium", "Low"]>;
+            geography_relevance_rating: z.ZodOptional<z.ZodEnum<["High", "Medium", "Low"]>>;
             source: z.ZodString;
         }, "strip", z.ZodTypeAny, {
             source: string;
             description: string;
             geography_relevance: string;
             priority: string;
-            geography_relevance_rating: "High" | "Medium" | "Low";
+            geography_relevance_rating?: "High" | "Medium" | "Low" | undefined;
         }, {
             source: string;
             description: string;
             geography_relevance: string;
             priority: string;
-            geography_relevance_rating: "High" | "Medium" | "Low";
+            geography_relevance_rating?: "High" | "Medium" | "Low" | undefined;
         }>, "many">;
-        geography_specific_initiatives: z.ZodString;
+        geography_specific_initiatives: z.ZodUnion<[z.ZodString, z.ZodArray<z.ZodString, "many">]>;
     }, "strip", z.ZodTypeAny, {
         summary: string;
         priorities: {
@@ -745,9 +765,9 @@ export declare const companyOverviewOutputSchema: z.ZodObject<{
             description: string;
             geography_relevance: string;
             priority: string;
-            geography_relevance_rating: "High" | "Medium" | "Low";
+            geography_relevance_rating?: "High" | "Medium" | "Low" | undefined;
         }[];
-        geography_specific_initiatives: string;
+        geography_specific_initiatives: string | string[];
     }, {
         summary: string;
         priorities: {
@@ -755,88 +775,88 @@ export declare const companyOverviewOutputSchema: z.ZodObject<{
             description: string;
             geography_relevance: string;
             priority: string;
-            geography_relevance_rating: "High" | "Medium" | "Low";
+            geography_relevance_rating?: "High" | "Medium" | "Low" | undefined;
         }[];
-        geography_specific_initiatives: string;
+        geography_specific_initiatives: string | string[];
     }>;
     key_leadership: z.ZodObject<{
         executives: z.ZodArray<z.ZodObject<{
             name: z.ZodString;
             title: z.ZodString;
             background: z.ZodString;
-            tenure: z.ZodString;
+            tenure: z.ZodOptional<z.ZodString>;
             geography_relevance: z.ZodOptional<z.ZodString>;
             geography_relevance_rating: z.ZodOptional<z.ZodEnum<["High", "Medium", "Low"]>>;
         }, "strip", z.ZodTypeAny, {
             name: string;
             title: string;
             background: string;
-            tenure: string;
             geography_relevance?: string | undefined;
             geography_relevance_rating?: "High" | "Medium" | "Low" | undefined;
+            tenure?: string | undefined;
         }, {
             name: string;
             title: string;
             background: string;
-            tenure: string;
             geography_relevance?: string | undefined;
             geography_relevance_rating?: "High" | "Medium" | "Low" | undefined;
+            tenure?: string | undefined;
         }>, "many">;
         regional_leaders: z.ZodArray<z.ZodObject<{
             name: z.ZodString;
             title: z.ZodString;
             background: z.ZodString;
-            tenure: z.ZodString;
+            tenure: z.ZodOptional<z.ZodString>;
             geography_relevance: z.ZodOptional<z.ZodString>;
             geography_relevance_rating: z.ZodOptional<z.ZodEnum<["High", "Medium", "Low"]>>;
         }, "strip", z.ZodTypeAny, {
             name: string;
             title: string;
             background: string;
-            tenure: string;
             geography_relevance?: string | undefined;
             geography_relevance_rating?: "High" | "Medium" | "Low" | undefined;
+            tenure?: string | undefined;
         }, {
             name: string;
             title: string;
             background: string;
-            tenure: string;
             geography_relevance?: string | undefined;
             geography_relevance_rating?: "High" | "Medium" | "Low" | undefined;
+            tenure?: string | undefined;
         }>, "many">;
     }, "strip", z.ZodTypeAny, {
         executives: {
             name: string;
             title: string;
             background: string;
-            tenure: string;
             geography_relevance?: string | undefined;
             geography_relevance_rating?: "High" | "Medium" | "Low" | undefined;
+            tenure?: string | undefined;
         }[];
         regional_leaders: {
             name: string;
             title: string;
             background: string;
-            tenure: string;
             geography_relevance?: string | undefined;
             geography_relevance_rating?: "High" | "Medium" | "Low" | undefined;
+            tenure?: string | undefined;
         }[];
     }, {
         executives: {
             name: string;
             title: string;
             background: string;
-            tenure: string;
             geography_relevance?: string | undefined;
             geography_relevance_rating?: "High" | "Medium" | "Low" | undefined;
+            tenure?: string | undefined;
         }[];
         regional_leaders: {
             name: string;
             title: string;
             background: string;
-            tenure: string;
             geography_relevance?: string | undefined;
             geography_relevance_rating?: "High" | "Medium" | "Low" | undefined;
+            tenure?: string | undefined;
         }[];
     }>;
     sources_used: z.ZodArray<z.ZodString, "many">;
@@ -865,7 +885,7 @@ export declare const companyOverviewOutputSchema: z.ZodObject<{
             capabilities?: string | undefined;
         }[];
         summary: string;
-        regional_stats: string;
+        regional_stats: string | Record<string, any>;
     };
     strategic_priorities: {
         summary: string;
@@ -874,26 +894,26 @@ export declare const companyOverviewOutputSchema: z.ZodObject<{
             description: string;
             geography_relevance: string;
             priority: string;
-            geography_relevance_rating: "High" | "Medium" | "Low";
+            geography_relevance_rating?: "High" | "Medium" | "Low" | undefined;
         }[];
-        geography_specific_initiatives: string;
+        geography_specific_initiatives: string | string[];
     };
     key_leadership: {
         executives: {
             name: string;
             title: string;
             background: string;
-            tenure: string;
             geography_relevance?: string | undefined;
             geography_relevance_rating?: "High" | "Medium" | "Low" | undefined;
+            tenure?: string | undefined;
         }[];
         regional_leaders: {
             name: string;
             title: string;
             background: string;
-            tenure: string;
             geography_relevance?: string | undefined;
             geography_relevance_rating?: "High" | "Medium" | "Low" | undefined;
+            tenure?: string | undefined;
         }[];
     };
 }, {
@@ -921,7 +941,7 @@ export declare const companyOverviewOutputSchema: z.ZodObject<{
             capabilities?: string | undefined;
         }[];
         summary: string;
-        regional_stats: string;
+        regional_stats: string | Record<string, any>;
     };
     strategic_priorities: {
         summary: string;
@@ -930,26 +950,26 @@ export declare const companyOverviewOutputSchema: z.ZodObject<{
             description: string;
             geography_relevance: string;
             priority: string;
-            geography_relevance_rating: "High" | "Medium" | "Low";
+            geography_relevance_rating?: "High" | "Medium" | "Low" | undefined;
         }[];
-        geography_specific_initiatives: string;
+        geography_specific_initiatives: string | string[];
     };
     key_leadership: {
         executives: {
             name: string;
             title: string;
             background: string;
-            tenure: string;
             geography_relevance?: string | undefined;
             geography_relevance_rating?: "High" | "Medium" | "Low" | undefined;
+            tenure?: string | undefined;
         }[];
         regional_leaders: {
             name: string;
             title: string;
             background: string;
-            tenure: string;
             geography_relevance?: string | undefined;
             geography_relevance_rating?: "High" | "Medium" | "Low" | undefined;
+            tenure?: string | undefined;
         }[];
     };
 }>;
@@ -2479,16 +2499,16 @@ export declare const sourceReferenceDetailedSchema: z.ZodObject<{
 } & {
     sections_used_in: z.ZodArray<z.ZodString, "many">;
 }, "strip", z.ZodTypeAny, {
+    type: "filing" | "transcript" | "analyst_report" | "news" | "user_provided" | "government" | "investor_presentation" | "industry_report";
     id: string;
     citation: string;
-    type: "filing" | "transcript" | "analyst_report" | "news" | "user_provided" | "government" | "investor_presentation" | "industry_report";
     date: string;
     sections_used_in: string[];
     url?: string | undefined;
 }, {
+    type: "filing" | "transcript" | "analyst_report" | "news" | "user_provided" | "government" | "investor_presentation" | "industry_report";
     id: string;
     citation: string;
-    type: "filing" | "transcript" | "analyst_report" | "news" | "user_provided" | "government" | "investor_presentation" | "industry_report";
     date: string;
     sections_used_in: string[];
     url?: string | undefined;
@@ -2549,16 +2569,16 @@ export declare const appendixOutputSchema: z.ZodObject<{
     } & {
         sections_used_in: z.ZodArray<z.ZodString, "many">;
     }, "strip", z.ZodTypeAny, {
+        type: "filing" | "transcript" | "analyst_report" | "news" | "user_provided" | "government" | "investor_presentation" | "industry_report";
         id: string;
         citation: string;
-        type: "filing" | "transcript" | "analyst_report" | "news" | "user_provided" | "government" | "investor_presentation" | "industry_report";
         date: string;
         sections_used_in: string[];
         url?: string | undefined;
     }, {
+        type: "filing" | "transcript" | "analyst_report" | "news" | "user_provided" | "government" | "investor_presentation" | "industry_report";
         id: string;
         citation: string;
-        type: "filing" | "transcript" | "analyst_report" | "news" | "user_provided" | "government" | "investor_presentation" | "industry_report";
         date: string;
         sections_used_in: string[];
         url?: string | undefined;
@@ -2652,9 +2672,9 @@ export declare const appendixOutputSchema: z.ZodObject<{
         reason: string;
     };
     source_references: {
+        type: "filing" | "transcript" | "analyst_report" | "news" | "user_provided" | "government" | "investor_presentation" | "industry_report";
         id: string;
         citation: string;
-        type: "filing" | "transcript" | "analyst_report" | "news" | "user_provided" | "government" | "investor_presentation" | "industry_report";
         date: string;
         sections_used_in: string[];
         url?: string | undefined;
@@ -2686,9 +2706,9 @@ export declare const appendixOutputSchema: z.ZodObject<{
         reason: string;
     };
     source_references: {
+        type: "filing" | "transcript" | "analyst_report" | "news" | "user_provided" | "government" | "investor_presentation" | "industry_report";
         id: string;
         citation: string;
-        type: "filing" | "transcript" | "analyst_report" | "news" | "user_provided" | "government" | "investor_presentation" | "industry_report";
         date: string;
         sections_used_in: string[];
         url?: string | undefined;

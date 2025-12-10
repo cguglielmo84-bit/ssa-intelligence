@@ -4,23 +4,22 @@
  */
 
 import { PrismaClient } from '@prisma/client';
-import { getClaudeClient } from './claude-client';
-import { createSourceCatalog, type SourceCatalogManager } from './source-resolver';
-import type { FoundationOutput } from '../types/prompts';
-import type { ClaudeResponse } from './claude-client';
+import { getClaudeClient } from './claude-client.js';
+import type { FoundationOutput } from '../types/prompts.js';
+import type { ClaudeResponse } from './claude-client.js';
 
 // Import prompt builders (these will be renamed section files)
-import { buildFoundationPrompt } from '../../prompts/foundation-prompt';
-import { buildExecSummaryPrompt } from '../../prompts/exec-summary';
-import { buildFinancialSnapshotPrompt } from '../../prompts/financial-snapshot';
-import { buildCompanyOverviewPrompt } from '../../prompts/company-overview';
-import { buildSegmentAnalysisPrompt } from '../../prompts/segment-analysis';
-import { buildTrendsPrompt } from '../../prompts/trends';
-import { buildPeerBenchmarkingPrompt } from '../../prompts/peer-benchmarking';
-import { buildSkuOpportunitiesPrompt } from '../../prompts/sku-opportunities';
-import { buildRecentNewsPrompt } from '../../prompts/recent-news';
-import { buildConversationStartersPrompt } from '../../prompts/conversation-starters';
-import { generateAppendix } from '../../prompts/appendix';
+import { buildFoundationPrompt } from '../../prompts/foundation-prompt.js';
+import { buildExecSummaryPrompt } from '../../prompts/exec-summary.js';
+import { buildFinancialSnapshotPrompt } from '../../prompts/financial-snapshot.js';
+import { buildCompanyOverviewPrompt } from '../../prompts/company-overview.js';
+import { buildSegmentAnalysisPrompt } from '../../prompts/segment-analysis.js';
+import { buildTrendsPrompt } from '../../prompts/trends.js';
+import { buildPeerBenchmarkingPrompt } from '../../prompts/peer-benchmarking.js';
+import { buildSkuOpportunitiesPrompt } from '../../prompts/sku-opportunities.js';
+import { buildRecentNewsPrompt } from '../../prompts/recent-news.js';
+import { buildConversationStartersPrompt } from '../../prompts/conversation-starters.js';
+import { generateAppendix } from '../../prompts/appendix.js';
 
 // Import validation schemas
 import {
@@ -35,7 +34,7 @@ import {
   recentNewsOutputSchema,
   conversationStartersOutputSchema,
   appendixOutputSchema
-} from '../../prompts/validation';
+} from '../../prompts/validation.js';
 
 // ============================================================================
 // TYPES
@@ -383,7 +382,7 @@ export class ResearchOrchestrator {
       // Guard against empty/invalid content that passed validation
       this.ensureStageHasContent(stageId, output);
 
-      await this.recordTokenUsage(jobId, stageId, response);
+      await this.recordTokenUsage(jobId, stageId, response!);
 
       // Save output
       await this.saveStageOutput(jobId, stageId, output);
@@ -441,7 +440,7 @@ export class ResearchOrchestrator {
       throw new Error('Foundation not available for appendix generation');
     }
 
-    const sections = {
+    const sections: any = {
       section1: job.execSummary,
       section2: job.financialSnapshot,
       section3: job.companyOverview,
@@ -454,7 +453,7 @@ export class ResearchOrchestrator {
     };
 
     const appendixOutput = generateAppendix({
-      foundation: job.foundation as FoundationOutput,
+      foundation: job.foundation as unknown as FoundationOutput,
       companyName: job.companyName,
       geography: job.geography,
       sections
@@ -541,7 +540,7 @@ export class ResearchOrchestrator {
         data: {
           attempts,
           lastError: errorMessage,
-          output: rawContent ? { rawContent, error: errorMessage } : subJob.output,
+          output: (rawContent ? { rawContent, error: errorMessage } : subJob.output) as any,
           status: 'pending'
         }
       });
@@ -552,7 +551,7 @@ export class ResearchOrchestrator {
         data: {
           status: 'failed',
           lastError: errorMessage,
-          output: rawContent ? { rawContent, error: errorMessage } : subJob.output
+          output: (rawContent ? { rawContent, error: errorMessage } : subJob.output) as any
         }
       });
     }
@@ -702,8 +701,8 @@ export class ResearchOrchestrator {
     const cleanedSources = Array.from(
       new Set(
         rawSources
-          .map((s) => (typeof s === 'string' ? s.trim() : String(s ?? '').trim()))
-          .filter((s) => /^S\d+$/.test(s))
+          .map((s: any) => (typeof s === 'string' ? s.trim() : String(s ?? '').trim()))
+          .filter((s: string) => /^S\d+$/.test(s))
       )
     );
 
@@ -783,3 +782,5 @@ export class ResearchOrchestrator {
     ]);
   }
 }
+
+

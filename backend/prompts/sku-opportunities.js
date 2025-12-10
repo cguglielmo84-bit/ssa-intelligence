@@ -180,6 +180,13 @@ interface Section7Output {
 }
 \`\`\`
 
+### SOURCE ID PROTOCOL (STRICT)
+- **Use S# IDs only.** Reuse existing IDs from foundation.source_catalog; do **not** renumber what already exists.
+- **New sources continue numbering** after the highest existing S#. If foundation ends at S9, your next new source is S10, then S11, etc.
+- **One source per field.** Every source value in opportunities must be a single S# (no commas or ranges). If multiple sources support the problem, pick the most authoritative for source and include all relevant S# in sources_used.
+- **sources_used** must be an array of S# strings, deduplicated, covering every source referenced anywhere.
+- **Never output non-S formats** (e.g., URLs, citations, or free text) in source or sources_used.
+
 ---
 
 ## QUALITY STANDARDS
