@@ -9,6 +9,7 @@ import rateLimit from 'express-rate-limit';
 import dotenv from 'dotenv';
 import { PrismaClient } from '@prisma/client';
 import path from 'path';
+import fs from 'fs';
 import { fileURLToPath } from 'url';
 
 // Load environment variables
@@ -112,15 +113,29 @@ app.post('/api/research/:id/regenerate', async (req, res) => {
 });
 
 // Serve built frontend if present (non-impacting dev API)
-// When compiled, __dirname is /app/backend/dist/src; frontend build lives at /app/frontend/dist
-const frontendDistPath = path.resolve(__dirname, '../../frontend/dist');
-app.use(express.static(frontendDistPath));
-app.get('*', (req, res, next) => {
-  if (req.path.startsWith('/api/')) return next();
-  res.sendFile(path.join(frontendDistPath, 'index.html'), (err) => {
-    if (err) next(err);
+// Try multiple candidate paths to avoid stale build path issues.
+const candidateFrontendPaths = [
+  path.resolve(__dirname, '../../frontend/dist'), // expected in Docker image
+  path.resolve(__dirname, '../frontend/dist'),   // fallback if layout differs
+  path.resolve(process.cwd(), 'frontend/dist')
+];
+const frontendDistPath = candidateFrontendPaths.find((p) => fs.existsSync(path.join(p, 'index.html')));
+
+if (frontendDistPath) {
+  app.use(express.static(frontendDistPath));
+  app.get('*', (req, res, next) => {
+    if (req.path.startsWith('/api/')) return next();
+    res.sendFile(path.join(frontendDistPath, 'index.html'), (err) => {
+      if (err) next(err);
+    });
   });
-});
+} else {
+  // If frontend build is missing, let non-API routes fall through to 404.
+  app.get('*', (req, res, next) => {
+    if (req.path.startsWith('/api/')) return next();
+    res.status(404).json({ error: 'Frontend build not found' });
+  });
+}
 
 // 404 handler
 app.use((req, res) => {
@@ -177,6 +192,8 @@ process.on('SIGINT', () => {
 });
 
 export default app;
+
+
 
 
 

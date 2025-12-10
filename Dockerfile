@@ -25,6 +25,7 @@ FROM node:20-alpine AS runner
 WORKDIR /app
 ENV NODE_ENV=production
 ENV PORT=3000
+ENV NODE_PATH=/app/backend/dist/src
 
 # Install bash for environments that invoke bash explicitly
 RUN apk add --no-cache bash
@@ -39,11 +40,8 @@ COPY --from=backend-build /app/backend/prompts ./backend/prompts
 # Frontend static build
 COPY --from=frontend-build /app/frontend/dist ./frontend/dist
 
-# Start script
-COPY start-app.sh ./start-app.sh
-RUN chmod +x ./start-app.sh
 
 EXPOSE 3000
 
 # Note: assumes backend handles serving the API (and optionally static frontend if configured in code)
-CMD ["sh", "./start-app.sh"]
+CMD ["node", "/app/backend/dist/src/index.js"]
