@@ -55,9 +55,20 @@ export async function generateResearch(req: Request, res: Response) {
     const industry = normalizedIndustry && hasMeaningfulChars(normalizedIndustry) ? toTitleLike(normalizedIndustry) : undefined;
     const companyName = toTitleLike(normalizedCompany);
 
-    // For demo purposes, use a default user
+    // For demo purposes, use a default user and ensure it exists to satisfy FK
     // In production, get this from auth middleware
-    const userId = req.headers['x-user-id'] as string || 'demo-user';
+    const userId = (req.headers['x-user-id'] as string) || 'demo-user';
+    const userEmail = `${userId}@demo.local`;
+
+    await prisma.user.upsert({
+      where: { id: userId },
+      update: {},
+      create: {
+        id: userId,
+        email: userEmail,
+        name: 'Demo User'
+      }
+    });
 
     // Create orchestrator
     const orchestrator = new ResearchOrchestrator(prisma);
