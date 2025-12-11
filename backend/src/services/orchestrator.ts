@@ -365,8 +365,18 @@ export class ResearchOrchestrator {
         select: { status: true }
       });
       const anyFailed = subJobs.some(s => s.status === 'failed');
+      const anyCancelled = subJobs.some(s => s.status === 'cancelled');
       const allTerminal = subJobs.every(s => ['completed', 'failed', 'cancelled'].includes(s.status));
-      if (anyFailed) {
+
+      const current = await this.prisma.researchJob.findUnique({
+        where: { id: jobId },
+        select: { status: true }
+      });
+      if (!current) return;
+
+      if (current.status === 'cancelled' || anyCancelled) {
+        await this.updateJobStatus(jobId, 'cancelled');
+      } else if (anyFailed) {
         await this.updateJobStatus(jobId, 'failed');
       } else if (allTerminal) {
         await this.updateJobStatus(jobId, 'completed');
@@ -691,10 +701,24 @@ export class ResearchOrchestrator {
    * Update job status
    */
   private async updateJobStatus(jobId: string, status: string) {
-    await this.prisma.researchJob.update({
+    const current = await this.prisma.researchJob.findUnique({
       where: { id: jobId },
-      data: { status }
+      select: { status: true }
     });
+
+    if (!current) return;
+
+    // Do not overwrite a cancelled job with another status
+    if (current.status === 'cancelled' && status !== 'cancelled') {
+      return;
+    }
+
+    if (current.status !== status) {
+      await this.prisma.researchJob.update({
+        where: { id: jobId },
+        data: { status }
+      });
+    }
 
     if (status === 'cancelled') {
       // Mark running/pending subjobs as cancelled too
@@ -767,7 +791,15 @@ export class ResearchOrchestrator {
 
     if (allComplete) {
       const anyFailed = job.subJobs.some(j => j.status === 'failed');
-      await this.updateJobStatus(jobId, anyFailed ? 'failed' : 'completed');
+      const anyCancelled = job.subJobs.some(j => j.status === 'cancelled');
+
+      if (anyFailed) {
+        await this.updateJobStatus(jobId, 'failed');
+      } else if (anyCancelled) {
+        await this.updateJobStatus(jobId, 'cancelled');
+      } else {
+        await this.updateJobStatus(jobId, 'completed');
+      }
     }
   }
 
