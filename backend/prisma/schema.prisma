@@ -23,8 +23,11 @@ model ResearchJob {
   
   // Research inputs
   companyName       String
+  normalizedCompany String
   geography         String
+  normalizedGeography String
   industry          String?
+  normalizedIndustry String?
   focusAreas        String[]  @default([])
   
   // Research outputs (stored as JSON matching TypeScript interfaces)
@@ -64,6 +67,7 @@ model ResearchJob {
   @@index([createdAt])
   @@index([status])
   @@index([status, queuedAt])
+  @@unique([userId, normalizedCompany, normalizedGeography, normalizedIndustry])
 }
 
 // Individual section/stage execution tracking

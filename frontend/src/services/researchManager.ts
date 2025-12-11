@@ -501,15 +501,41 @@ const fetchJson = async (path: string, options?: RequestInit) => {
 };
 
 const createJobApi = async (companyName: string, geography: string, industry?: string) => {
-  return fetchJson('/research/generate', {
-    method: 'POST',
-    body: JSON.stringify({
-      companyName,
-      geography,
-      focusAreas: industry ? [industry] : undefined,
-      requestedBy: 'web-user',
-    }),
-  }) as Promise<{ jobId: string; status: string; queuePosition?: number }>;
+  const payload = {
+    companyName,
+    geography,
+    focusAreas: industry ? [industry] : undefined,
+    requestedBy: 'web-user',
+  };
+
+  const res = await fetch(
+    `${API_BASE}/research/generate`,
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    }
+  );
+
+  if (res.status === 409) {
+    let body: any = {};
+    try {
+      body = await res.json();
+    } catch (_) {}
+    throw {
+      duplicate: true,
+      jobId: body?.jobId,
+      status: body?.status,
+      message: body?.error || 'Research already exists for this company/geography/industry.'
+    };
+  }
+
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(text || `Request failed: ${res.status}`);
+  }
+
+  return (await res.json()) as { jobId: string; status: string; queuePosition?: number };
 };
 
 const listJobsApi = async () => {

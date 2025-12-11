@@ -207,12 +207,18 @@ export class ResearchOrchestrator {
     industry?: string;
     focusAreas?: string[];
     userId: string;
+    normalizedCompany?: string;
+    normalizedGeography?: string;
+    normalizedIndustry?: string | null;
   }) {
     const job = await this.prisma.researchJob.create({
       data: {
         companyName: input.companyName,
+        normalizedCompany: input.normalizedCompany || input.companyName.toLowerCase(),
         geography: input.geography,
+        normalizedGeography: input.normalizedGeography || input.geography.toLowerCase(),
         industry: input.industry,
+        normalizedIndustry: input.normalizedIndustry || (input.industry ? input.industry.toLowerCase() : null),
         focusAreas: input.focusAreas || [],
         status: 'queued',
         queuedAt: new Date(),

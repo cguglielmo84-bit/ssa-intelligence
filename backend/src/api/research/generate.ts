@@ -35,6 +35,8 @@ const toTitleLike = (value: string) => {
 
 const hasMeaningfulChars = (value: string) => /[A-Za-z0-9]/.test(value);
 
+const normalizeForKey = (value: string) => value.trim().replace(/\s+/g, ' ').toLowerCase();
+
 export async function generateResearch(req: Request, res: Response) {
   try {
     const body = req.body as GenerateRequestBody;
@@ -54,6 +56,9 @@ export async function generateResearch(req: Request, res: Response) {
     const geography = normalizedGeo && hasMeaningfulChars(normalizedGeo) ? toTitleLike(normalizedGeo) : 'Global';
     const industry = normalizedIndustry && hasMeaningfulChars(normalizedIndustry) ? toTitleLike(normalizedIndustry) : undefined;
     const companyName = toTitleLike(normalizedCompany);
+    const normalizedCompanyKey = normalizeForKey(normalizedCompany);
+    const normalizedGeoKey = normalizeForKey(geography);
+    const normalizedIndustryKey = industry ? normalizeForKey(industry) : null;
 
     // For demo purposes, use a default user and ensure it exists to satisfy FK
     // In production, get this from auth middleware
@@ -70,6 +75,36 @@ export async function generateResearch(req: Request, res: Response) {
       }
     });
 
+    // Check for existing job with same normalized company+geo+industry and running/queued/completed
+    const existing = await prisma.researchJob.findFirst({
+      where: {
+        userId,
+        // normalize safeguard: fall back to raw match if columns not present yet
+        OR: [
+          {
+            normalizedCompany: normalizedCompanyKey,
+            normalizedGeography: normalizedGeoKey,
+            normalizedIndustry: normalizedIndustryKey
+          },
+          {
+            companyName: companyName,
+            geography: geography,
+            industry: industry || null
+          }
+        ],
+        status: { in: ['queued', 'running', 'completed'] }
+      },
+      select: { id: true, status: true }
+    });
+
+    if (existing) {
+      return res.status(409).json({
+        error: 'Research already exists for this company/geography/industry.',
+        status: existing.status,
+        jobId: existing.id
+      });
+    }
+
     // Create orchestrator
     const orchestrator = getResearchOrchestrator(prisma);
 
@@ -79,7 +114,10 @@ export async function generateResearch(req: Request, res: Response) {
       geography,
       industry,
       focusAreas: body.focusAreas,
-      userId
+      userId,
+      normalizedCompany: normalizedCompanyKey,
+      normalizedGeography: normalizedGeoKey,
+      normalizedIndustry: normalizedIndustryKey
     });
 
     const queuePosition = await orchestrator.getQueuePosition(job.id);

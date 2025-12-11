@@ -23,6 +23,7 @@ export const NewResearch: React.FC<NewResearchProps> = ({ createJob, runJob, job
   const [formData, setFormData] = useState({ company: '', geo: '', industry: '' });
   const [currentJobId, setCurrentJobId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [duplicateInfo, setDuplicateInfo] = useState<{ jobId?: string; status?: string; message?: string } | null>(null);
 
   const activeJob = jobs.find(j => j.id === currentJobId);
 
@@ -46,14 +47,24 @@ export const NewResearch: React.FC<NewResearchProps> = ({ createJob, runJob, job
 
     setFormData(normalized);
     setError(null);
+    setDuplicateInfo(null);
 
-    const id = await createJob(normalized.company, normalized.geo, normalized.industry);
-    setCurrentJobId(id);
-    setStep('processing');
-    
-    // Start the process, passing the company name explicitly to avoid stale state issues
-    runJob(id, normalized.company).catch(console.error);
-    onNavigate(`/research/${id}`);
+    try {
+      const id = await createJob(normalized.company, normalized.geo, normalized.industry);
+      setCurrentJobId(id);
+      setStep('processing');
+      
+      // Start the process, passing the company name explicitly to avoid stale state issues
+      runJob(id, normalized.company).catch(console.error);
+      onNavigate(`/research/${id}`);
+    } catch (err: any) {
+      if (err?.duplicate) {
+        setDuplicateInfo({ jobId: err.jobId, status: err.status, message: err.message });
+        return;
+      }
+      const msg = (err && err.message) || 'Failed to start analysis.';
+      setError(msg);
+    }
   };
 
   // Redirect when done
@@ -126,6 +137,24 @@ export const NewResearch: React.FC<NewResearchProps> = ({ createJob, runJob, job
             </button>
           </div>
         </form>
+        {duplicateInfo && (
+          <div className="mt-4 bg-amber-50 border border-amber-200 rounded-xl p-4 text-sm text-amber-800">
+            <div className="font-semibold mb-1">Research already exists.</div>
+            <div className="mb-2">
+              {duplicateInfo.message || 'This company/geography/industry has already been analyzed.'}
+              {duplicateInfo.status ? ` Status: ${duplicateInfo.status}.` : ''}
+            </div>
+            {duplicateInfo.jobId && (
+              <button
+                type="button"
+                onClick={() => onNavigate(`/research/${duplicateInfo.jobId}`)}
+                className="text-brand-700 font-semibold hover:underline"
+              >
+                View existing research
+              </button>
+            )}
+          </div>
+        )}
       </div>
     );
   }
