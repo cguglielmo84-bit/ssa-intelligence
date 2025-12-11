@@ -1,0 +1,58 @@
+/**
+ * POST /api/research/:id/cancel
+ * Cancel a queued or running research job
+ */
+
+import { Request, Response } from 'express';
+import { PrismaClient } from '@prisma/client';
+import { getResearchOrchestrator } from '../../services/orchestrator.js';
+
+const prisma = new PrismaClient();
+
+export async function cancelResearchJob(req: Request, res: Response) {
+  try {
+    const { id } = req.params;
+
+    const job = await prisma.researchJob.findUnique({
+      where: { id },
+      select: { status: true }
+    });
+
+    if (!job) {
+      return res.status(404).json({ error: 'Job not found', jobId: id });
+    }
+
+    if (job.status === 'completed' || job.status === 'failed') {
+      return res.status(400).json({ error: 'Job already completed', status: job.status });
+    }
+
+    await prisma.$transaction([
+      prisma.researchJob.update({
+        where: { id },
+        data: {
+          status: 'cancelled',
+          currentStage: null
+        }
+      }),
+      prisma.researchSubJob.updateMany({
+        where: { researchId: id, status: { in: ['pending', 'running'] } },
+        data: {
+          status: 'cancelled',
+          completedAt: new Date()
+        }
+      })
+    ]);
+
+    // Nudge the queue to pick the next job if this one was running/queued
+    const orchestrator = getResearchOrchestrator(prisma);
+    orchestrator.processQueue(true).catch(console.error);
+
+    return res.json({ success: true, jobId: id, status: 'cancelled' });
+  } catch (error) {
+    console.error('Error cancelling research job:', error);
+    return res.status(500).json({
+      error: 'Failed to cancel research job',
+      message: error instanceof Error ? error.message : 'Unknown error'
+    });
+  }
+}

@@ -6,11 +6,20 @@ import { ArrowRight, Search, TrendingUp, Building2, MapPin } from 'lucide-react'
 interface HomeProps {
   jobs: ResearchJob[];
   onNavigate: (path: string) => void;
+  onCancel?: (id: string) => Promise<void>;
 }
 
-export const Home: React.FC<HomeProps> = ({ jobs, onNavigate }) => {
+export const Home: React.FC<HomeProps> = ({ jobs, onNavigate, onCancel }) => {
   const completedJobs = jobs.filter(j => j.status === 'completed');
-  const activeJobs = jobs.filter(j => j.status === 'running' || j.status === 'idle');
+  const activeJobs = jobs
+    .filter(j => j.status === 'running' || j.status === 'queued' || j.status === 'idle')
+    .sort((a, b) => {
+      const priority = (status: string) => (status === 'running' ? 0 : 1);
+      const pa = priority(a.status);
+      const pb = priority(b.status);
+      if (pa !== pb) return pa - pb;
+      return (a.createdAt || 0) - (b.createdAt || 0);
+    });
   // Hero shine temporarily disabled
 
   return (
@@ -59,6 +68,19 @@ export const Home: React.FC<HomeProps> = ({ jobs, onNavigate }) => {
                 <div className="w-full bg-slate-100 h-1.5 rounded-full overflow-hidden">
                   <div className="bg-blue-500 h-full transition-all duration-500" style={{ width: `${job.progress}%` }}></div>
                 </div>
+                {(job.status === 'running' || job.status === 'queued') && onCancel && (
+                  <div className="flex justify-end mt-3">
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onCancel(job.id).catch(() => {});
+                      }}
+                      className="text-xs text-rose-600 hover:text-rose-700 font-semibold"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                )}
               </div>
             ))}
           </div>

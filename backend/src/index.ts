@@ -20,6 +20,8 @@ import { generateResearch } from './api/research/generate.js';
 import { getJobStatus } from './api/research/status.js';
 import { getResearchDetail } from './api/research/detail.js';
 import { listResearch } from './api/research/list.js';
+import { cancelResearchJob } from './api/research/cancel.js';
+import { getResearchOrchestrator } from './services/orchestrator.js';
 
 // ============================================================================
 // SERVER SETUP
@@ -103,6 +105,7 @@ app.post('/api/research/generate', generateResearch);
 app.get('/api/research/jobs/:id', getJobStatus);
 app.get('/api/research/:id', getResearchDetail);
 app.get('/api/research', listResearch);
+app.post('/api/research/:id/cancel', cancelResearchJob);
 
 // Regenerate specific sections (optional - for future implementation)
 app.post('/api/research/:id/regenerate', async (req, res) => {
@@ -189,6 +192,12 @@ process.on('SIGTERM', () => {
 process.on('SIGINT', () => {
   console.log('SIGINT received, shutting down gracefully...');
   process.exit(0);
+});
+
+// Resume queue processing for any queued jobs on startup
+const orchestrator = getResearchOrchestrator(prisma);
+orchestrator.processQueue().catch((err) => {
+  console.error('Failed to start queue processor:', err);
 });
 
 export default app;

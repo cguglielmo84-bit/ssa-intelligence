@@ -61,6 +61,7 @@ export async function listResearch(req: Request, res: Response) {
           createdAt: true,
           updatedAt: true,
           completedAt: true,
+          queuedAt: true,
           subJobs: {
             where: { status: 'completed' },
             select: { stage: true }
@@ -85,6 +86,7 @@ export async function listResearch(req: Request, res: Response) {
       completionTokens: job.completionTokens,
       costUsd: job.costUsd,
       createdAt: job.createdAt,
+      queuedAt: job.queuedAt,
       updatedAt: job.updatedAt,
       completedAt: job.completedAt,
       metadata: {

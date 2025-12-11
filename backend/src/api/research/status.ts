@@ -5,6 +5,7 @@
 
 import { Request, Response } from 'express';
 import { PrismaClient } from '@prisma/client';
+import { getResearchOrchestrator } from '../../services/orchestrator.js';
 
 const prisma = new PrismaClient();
 
@@ -48,9 +49,21 @@ export async function getJobStatus(req: Request, res: Response) {
     const avgTimePerSection = 45; // seconds (estimate)
     const estimatedTimeRemaining = pendingJobs.length * avgTimePerSection;
 
+    const orchestrator = getResearchOrchestrator(prisma);
+    const queuePosition = job.status === 'queued'
+      ? await orchestrator.getQueuePosition(job.id)
+      : 0;
+    const blockedByRunning = job.status === 'queued' && queuePosition > 1;
+    if (job.status === 'queued') {
+      // Nudge queue in case it stalled
+      orchestrator.processQueue(true).catch(console.error);
+    }
+
     return res.json({
       id: job.id,
       status: job.status,
+      queuePosition,
+      blockedByRunning,
       progress: job.progress,
       currentStage: job.currentStage,
       companyName: job.companyName,

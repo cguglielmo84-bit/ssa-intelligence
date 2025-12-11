@@ -183,6 +183,9 @@ export const STAGE_CONFIGS: Record<StageId, StageConfig> = {
 export class ResearchOrchestrator {
   private prisma: PrismaClient;
   private claudeClient;
+  private queueLockId = BigInt(937451); // arbitrary global lock id
+  private queueLoopRunning = false;
+  private queueWatchdogStarted = false;
   private modelPricing: Record<string, { prompt: number; completion: number }> = {
     // USD per 1M tokens (set to 0 by default; adjust if pricing changes)
     'claude-sonnet-4-5': { prompt: 3, completion: 15 },
@@ -192,6 +195,7 @@ export class ResearchOrchestrator {
   constructor(prisma: PrismaClient) {
     this.prisma = prisma;
     this.claudeClient = getClaudeClient();
+    this.startQueueWatchdog();
   }
 
   /**
@@ -210,7 +214,8 @@ export class ResearchOrchestrator {
         geography: input.geography,
         industry: input.industry,
         focusAreas: input.focusAreas || [],
-        status: 'pending',
+        status: 'queued',
+        queuedAt: new Date(),
         progress: 0,
         userId: input.userId,
         metadata: {
@@ -252,10 +257,66 @@ export class ResearchOrchestrator {
       )
     );
 
-    // Start execution in background
-    this.executeJob(job.id).catch(console.error);
+    // Kick off queue processor in background (force restart to avoid stale flag)
+    this.processQueue(true).catch(console.error);
 
     return job;
+  }
+
+  /**
+   * Main queue processor - ensures only one job executes at a time using pg advisory lock
+   */
+  async processQueue(forceRestart = false) {
+    if (this.queueLoopRunning && !forceRestart) return;
+    if (forceRestart) {
+      this.queueLoopRunning = false;
+    }
+    this.queueLoopRunning = true;
+
+    try {
+      while (true) {
+        let lockHeld = false;
+        try {
+          const lockAcquired = await this.tryAcquireLock();
+          if (!lockAcquired) {
+            await this.delay(750);
+            continue;
+          }
+          lockHeld = true;
+
+          const jobToRun = await this.prisma.researchJob.findFirst({
+            where: { status: 'queued' },
+            orderBy: { queuedAt: 'asc' },
+            select: { id: true }
+          });
+
+          if (!jobToRun) {
+            // Nothing to do; release lock and exit loop
+            await this.releaseLock();
+            lockHeld = false;
+            break;
+          }
+
+          await this.prisma.researchJob.update({
+            where: { id: jobToRun.id },
+            data: {
+              status: 'running',
+              startedAt: new Date()
+            }
+          });
+
+          await this.executeJob(jobToRun.id);
+        } finally {
+          if (lockHeld) {
+            await this.releaseLock();
+          }
+        }
+      }
+    } catch (error) {
+      console.error('Queue processor error:', error);
+    } finally {
+      this.queueLoopRunning = false;
+    }
   }
 
   /**
@@ -263,6 +324,14 @@ export class ResearchOrchestrator {
    */
   async executeJob(jobId: string) {
     try {
+      const existing = await this.prisma.researchJob.findUnique({
+        where: { id: jobId },
+        select: { status: true }
+      });
+      if (!existing || existing.status === 'cancelled') {
+        return;
+      }
+
       await this.updateJobStatus(jobId, 'running');
 
       // Execute stages in dependency order
@@ -273,6 +342,9 @@ export class ResearchOrchestrator {
     } catch (error) {
       console.error(`Job ${jobId} failed:`, error);
       await this.updateJobStatus(jobId, 'failed');
+    } finally {
+      // Ensure the queue loop continues after this job finishes
+      this.processQueue().catch(console.error);
     }
   }
 
@@ -280,6 +352,9 @@ export class ResearchOrchestrator {
    * Execute the next phase of stages (dependency-aware)
    */
   private async executeNextPhase(jobId: string) {
+    const cancelled = await this.isJobCancelled(jobId);
+    if (cancelled) return;
+
     const runnable = await this.getNextRunnableStages(jobId);
 
     if (runnable.length === 0) {
@@ -288,10 +363,12 @@ export class ResearchOrchestrator {
       return;
     }
 
-    // Execute all runnable stages in parallel
-    await Promise.all(
-      runnable.map(stage => this.executeStage(jobId, stage))
-    );
+    // Execute runnable stages sequentially to ensure only one Claude call at a time
+    for (const stage of runnable) {
+      const cancelledMidway = await this.isJobCancelled(jobId);
+      if (cancelledMidway) return;
+      await this.executeStage(jobId, stage);
+    }
 
     // After this phase completes, check for next phase
     await this.executeNextPhase(jobId);
@@ -306,7 +383,7 @@ export class ResearchOrchestrator {
       include: { subJobs: true }
     });
 
-    if (!job) return [];
+    if (!job || job.status === 'cancelled') return [];
 
     const completed = new Set(
       job.subJobs
@@ -345,6 +422,13 @@ export class ResearchOrchestrator {
   private async executeStage(jobId: string, stageId: StageId) {
     let response: ClaudeResponse | null = null;
     try {
+      const job = await this.prisma.researchJob.findUnique({
+        where: { id: jobId },
+        select: { status: true }
+      });
+      if (!job || job.status === 'cancelled') {
+        return;
+      }
       // Mark as running
       await this.updateSubJobStatus(jobId, stageId, 'running');
       await this.updateJobCurrentStage(jobId, stageId);
@@ -565,6 +649,14 @@ export class ResearchOrchestrator {
       where: { id: jobId },
       data: { status }
     });
+
+    if (status === 'cancelled') {
+      // Mark running/pending subjobs as cancelled too
+      await this.prisma.researchSubJob.updateMany({
+        where: { researchId: jobId, status: { in: ['pending', 'running'] } },
+        data: { status: 'cancelled', completedAt: new Date() }
+      });
+    }
   }
 
   /**
@@ -619,8 +711,12 @@ export class ResearchOrchestrator {
 
     if (!job) return;
 
+    if (job.status === 'cancelled') {
+      return;
+    }
+
     const allComplete = job.subJobs.every(j => 
-      j.status === 'completed' || j.status === 'failed'
+      j.status === 'completed' || j.status === 'failed' || j.status === 'cancelled'
     );
 
     if (allComplete) {
@@ -781,6 +877,94 @@ export class ResearchOrchestrator {
       })
     ]);
   }
+
+  /**
+   * Compute queue position for a job (running job counts as position 0)
+   */
+  async getQueuePosition(jobId: string): Promise<number> {
+    const job = await this.prisma.researchJob.findUnique({
+      where: { id: jobId },
+      select: { status: true, queuedAt: true, createdAt: true }
+    });
+    if (!job) return 0;
+
+    const anchor = job.queuedAt || job.createdAt;
+    const queuedAhead = await this.prisma.researchJob.count({
+      where: {
+        status: 'queued',
+        queuedAt: { lt: anchor }
+      }
+    });
+    const runningCount = await this.prisma.researchJob.count({
+      where: { status: 'running' }
+    });
+
+    if (job.status === 'running') {
+      return 0;
+    }
+
+    return queuedAhead + runningCount + 1;
+  }
+
+  // ============================================================================
+  // Queue helpers
+  // ============================================================================
+
+  private async tryAcquireLock(): Promise<boolean> {
+    const result = await this.prisma.$queryRaw<{ locked: boolean }[]>`
+      SELECT pg_try_advisory_lock(${this.queueLockId}) AS locked
+    `;
+    return Boolean(result?.[0]?.locked);
+  }
+
+  private async releaseLock() {
+    await this.prisma.$queryRaw`
+      SELECT pg_advisory_unlock(${this.queueLockId})
+    `;
+  }
+
+  private async delay(ms: number) {
+    return new Promise((resolve) => setTimeout(resolve, ms));
+  }
+
+  private async isJobCancelled(jobId: string): Promise<boolean> {
+    const job = await this.prisma.researchJob.findUnique({
+      where: { id: jobId },
+      select: { status: true }
+    });
+    return job?.status === 'cancelled';
+  }
+
+  /**
+   * Periodic watchdog to kick the queue if it ever stalls
+   */
+  private startQueueWatchdog() {
+    if (this.queueWatchdogStarted) return;
+    this.queueWatchdogStarted = true;
+
+    setInterval(async () => {
+      try {
+        if (this.queueLoopRunning) return;
+        const queuedCount = await this.prisma.researchJob.count({
+          where: { status: 'queued' }
+        });
+        if (queuedCount > 0) {
+          this.processQueue(true).catch(console.error);
+        }
+      } catch (err) {
+        console.error('Queue watchdog error:', err);
+      }
+    }, 10000); // every 10s
+  }
+}
+
+// Singleton accessor so queue processor is shared
+let orchestratorSingleton: ResearchOrchestrator | null = null;
+export function getResearchOrchestrator(prisma: PrismaClient): ResearchOrchestrator {
+  if (!orchestratorSingleton) {
+    orchestratorSingleton = new ResearchOrchestrator(prisma);
+  }
+  return orchestratorSingleton;
 }
 
 

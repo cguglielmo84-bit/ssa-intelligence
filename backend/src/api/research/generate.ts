@@ -5,7 +5,7 @@
 
 import { Request, Response } from 'express';
 import { PrismaClient } from '@prisma/client';
-import { ResearchOrchestrator } from '../../services/orchestrator.js';
+import { getResearchOrchestrator } from '../../services/orchestrator.js';
 
 const prisma = new PrismaClient();
 
@@ -71,7 +71,7 @@ export async function generateResearch(req: Request, res: Response) {
     });
 
     // Create orchestrator
-    const orchestrator = new ResearchOrchestrator(prisma);
+    const orchestrator = getResearchOrchestrator(prisma);
 
     // Create and start job
     const job = await orchestrator.createJob({
@@ -82,10 +82,15 @@ export async function generateResearch(req: Request, res: Response) {
       userId
     });
 
+    const queuePosition = await orchestrator.getQueuePosition(job.id);
+
     return res.status(201).json({
       jobId: job.id,
-      status: 'pending',
-      message: 'Research job created. Generating all 10 sections.',
+      status: 'queued',
+      queuePosition,
+      message: queuePosition > 1
+        ? 'Another job is running; your analysis has been added to the queue.'
+        : 'Research job created and will start shortly.',
       companyName: job.companyName,
       geography: job.geography
     });

@@ -15,9 +15,11 @@ model ResearchJob {
   id                String    @id @default(cuid())
   
   // Job status
-  status            String    // 'pending' | 'running' | 'completed' | 'failed'
+  status            String    // 'queued' | 'pending' | 'running' | 'completed' | 'failed'
   currentStage      String?   // Current stage being executed
   progress          Float     @default(0) // 0.0 to 1.0
+  queuedAt          DateTime  @default(now())
+  startedAt         DateTime?
   
   // Research inputs
   companyName       String
@@ -61,6 +63,7 @@ model ResearchJob {
   @@index([userId, status])
   @@index([createdAt])
   @@index([status])
+  @@index([status, queuedAt])
 }
 
 // Individual section/stage execution tracking

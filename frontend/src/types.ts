@@ -1,4 +1,4 @@
-export type JobStatus = 'idle' | 'running' | 'completed' | 'failed';
+export type JobStatus = 'idle' | 'queued' | 'running' | 'completed' | 'failed' | 'cancelled';
 
 export type SectionId = 
   | 'exec_summary'
@@ -41,6 +41,7 @@ export interface ResearchJob {
   companyName: string;
   geography: string;
   industry?: string;
+  queuePosition?: number | null;
   overallConfidence?: string | null;
   overallConfidenceScore?: number | null;
   promptTokens?: number | null;

@@ -166,14 +166,20 @@ export const ResearchDetail: React.FC<ResearchDetailProps> = ({ jobs, onNavigate
   // Show progress/error view while running or failed
   if (job.status !== 'completed') {
     const isFailed = job.status === 'failed';
+    const isQueued = job.status === 'queued';
     return (
       <div className="max-w-5xl mx-auto h-[calc(100vh-140px)] flex flex-col md:flex-row gap-8 mt-6">
         <div className="w-full md:w-1/3 space-y-6">
           <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
             <h3 className="font-bold text-slate-800 mb-4 flex items-center gap-2">
               {isFailed ? <AlertTriangle className="text-rose-500" size={18} /> : <Loader2 className="animate-spin text-brand-500" size={18} />}
-              {isFailed ? 'Analysis Failed' : 'Researching...'}
+              {isFailed ? 'Analysis Failed' : isQueued ? 'Queued for processing' : 'Researching...'}
             </h3>
+            {isQueued && (
+              <div className="text-sm text-amber-700 bg-amber-50 border border-amber-200 rounded-lg p-3 mb-3">
+                {job.currentAction || 'Another job is currently running. This analysis will start automatically.'}
+              </div>
+            )}
             <div className="space-y-4">
               {SECTIONS_CONFIG.map((section) => {
                 const secData = job.sections[section.id];

@@ -138,8 +138,13 @@ export const NewResearch: React.FC<NewResearchProps> = ({ createJob, runJob, job
          <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
             <h3 className="font-bold text-slate-800 mb-4 flex items-center gap-2">
               <Loader2 className={`animate-spin text-brand-500 ${activeJob?.status === 'completed' ? 'hidden' : 'block'}`} size={18} />
-              {activeJob?.status === 'completed' ? 'Analysis Complete' : 'Researching...'}
+              {activeJob?.status === 'completed' ? 'Analysis Complete' : activeJob?.status === 'queued' ? 'Queued for processing' : 'Researching...'}
             </h3>
+            {activeJob?.status === 'queued' && (
+              <div className="text-sm text-amber-600 bg-amber-50 border border-amber-200 rounded-lg p-3 mb-3">
+                Another job is currently running. Your analysis will start automatically.
+              </div>
+            )}
             <div className="space-y-4">
                {SECTIONS_CONFIG.map((section, idx) => {
                  const secData = activeJob?.sections[section.id];

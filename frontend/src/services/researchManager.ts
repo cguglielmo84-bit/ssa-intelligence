@@ -14,6 +14,8 @@ type ApiSectionStatus = {
 type ApiJobStatus = {
   id: string;
   status: string;
+  queuePosition?: number;
+  blockedByRunning?: boolean;
   error?: string | null;
   progress?: number | null;
   currentStage?: string | null;
@@ -46,6 +48,7 @@ type ApiListItem = {
   id: string;
   status: string;
   metadata?: Record<string, unknown>;
+  queuedAt?: string;
   companyName?: string;
   geography?: string;
   overallConfidence?: string | null;
@@ -506,7 +509,7 @@ const createJobApi = async (companyName: string, geography: string, industry?: s
       focusAreas: industry ? [industry] : undefined,
       requestedBy: 'web-user',
     }),
-  }) as Promise<{ jobId: string; status: string }>;
+  }) as Promise<{ jobId: string; status: string; queuePosition?: number }>;
 };
 
 const listJobsApi = async () => {
@@ -520,6 +523,12 @@ const getJobStatusApi = async (id: string) => {
 
 const getJobDetailApi = async (id: string) => {
   return (await fetchJson(`/research/${id}`)) as ApiResearchDetail;
+};
+
+const cancelJobApi = async (id: string) => {
+  return fetchJson(`/research/${id}/cancel`, {
+    method: 'POST'
+  }) as Promise<{ success: boolean; status: string }>;
 };
 
 const mapSections = (
@@ -570,12 +579,15 @@ const mapListItem = (item: ApiListItem): ResearchJob => {
   const metadata = (item.metadata as Record<string, unknown>) || {};
   const generated = item.generatedSections || [];
   const progress = generated.length ? Math.round((generated.length / 10) * 100) : 0;
+  const status = (item.status as JobStatus) || 'idle';
+  const currentAction = status === 'queued' ? 'Queued...' : '';
 
   return {
     id: item.id,
     companyName: (metadata.companyName as string) || item.companyName || 'Unknown Company',
     geography: (metadata.geography as string) || item.geography || 'Unknown',
     industry: (metadata.industry as string) || undefined,
+    queuePosition: null,
     overallConfidence: (metadata.overallConfidence as string) || item.overallConfidence || null,
     overallConfidenceScore:
       (metadata.overallConfidenceScore as number) ?? item.overallConfidenceScore ?? null,
@@ -583,9 +595,9 @@ const mapListItem = (item: ApiListItem): ResearchJob => {
     completionTokens: item.completionTokens ?? null,
     costUsd: item.costUsd ?? null,
     createdAt: Date.now(),
-    status: (item.status as JobStatus) || 'idle',
+    status,
     progress,
-    currentAction: '',
+    currentAction,
     sections: buildEmptySections(),
   };
 };
@@ -596,20 +608,35 @@ const mapJobFromStatus = (
   overrides?: Partial<ResearchJob>,
 ): ResearchJob => {
   const sections = mapSections(status.jobs, undefined, existing?.sections);
+  const queuePosition = status.queuePosition ?? existing?.queuePosition ?? null;
+  const derivedStatus = (status.status as JobStatus) || existing?.status || 'running';
+  let currentAction = existing?.currentAction || '';
+
+  if (derivedStatus === 'queued') {
+    currentAction = queuePosition && queuePosition > 1
+      ? `Queued behind ${queuePosition - 1} job(s)`
+      : 'Queued...';
+  } else if (derivedStatus === 'running') {
+    currentAction = status.currentStage ? `Running ${status.currentStage}` : existing?.currentAction || '';
+  } else if (derivedStatus === 'cancelled') {
+    currentAction = 'Cancelled';
+  }
+
   return {
     id: status.id,
     companyName: overrides?.companyName || existing?.companyName || 'Unknown Company',
     geography: overrides?.geography || existing?.geography || 'Unknown',
     industry: overrides?.industry ?? existing?.industry,
+    queuePosition,
     overallConfidence: status.overallConfidence ?? existing?.overallConfidence ?? null,
     overallConfidenceScore: status.overallConfidenceScore ?? existing?.overallConfidenceScore ?? null,
     promptTokens: status.promptTokens ?? existing?.promptTokens ?? null,
     completionTokens: status.completionTokens ?? existing?.completionTokens ?? null,
     costUsd: status.costUsd ?? existing?.costUsd ?? null,
     createdAt: existing?.createdAt || Date.now(),
-    status: (status.status as JobStatus) || existing?.status || 'running',
+    status: derivedStatus,
     progress: status.progress !== undefined && status.progress !== null ? Math.round(status.progress * 100) : existing?.progress || 0,
-    currentAction: status.currentStage ? `Running ${status.currentStage}` : existing?.currentAction || '',
+    currentAction: currentAction || existing?.currentAction || '',
     sections,
   };
 };
@@ -670,13 +697,16 @@ export const useResearchManager = () => {
       companyName,
       geography: geography || 'Global',
       industry,
+      queuePosition: res.queuePosition ?? 1,
       promptTokens: 0,
       completionTokens: 0,
       costUsd: 0,
       createdAt: Date.now(),
-      status: 'idle',
+      status: 'queued',
       progress: 0,
-      currentAction: 'Queued... ',
+      currentAction: res.queuePosition && res.queuePosition > 1
+        ? `Queued behind ${res.queuePosition - 1} job(s)`
+        : 'Queued... ',
       sections: buildEmptySections(),
     };
 
@@ -742,5 +772,23 @@ export const useResearchManager = () => {
     [],
   );
 
-  return { jobs, createJob, runJob };
+  const cancelJob = useCallback(async (jobId: string) => {
+    try {
+      await cancelJobApi(jobId);
+      setJobs((prev) =>
+        prev
+          .map((j) =>
+            j.id === jobId
+              ? { ...j, status: 'cancelled', currentAction: 'Cancelled' }
+              : j
+          )
+          .filter((j) => j.id !== jobId || j.status !== 'cancelled')
+      );
+    } catch (error) {
+      console.error('Failed to cancel job', error);
+      throw error;
+    }
+  }, []);
+
+  return { jobs, createJob, runJob, cancelJob };
 };
