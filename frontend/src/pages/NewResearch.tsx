@@ -3,7 +3,7 @@ import { Loader2, Sparkles, CheckCircle2, Circle, ArrowRight, BrainCircuit } fro
 import { SECTIONS_CONFIG } from '../types';
 
 interface NewResearchProps {
-  createJob: (name: string, geo: string, industry: string) => Promise<string>;
+  createJob: (name: string, geo: string, industry: string, force?: boolean) => Promise<string>;
   runJob: (id: string, companyName?: string) => Promise<void>;
   jobs: any[]; // Using any for simplicity in props mapping, but strongly typed inside
   onNavigate: (path: string) => void;
@@ -27,8 +27,8 @@ export const NewResearch: React.FC<NewResearchProps> = ({ createJob, runJob, job
 
   const activeJob = jobs.find(j => j.id === currentJobId);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSubmit = async (e?: React.FormEvent, force = false) => {
+    if (e) e.preventDefault();
 
     const company = normalizeInput(formData.company);
     const geo = normalizeInput(formData.geo);
@@ -50,7 +50,7 @@ export const NewResearch: React.FC<NewResearchProps> = ({ createJob, runJob, job
     setDuplicateInfo(null);
 
     try {
-      const id = await createJob(normalized.company, normalized.geo, normalized.industry);
+      const id = await createJob(normalized.company, normalized.geo, normalized.industry, force);
       setCurrentJobId(id);
       setStep('processing');
       
@@ -90,7 +90,7 @@ export const NewResearch: React.FC<NewResearchProps> = ({ createJob, runJob, job
           </p>
         </div>
 
-        <form onSubmit={handleSubmit} className="bg-white p-8 rounded-2xl border border-slate-200 shadow-xl shadow-slate-200/50">
+        <form onSubmit={(e) => handleSubmit(e, false)} className="bg-white p-8 rounded-2xl border border-slate-200 shadow-xl shadow-slate-200/50">
           <div className="space-y-6">
             <div>
               <label className="block text-sm font-semibold text-slate-700 mb-2">Company Name</label>
@@ -144,15 +144,24 @@ export const NewResearch: React.FC<NewResearchProps> = ({ createJob, runJob, job
               {duplicateInfo.message || 'This company/geography/industry has already been analyzed.'}
               {duplicateInfo.status ? ` Status: ${duplicateInfo.status}.` : ''}
             </div>
-            {duplicateInfo.jobId && (
+            <div className="flex items-center gap-4">
               <button
                 type="button"
-                onClick={() => onNavigate(`/research/${duplicateInfo.jobId}`)}
-                className="text-brand-700 font-semibold hover:underline"
+                onClick={() => handleSubmit(undefined, true)}
+                className="px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white font-semibold rounded-lg transition-colors"
               >
-                View existing research
+                Run anyway
               </button>
-            )}
+              {duplicateInfo.jobId && (
+                <button
+                  type="button"
+                  onClick={() => onNavigate(`/research/${duplicateInfo.jobId}`)}
+                  className="text-brand-700 font-semibold hover:underline"
+                >
+                  View existing research
+                </button>
+              )}
+            </div>
           </div>
         )}
       </div>

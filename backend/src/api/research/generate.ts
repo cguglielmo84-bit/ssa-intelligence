@@ -15,6 +15,7 @@ interface GenerateRequestBody {
   focusAreas?: string[];
   industry?: string;
   requestedBy?: string;
+  force?: boolean;
 }
 
 // Normalize and validate user-provided text inputs to avoid empty/garbage jobs
@@ -97,12 +98,32 @@ export async function generateResearch(req: Request, res: Response) {
       select: { id: true, status: true }
     });
 
+    const force = Boolean(body.force);
     if (existing) {
-      return res.status(409).json({
-        error: 'Research already exists for this company/geography/industry.',
-        status: existing.status,
-        jobId: existing.id
-      });
+      // Only allow force when existing is completed; block queued/running
+      if (!force && existing.status !== 'completed') {
+        return res.status(409).json({
+          error: 'Research already exists for this company/geography/industry.',
+          status: existing.status,
+          jobId: existing.id
+        });
+      }
+      if (force && existing.status !== 'completed') {
+        return res.status(409).json({
+          error: 'An active job exists for this company/geography/industry.',
+          status: existing.status,
+          jobId: existing.id
+        });
+      }
+      if (!force && existing.status === 'completed') {
+        return res.status(409).json({
+          error: 'Research already exists for this company/geography/industry.',
+          status: existing.status,
+          jobId: existing.id
+        });
+      }
+      // force + completed: allow
+      console.log('[duplicate] Forcing new research for existing completed job', existing.id);
     }
 
     // Create orchestrator

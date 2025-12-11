@@ -500,12 +500,13 @@ const fetchJson = async (path: string, options?: RequestInit) => {
   return res.json();
 };
 
-const createJobApi = async (companyName: string, geography: string, industry?: string) => {
+const createJobApi = async (companyName: string, geography: string, industry?: string, force?: boolean) => {
   const payload = {
     companyName,
     geography,
     focusAreas: industry ? [industry] : undefined,
     requestedBy: 'web-user',
+    force: !!force,
   };
 
   const res = await fetch(
@@ -716,8 +717,8 @@ export const useResearchManager = () => {
       .catch((err) => console.error(err));
   }, []);
 
-  const createJob = useCallback(async (companyName: string, geography: string, industry: string) => {
-    const res = await createJobApi(companyName, geography || 'Global', industry);
+  const createJob = useCallback(async (companyName: string, geography: string, industry: string, force?: boolean) => {
+    const res = await createJobApi(companyName, geography || 'Global', industry, force);
     const job: ResearchJob = {
       id: res.jobId,
       companyName,
