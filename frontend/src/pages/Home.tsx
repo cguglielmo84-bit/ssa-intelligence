@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { ResearchJob } from '../types';
 import { StatusPill } from '../components/StatusPill';
-import { ArrowRight, Search, TrendingUp, Building2, MapPin } from 'lucide-react';
+import { ArrowRight, Search, TrendingUp, Building2, MapPin, MoreHorizontal, Loader2 } from 'lucide-react';
 
 interface HomeProps {
   jobs: ResearchJob[];
@@ -11,6 +11,9 @@ interface HomeProps {
 
 export const Home: React.FC<HomeProps> = ({ jobs, onNavigate, onCancel }) => {
   const completedJobs = jobs.filter(j => j.status === 'completed');
+  const [openMenuId, setOpenMenuId] = useState<string | null>(null);
+  const [exportingId, setExportingId] = useState<string | null>(null);
+  const API_BASE = ((import.meta as any).env?.VITE_API_BASE_URL || '/api').replace(/\/$/, '');
   const activeJobs = jobs
     .filter(j => j.status === 'running' || j.status === 'queued' || j.status === 'idle')
     .sort((a, b) => {
@@ -21,6 +24,33 @@ export const Home: React.FC<HomeProps> = ({ jobs, onNavigate, onCancel }) => {
       return (a.createdAt || 0) - (b.createdAt || 0);
     });
   // Hero shine temporarily disabled
+
+  const handleExport = async (job: ResearchJob) => {
+    try {
+      setExportingId(job.id);
+      const res = await fetch(`${API_BASE}/research/${job.id}/export/pdf`);
+      if (!res.ok) {
+        const text = await res.text();
+        throw new Error(text || 'Failed to export PDF');
+      }
+      const blob = await res.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      const dateStr = new Date(job.createdAt).toISOString().slice(0, 10);
+      a.href = url;
+      a.download = `${job.companyName.replace(/\s+/g, '_')}-${dateStr}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      window.URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error(err);
+      alert('Failed to export PDF. Please try again.');
+    } finally {
+      setExportingId(null);
+      setOpenMenuId(null);
+    }
+  };
 
   return (
     <div className="space-y-8 animate-in fade-in duration-500">
@@ -140,13 +170,45 @@ export const Home: React.FC<HomeProps> = ({ jobs, onNavigate, onCancel }) => {
                     <td className="px-6 py-4">
                       <StatusPill status={job.status} size="sm" />
                     </td>
-                    <td className="px-6 py-4 text-right">
-                      <button 
-                        onClick={() => onNavigate(`/research/${job.id}`)}
-                        className="text-brand-600 font-medium hover:text-brand-700 flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                    <td className="px-6 py-4 text-right relative">
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setOpenMenuId(openMenuId === job.id ? null : job.id);
+                        }}
+                        className="text-slate-500 hover:text-slate-700 p-1 rounded hover:bg-slate-100 transition-colors opacity-0 group-hover:opacity-100"
+                        aria-label="Actions"
                       >
-                        View Report <ArrowRight size={16} />
+                        <MoreHorizontal size={18} />
                       </button>
+                      {openMenuId === job.id && (
+                        <div className="absolute right-4 mt-2 w-48 bg-white border border-slate-200 rounded-lg shadow-lg z-10">
+                          <button
+                            onClick={() => {
+                              setOpenMenuId(null);
+                              onNavigate(`/research/${job.id}`);
+                            }}
+                            className="w-full text-left px-3 py-2 text-sm hover:bg-slate-50 flex items-center justify-between"
+                          >
+                            View Report <ArrowRight size={14} />
+                          </button>
+                          <button
+                            onClick={() => handleExport(job)}
+                            disabled={exportingId === job.id}
+                            className="w-full text-left px-3 py-2 text-sm hover:bg-slate-50 flex items-center gap-2 disabled:opacity-60"
+                          >
+                            {exportingId === job.id ? <Loader2 size={14} className="animate-spin text-slate-400" /> : null}
+                            Export to PDF
+                          </button>
+                          <button
+                            disabled
+                            className="w-full text-left px-3 py-2 text-sm text-slate-400 cursor-not-allowed flex items-center justify-between"
+                            title="Coming soon"
+                          >
+                            Rerun Job
+                          </button>
+                        </div>
+                      )}
                     </td>
                   </tr>
                 ))

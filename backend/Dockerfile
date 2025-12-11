@@ -1,7 +1,7 @@
-# Multi-stage Dockerfile for Intellectra Backend
+# Playwright-ready Dockerfile for Intellectra Backend
 
-# Stage 1: Dependencies
-FROM node:20-alpine AS deps
+# Stage 1: Dependencies (Playwright base image includes Chromium and deps)
+FROM mcr.microsoft.com/playwright:v1.47.2-jammy AS deps
 WORKDIR /app
 
 # Install dependencies
@@ -9,7 +9,7 @@ COPY package.json package-lock.json* ./
 RUN npm ci --only=production
 
 # Stage 2: Builder
-FROM node:20-alpine AS builder
+FROM mcr.microsoft.com/playwright:v1.47.2-jammy AS builder
 WORKDIR /app
 
 # Copy dependencies
@@ -29,7 +29,7 @@ RUN npx prisma generate
 RUN npm run build
 
 # Stage 3: Production
-FROM node:20-alpine AS runner
+FROM mcr.microsoft.com/playwright:v1.47.2-jammy AS runner
 WORKDIR /app
 
 # Set environment
@@ -45,11 +45,8 @@ COPY --from=builder /app/package.json ./package.json
 # Generate Prisma Client in production
 RUN npx prisma generate
 
-# Create non-root user
-RUN addgroup --system --gid 1001 nodejs && \
-    adduser --system --uid 1001 intellectra
-
-USER intellectra
+# Use non-root user (already present in Playwright base)
+USER pwuser
 
 # Expose port
 EXPOSE 3000
