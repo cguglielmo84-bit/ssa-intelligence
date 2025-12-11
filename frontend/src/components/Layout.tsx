@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Search, Home, FileText, Plus, Bell, PanelLeftClose, PanelLeftOpen } from 'lucide-react';
+import { FeedbackModal } from './FeedbackModal';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -11,11 +12,13 @@ export const Layout: React.FC<LayoutProps> = ({ children, onNavigate, activePath
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [healthStatus, setHealthStatus] = useState<'checking' | 'ok' | 'degraded' | 'down'>('checking');
   const [healthModel, setHealthModel] = useState<string>('Sonnet 4.5');
+  const [feedbackOpen, setFeedbackOpen] = useState(false);
 
   // Build health endpoint from API base (strip trailing /api)
   const apiBase = (import.meta as any).env?.VITE_API_BASE_URL || '/api';
   const healthBase = apiBase.replace(/\/api\/?$/, '') || '';
   const healthUrl = `${healthBase.replace(/\/$/, '') || ''}/health`;
+  const feedbackUrl = `${apiBase.replace(/\/$/, '')}/feedback`;
 
   useEffect(() => {
     let timer: ReturnType<typeof setInterval> | null = null;
@@ -44,10 +47,27 @@ export const Layout: React.FC<LayoutProps> = ({ children, onNavigate, activePath
     };
   }, [healthUrl]);
 
+  const submitFeedback = async (payload: { name?: string; email?: string; message: string; pagePath?: string; reportId?: string }) => {
+    const res = await fetch(feedbackUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+    if (!res.ok) {
+      const text = await res.text();
+      throw new Error(text || 'Failed to submit feedback');
+    }
+  };
+
   const statusColor =
     healthStatus === 'ok' ? 'bg-emerald-500' : healthStatus === 'degraded' ? 'bg-amber-500' : 'bg-rose-500';
   const statusText =
     healthStatus === 'ok' ? 'System Operational' : healthStatus === 'degraded' ? 'Degraded' : healthStatus === 'checking' ? 'Checking...' : 'Offline';
+
+  const currentHash = typeof window !== 'undefined' ? window.location.hash : '';
+  const reportMatch = currentHash.match(/\/research\/([^/]+)/);
+  const reportId = reportMatch ? reportMatch[1] : undefined;
+  const pagePath = typeof window !== 'undefined' ? window.location.href : undefined;
 
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900 flex flex-col md:flex-row">
@@ -100,6 +120,16 @@ export const Layout: React.FC<LayoutProps> = ({ children, onNavigate, activePath
           </button>
         </nav>
 
+        <div className="px-4 pb-4">
+          <button
+            onClick={() => setFeedbackOpen(true)}
+            className={`text-sm font-semibold text-blue-600 hover:text-blue-700 transition-colors ${isCollapsed ? 'w-full text-center' : ''}`}
+            title="Share feedback"
+          >
+            Share feedback
+          </button>
+        </div>
+
         <div className="p-4 border-t border-slate-100 mt-auto">
           {isCollapsed ? (
             <div className="flex justify-center">
@@ -139,6 +169,13 @@ export const Layout: React.FC<LayoutProps> = ({ children, onNavigate, activePath
             {children}
          </div>
       </main>
+
+      <FeedbackModal
+        isOpen={feedbackOpen}
+        onClose={() => setFeedbackOpen(false)}
+        onSubmit={submitFeedback}
+        context={{ pagePath, reportId }}
+      />
     </div>
   );
 };

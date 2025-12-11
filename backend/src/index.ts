@@ -21,6 +21,7 @@ import { getJobStatus } from './api/research/status.js';
 import { getResearchDetail } from './api/research/detail.js';
 import { listResearch } from './api/research/list.js';
 import { cancelResearchJob } from './api/research/cancel.js';
+import { submitFeedback } from './api/feedback.js';
 import { getResearchOrchestrator } from './services/orchestrator.js';
 
 // ============================================================================
@@ -106,6 +107,7 @@ app.get('/api/research/jobs/:id', getJobStatus);
 app.get('/api/research/:id', getResearchDetail);
 app.get('/api/research', listResearch);
 app.post('/api/research/:id/cancel', cancelResearchJob);
+app.post('/api/feedback', submitFeedback);
 
 // Regenerate specific sections (optional - for future implementation)
 app.post('/api/research/:id/regenerate', async (req, res) => {
@@ -201,7 +203,6 @@ orchestrator.processQueue().catch((err) => {
 });
 
 export default app;
-
 
 
 

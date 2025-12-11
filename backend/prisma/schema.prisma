@@ -134,3 +134,16 @@ model ApiKey {
   @@index([userId])
   @@index([key])
 }
+
+// User feedback submissions
+model Feedback {
+  id         String   @id @default(cuid())
+  name       String?
+  email      String?
+  message    String
+  pagePath   String?
+  reportId   String?
+  createdAt  DateTime @default(now())
+  
+  @@index([createdAt])
+}
