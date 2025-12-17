@@ -20,6 +20,7 @@ import { buildSkuOpportunitiesPrompt } from '../../prompts/sku-opportunities.js'
 import { buildRecentNewsPrompt } from '../../prompts/recent-news.js';
 import { buildConversationStartersPrompt } from '../../prompts/conversation-starters.js';
 import { generateAppendix } from '../../prompts/appendix.js';
+import { generateThumbnailForJob } from './thumbnail.js';
 
 // Import validation schemas
 import {
@@ -210,6 +211,8 @@ export class ResearchOrchestrator {
     normalizedCompany?: string;
     normalizedGeography?: string;
     normalizedIndustry?: string | null;
+    domain?: string | null;
+    normalizedDomain?: string | null;
   }) {
     const job = await this.prisma.researchJob.create({
       data: {
@@ -219,6 +222,8 @@ export class ResearchOrchestrator {
         normalizedGeography: input.normalizedGeography || input.geography.toLowerCase(),
         industry: input.industry,
         normalizedIndustry: input.normalizedIndustry || (input.industry ? input.industry.toLowerCase() : null),
+        domain: input.domain || null,
+        normalizedDomain: input.normalizedDomain || (input.domain ? input.domain.toLowerCase() : null),
         focusAreas: input.focusAreas || [],
         status: 'queued',
         queuedAt: new Date(),
@@ -380,6 +385,7 @@ export class ResearchOrchestrator {
         await this.updateJobStatus(jobId, 'failed');
       } else if (allTerminal) {
         await this.updateJobStatus(jobId, 'completed');
+        await this.triggerThumbnail(jobId);
       }
     } catch (error) {
       console.error(`Job ${jobId} failed:`, error);
@@ -799,6 +805,7 @@ export class ResearchOrchestrator {
         await this.updateJobStatus(jobId, 'cancelled');
       } else {
         await this.updateJobStatus(jobId, 'completed');
+        await this.triggerThumbnail(jobId);
       }
     }
   }
@@ -1011,6 +1018,17 @@ export class ResearchOrchestrator {
       select: { status: true }
     });
     return job?.status === 'cancelled';
+  }
+
+  /**
+   * Kick off thumbnail generation for completed jobs (best-effort, non-blocking)
+   */
+  private async triggerThumbnail(jobId: string) {
+    try {
+      await generateThumbnailForJob(this.prisma, jobId);
+    } catch (err) {
+      console.error(`Thumbnail generation failed for ${jobId}:`, err);
+    }
   }
 
   private isRateLimitError(message: string): boolean {

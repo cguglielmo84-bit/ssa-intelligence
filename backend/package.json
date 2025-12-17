@@ -15,6 +15,7 @@
     "db:seed": "tsx prisma/seed.ts",
     "lint": "eslint src --ext .ts",
     "type-check": "tsc --noEmit",
+    "script:backfill-domains": "node --loader ts-node/esm scripts/backfill-domains.ts",
     "docker:up": "docker-compose up -d",
     "docker:down": "docker-compose down",
     "docker:logs": "docker-compose logs -f",
@@ -30,6 +31,7 @@
   "license": "MIT",
   "dependencies": {
     "@anthropic-ai/sdk": "^0.32.1",
+    "@aws-sdk/client-s3": "^3.953.0",
     "@prisma/client": "^6.2.0",
     "cors": "^2.8.5",
     "dotenv": "^16.4.7",
@@ -39,6 +41,7 @@
     "marked": "^15.0.12",
     "pdfkit": "^0.15.0",
     "playwright": "^1.47.2",
+    "ts-node": "^10.9.2",
     "zod": "^3.24.1"
   },
   "devDependencies": {

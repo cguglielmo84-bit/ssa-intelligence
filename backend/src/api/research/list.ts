@@ -51,6 +51,7 @@ export async function listResearch(req: Request, res: Response) {
           companyName: true,
           geography: true,
           industry: true,
+          domain: true,
           progress: true,
           currentStage: true,
           overallConfidence: true,
@@ -62,6 +63,7 @@ export async function listResearch(req: Request, res: Response) {
           updatedAt: true,
           completedAt: true,
           queuedAt: true,
+          thumbnailUrl: true,
           // include cancelled sub-jobs only to compute generated sections count? keep completed only
           subJobs: {
             where: { status: 'completed' },
@@ -79,6 +81,7 @@ export async function listResearch(req: Request, res: Response) {
       companyName: job.companyName,
       geography: job.geography,
       industry: job.industry,
+      domain: (job as any).domain || null,
       progress: job.progress,
       currentStage: job.currentStage,
       overallConfidence: job.overallConfidence,
@@ -90,6 +93,7 @@ export async function listResearch(req: Request, res: Response) {
       queuedAt: job.queuedAt,
       updatedAt: job.updatedAt,
       completedAt: job.completedAt,
+      thumbnailUrl: (job as any).thumbnailUrl || null,
       metadata: {
         companyName: job.companyName,
         geography: job.geography,

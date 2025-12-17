@@ -6,6 +6,7 @@
 import { Request, Response } from 'express';
 import { PrismaClient } from '@prisma/client';
 import { getResearchOrchestrator } from '../../services/orchestrator.js';
+import { ensureDomainForJob } from '../../services/domain-infer.js';
 
 const prisma = new PrismaClient();
 
@@ -16,6 +17,7 @@ interface GenerateRequestBody {
   industry?: string;
   requestedBy?: string;
   force?: boolean;
+  domain?: string;
 }
 
 // Normalize and validate user-provided text inputs to avoid empty/garbage jobs
@@ -37,6 +39,15 @@ const toTitleLike = (value: string) => {
 const hasMeaningfulChars = (value: string) => /[A-Za-z0-9]/.test(value);
 
 const normalizeForKey = (value: string) => value.trim().replace(/\s+/g, ' ').toLowerCase();
+const normalizeDomain = (value: string | undefined | null) => {
+  if (!value) return '';
+  const trimmed = value.trim();
+  if (!trimmed) return '';
+  return trimmed
+    .replace(/^https?:\/\//i, '')
+    .replace(/\/.*$/, '')
+    .toLowerCase();
+};
 
 export async function generateResearch(req: Request, res: Response) {
   try {
@@ -46,6 +57,7 @@ export async function generateResearch(req: Request, res: Response) {
     const normalizedCompany = normalizeInput(body.companyName);
     const normalizedGeo = normalizeInput(body.geography || 'Global');
     const normalizedIndustry = normalizeInput(body.industry || '');
+    const normalizedDomain = normalizeDomain(body.domain);
 
     if (!normalizedCompany || normalizedCompany.length < 2 || !hasMeaningfulChars(normalizedCompany)) {
       return res.status(400).json({
@@ -56,10 +68,12 @@ export async function generateResearch(req: Request, res: Response) {
     // Default geography to 'Global' if not provided
     const geography = normalizedGeo && hasMeaningfulChars(normalizedGeo) ? toTitleLike(normalizedGeo) : 'Global';
     const industry = normalizedIndustry && hasMeaningfulChars(normalizedIndustry) ? toTitleLike(normalizedIndustry) : undefined;
+    const domain = normalizedDomain || undefined;
     const companyName = toTitleLike(normalizedCompany);
     const normalizedCompanyKey = normalizeForKey(normalizedCompany);
     const normalizedGeoKey = normalizeForKey(geography);
     const normalizedIndustryKey = industry ? normalizeForKey(industry) : null;
+    const normalizedDomainKey = domain ? normalizeDomain(domain) : null;
 
     // For demo purposes, use a default user and ensure it exists to satisfy FK
     // In production, get this from auth middleware
@@ -138,10 +152,17 @@ export async function generateResearch(req: Request, res: Response) {
       userId,
       normalizedCompany: normalizedCompanyKey,
       normalizedGeography: normalizedGeoKey,
-      normalizedIndustry: normalizedIndustryKey
+      normalizedIndustry: normalizedIndustryKey,
+      domain,
+      normalizedDomain: normalizedDomainKey || null
     });
 
     const queuePosition = await orchestrator.getQueuePosition(job.id);
+
+    if (!domain) {
+      // Best-effort domain inference in the background
+      ensureDomainForJob(prisma, job.id, companyName).catch((err) => console.error('Domain inference error:', err));
+    }
 
     return res.status(201).json({
       jobId: job.id,

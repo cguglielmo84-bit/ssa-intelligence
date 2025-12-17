@@ -41,12 +41,14 @@ export interface ResearchJob {
   companyName: string;
   geography: string;
   industry?: string;
+  domain?: string | null;
   queuePosition?: number | null;
   overallConfidence?: string | null;
   overallConfidenceScore?: number | null;
   promptTokens?: number | null;
   completionTokens?: number | null;
   costUsd?: number | null;
+  thumbnailUrl?: string | null;
   createdAt: number;
   status: JobStatus;
   progress: number; // 0-100

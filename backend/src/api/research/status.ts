@@ -68,6 +68,8 @@ export async function getJobStatus(req: Request, res: Response) {
       currentStage: job.currentStage,
       companyName: job.companyName,
       geography: job.geography,
+      domain: (job as any).domain || null,
+      thumbnailUrl: (job as any).thumbnailUrl || null,
       overallConfidence: job.overallConfidence,
       overallConfidenceScore: job.overallConfidenceScore,
       promptTokens: (job as any).promptTokens,

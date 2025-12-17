@@ -111,6 +111,7 @@ export async function getResearchDetail(req: Request, res: Response) {
         companyName: job.companyName,
         geography: job.geography,
         industry: job.industry,
+        domain: (job as any).domain || null,
         overallConfidence: job.overallConfidence,
         overallConfidenceScore: job.overallConfidenceScore,
         promptTokens: job.promptTokens,
@@ -120,6 +121,7 @@ export async function getResearchDetail(req: Request, res: Response) {
         updatedAt: job.updatedAt,
         completedAt: job.completedAt
       },
+      thumbnailUrl: (job as any).thumbnailUrl || null,
       foundation: job.foundation,
       sections,
       sectionsCompleted: completedSections,
@@ -149,7 +151,5 @@ export async function getResearchDetail(req: Request, res: Response) {
     });
   }
 }
-
-
 
 

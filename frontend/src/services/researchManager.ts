@@ -23,7 +23,11 @@ type ApiJobStatus = {
   overallConfidenceScore?: number | null;
    promptTokens?: number | null;
    completionTokens?: number | null;
-   costUsd?: number | null;
+  costUsd?: number | null;
+  thumbnailUrl?: string | null;
+  createdAt?: string;
+  updatedAt?: string;
+  domain?: string | null;
   jobs?: ApiSectionStatus[];
   companyName?: string;
   geography?: string;
@@ -39,9 +43,11 @@ type ApiResearchDetail = {
   promptTokens?: number | null;
   completionTokens?: number | null;
   costUsd?: number | null;
+  thumbnailUrl?: string | null;
   sections?: Record<string, unknown>;
   sectionsCompleted?: number[];
   sectionStatuses?: ApiSectionStatus[];
+  domain?: string | null;
 };
 
 type ApiListItem = {
@@ -49,13 +55,16 @@ type ApiListItem = {
   status: string;
   metadata?: Record<string, unknown>;
   queuedAt?: string;
+  createdAt?: string;
   companyName?: string;
   geography?: string;
+  domain?: string | null;
   overallConfidence?: string | null;
   overallConfidenceScore?: number | null;
   promptTokens?: number | null;
   completionTokens?: number | null;
   costUsd?: number | null;
+  thumbnailUrl?: string | null;
   generatedSections?: number[];
 };
 
@@ -602,11 +611,11 @@ const mapSections = (
   }, {} as Record<SectionId, ResearchSection>);
 };
 
-const mapListItem = (item: ApiListItem): ResearchJob => {
-  const metadata = (item.metadata as Record<string, unknown>) || {};
-  const generated = item.generatedSections || [];
-  const progress = generated.length ? Math.round((generated.length / 10) * 100) : 0;
-  const status = (item.status as JobStatus) || 'idle';
+  const mapListItem = (item: ApiListItem): ResearchJob => {
+    const metadata = (item.metadata as Record<string, unknown>) || {};
+    const generated = item.generatedSections || [];
+    const progress = generated.length ? Math.round((generated.length / 10) * 100) : 0;
+    const status = (item.status as JobStatus) || 'idle';
   const currentAction = status === 'queued' ? 'Queued...' : '';
 
   return {
@@ -614,6 +623,7 @@ const mapListItem = (item: ApiListItem): ResearchJob => {
     companyName: (metadata.companyName as string) || item.companyName || 'Unknown Company',
     geography: (metadata.geography as string) || item.geography || 'Unknown',
     industry: (metadata.industry as string) || undefined,
+    domain: (metadata.domain as string) || item.domain || null,
     queuePosition: null,
     overallConfidence: (metadata.overallConfidence as string) || item.overallConfidence || null,
     overallConfidenceScore:
@@ -621,6 +631,7 @@ const mapListItem = (item: ApiListItem): ResearchJob => {
     promptTokens: item.promptTokens ?? null,
     completionTokens: item.completionTokens ?? null,
     costUsd: item.costUsd ?? null,
+    thumbnailUrl: item.thumbnailUrl ?? null,
     createdAt: item.createdAt ? new Date(item.createdAt).getTime() : Date.now(),
     status,
     progress,
@@ -654,12 +665,14 @@ const mapJobFromStatus = (
     companyName: overrides?.companyName || existing?.companyName || 'Unknown Company',
     geography: overrides?.geography || existing?.geography || 'Unknown',
     industry: overrides?.industry ?? existing?.industry,
+    domain: status.domain ?? existing?.domain ?? null,
     queuePosition,
     overallConfidence: status.overallConfidence ?? existing?.overallConfidence ?? null,
     overallConfidenceScore: status.overallConfidenceScore ?? existing?.overallConfidenceScore ?? null,
     promptTokens: status.promptTokens ?? existing?.promptTokens ?? null,
     completionTokens: status.completionTokens ?? existing?.completionTokens ?? null,
     costUsd: status.costUsd ?? existing?.costUsd ?? null,
+    thumbnailUrl: status.thumbnailUrl ?? existing?.thumbnailUrl ?? null,
     createdAt: status.createdAt ? new Date(status.createdAt).getTime() : existing?.createdAt || Date.now(),
     status: derivedStatus,
     progress: status.progress !== undefined && status.progress !== null ? Math.round(status.progress * 100) : existing?.progress || 0,
@@ -678,6 +691,7 @@ const mergeDetail = (job: ResearchJob, detail: ApiResearchDetail): ResearchJob =
     companyName: (metadata.companyName as string) || job.companyName,
     geography: (metadata.geography as string) || job.geography,
     industry: (metadata.industry as string) || job.industry,
+    domain: (metadata.domain as string) || job.domain,
     overallConfidence:
       (metadata.overallConfidence as string) || detail.overallConfidence || job.overallConfidence || null,
     overallConfidenceScore:
@@ -688,6 +702,7 @@ const mergeDetail = (job: ResearchJob, detail: ApiResearchDetail): ResearchJob =
     promptTokens: detail.promptTokens ?? job.promptTokens ?? null,
     completionTokens: detail.completionTokens ?? job.completionTokens ?? null,
     costUsd: detail.costUsd ?? job.costUsd ?? null,
+    thumbnailUrl: detail.thumbnailUrl ?? job.thumbnailUrl ?? null,
     sections,
   };
 };
@@ -728,6 +743,8 @@ export const useResearchManager = () => {
       promptTokens: 0,
       completionTokens: 0,
       costUsd: 0,
+      thumbnailUrl: null,
+      domain: undefined,
       createdAt: Date.now(),
       status: 'queued',
       progress: 0,
