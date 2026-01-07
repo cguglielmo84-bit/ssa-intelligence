@@ -4,6 +4,7 @@
  */
 
 import express from 'express';
+import type { RequestHandler } from 'express';
 import cors from 'cors';
 import rateLimit from 'express-rate-limit';
 import dotenv from 'dotenv';
@@ -40,6 +41,9 @@ const __dirname = path.dirname(__filename);
 // MIDDLEWARE
 // ============================================================================
 
+// Trust Render/hosted proxy so req.ip reflects the client IP (required for rate limiting)
+app.set('trust proxy', 1);
+
 // CORS
 app.use(cors({
   origin: process.env.CORS_ORIGIN || 'http://localhost:5174',
@@ -50,15 +54,48 @@ app.use(cors({
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
-// Rate limiting
-if (process.env.NODE_ENV !== 'development') {
-  const limiter = rateLimit({
-    windowMs: parseInt(process.env.RATE_LIMIT_WINDOW_MS || '900000'), // 15 minutes
-    max: parseInt(process.env.RATE_LIMIT_MAX_REQUESTS || '100'),
-    message: 'Too many requests from this IP, please try again later.'
-  });
-  app.use('/api/', limiter);
-}
+// Rate limiting (production only, route-specific)
+const rateLimitMessage = 'Too many requests from this IP, please try again later.';
+const parseEnvInt = (name: string, fallback: number) => {
+  const raw = process.env[name];
+  const value = raw ? parseInt(raw, 10) : NaN;
+  return Number.isFinite(value) ? value : fallback;
+};
+const isProd = process.env.NODE_ENV !== 'development';
+
+const getLimiter: RequestHandler | undefined = isProd
+  ? rateLimit({
+      windowMs: parseEnvInt('RATE_LIMIT_GET_WINDOW_MS', 300000), // 5 minutes
+      max: parseEnvInt('RATE_LIMIT_GET_MAX', 2000),
+      message: rateLimitMessage
+    })
+  : undefined;
+
+const generateLimiter: RequestHandler | undefined = isProd
+  ? rateLimit({
+      windowMs: parseEnvInt('RATE_LIMIT_GENERATE_WINDOW_MS', 900000), // 15 minutes
+      max: parseEnvInt('RATE_LIMIT_GENERATE_MAX', 10),
+      message: rateLimitMessage
+    })
+  : undefined;
+
+const exportLimiter: RequestHandler | undefined = isProd
+  ? rateLimit({
+      windowMs: parseEnvInt('RATE_LIMIT_EXPORT_WINDOW_MS', 3600000), // 60 minutes
+      max: parseEnvInt('RATE_LIMIT_EXPORT_MAX', 20),
+      message: rateLimitMessage
+    })
+  : undefined;
+
+const writeLimiter: RequestHandler | undefined = isProd
+  ? rateLimit({
+      windowMs: parseEnvInt('RATE_LIMIT_WRITE_WINDOW_MS', 900000), // 15 minutes
+      max: parseEnvInt('RATE_LIMIT_WRITE_MAX', 60),
+      message: rateLimitMessage
+    })
+  : undefined;
+
+const applyLimiter = (limiter?: RequestHandler) => (limiter ? [limiter] : []);
 
 // Request logging
 app.use((req, res, next) => {
@@ -104,14 +141,14 @@ app.get('/health', (req, res) => {
 });
 
 // Research API routes
-app.post('/api/research/generate', generateResearch);
-app.get('/api/research/jobs/:id', getJobStatus);
-app.get('/api/research/:id', getResearchDetail);
-app.get('/api/research', listResearch);
-app.post('/api/research/:id/cancel', cancelResearchJob);
-app.delete('/api/research/:id', deleteResearchJob);
-app.get('/api/research/:id/export/pdf', exportResearchPdf);
-app.post('/api/feedback', submitFeedback);
+app.post('/api/research/generate', ...applyLimiter(generateLimiter), generateResearch);
+app.get('/api/research/jobs/:id', ...applyLimiter(getLimiter), getJobStatus);
+app.get('/api/research/:id', ...applyLimiter(getLimiter), getResearchDetail);
+app.get('/api/research', ...applyLimiter(getLimiter), listResearch);
+app.post('/api/research/:id/cancel', ...applyLimiter(writeLimiter), cancelResearchJob);
+app.delete('/api/research/:id', ...applyLimiter(writeLimiter), deleteResearchJob);
+app.get('/api/research/:id/export/pdf', ...applyLimiter(exportLimiter), exportResearchPdf);
+app.post('/api/feedback', ...applyLimiter(writeLimiter), submitFeedback);
 
 // Regenerate specific sections (optional - for future implementation)
 app.post('/api/research/:id/regenerate', async (req, res) => {
