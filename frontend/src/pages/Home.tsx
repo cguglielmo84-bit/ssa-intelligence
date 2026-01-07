@@ -21,7 +21,9 @@ export const Home: React.FC<HomeProps> = ({ jobs, onNavigate, onCancel, onDelete
   const [search, setSearch] = useState('');
   const [selectedCompany, setSelectedCompany] = useState<string | null>(null);
   const API_BASE = ((import.meta as any).env?.VITE_API_BASE_URL || '/api').replace(/\/$/, '');
-  const logoToken = (import.meta as any).env?.VITE_LOGO_DEV_TOKEN as string | undefined;
+  const [runtimeLogoToken, setRuntimeLogoToken] = useState<string | null>(null);
+  const fallbackLogoToken = (import.meta as any).env?.VITE_LOGO_DEV_TOKEN as string | undefined;
+  const logoToken = runtimeLogoToken || fallbackLogoToken;
   const activeJobs = jobs
     .filter(j => j.status === 'running' || j.status === 'queued' || j.status === 'idle')
     .sort((a, b) => {
@@ -60,6 +62,23 @@ export const Home: React.FC<HomeProps> = ({ jobs, onNavigate, onCancel, onDelete
       .map((group) => ({ ...group, jobs: group.jobs.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0)) }))
       .sort((a, b) => b.lastActive - a.lastActive);
   }, [jobs]);
+
+  useEffect(() => {
+    let isMounted = true;
+    fetch(`${API_BASE}/config`)
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (!isMounted) return;
+        const token = data?.logoToken;
+        if (typeof token === 'string' && token.trim()) {
+          setRuntimeLogoToken(token.trim());
+        }
+      })
+      .catch(() => {});
+    return () => {
+      isMounted = false;
+    };
+  }, [API_BASE]);
 
   const filteredGroups = companyGroups.filter((group) =>
     group.companyName.toLowerCase().includes(search.toLowerCase().trim())

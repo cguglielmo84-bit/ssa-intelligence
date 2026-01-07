@@ -140,6 +140,13 @@ app.get('/health', (req, res) => {
   });
 });
 
+// Public runtime config (non-sensitive client config)
+app.get('/api/config', (req, res) => {
+  res.json({
+    logoToken: process.env.LOGO_DEV_TOKEN || null
+  });
+});
+
 // Research API routes
 app.post('/api/research/generate', ...applyLimiter(generateLimiter), generateResearch);
 app.get('/api/research/jobs/:id', ...applyLimiter(getLimiter), getJobStatus);
