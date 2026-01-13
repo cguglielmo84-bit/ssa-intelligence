@@ -101,6 +101,11 @@ export interface CreateJobRequest {
   industry?: string;
   focusAreas?: string[];
   requestedBy?: string;
+  reportType?: 'GENERIC' | 'INDUSTRIALS' | 'PE' | 'FS';
+  selectedSections?: string[];
+  userAddedPrompt?: string;
+  visibilityScope?: 'PRIVATE' | 'GROUP' | 'GENERAL';
+  groupIds?: string[];
 }
 
 export interface CreateJobResponse {

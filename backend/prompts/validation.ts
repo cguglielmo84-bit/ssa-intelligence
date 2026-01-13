@@ -467,6 +467,48 @@ export const appendixOutputSchema = z.object({
 });
 
 // ============================================================================
+// PRESET-AWARE SCHEMA HELPERS
+// ============================================================================
+
+export type ReportTypeId = 'GENERIC' | 'INDUSTRIALS' | 'PE' | 'FS';
+
+export type ValidationStageId =
+  | 'foundation'
+  | 'exec_summary'
+  | 'financial_snapshot'
+  | 'company_overview'
+  | 'segment_analysis'
+  | 'trends'
+  | 'peer_benchmarking'
+  | 'sku_opportunities'
+  | 'recent_news'
+  | 'conversation_starters'
+  | 'appendix';
+
+const BASE_SECTION_SCHEMAS: Record<ValidationStageId, z.ZodSchema<any>> = {
+  foundation: foundationOutputSchema,
+  exec_summary: execSummaryOutputSchema,
+  financial_snapshot: financialSnapshotOutputSchema,
+  company_overview: companyOverviewOutputSchema,
+  segment_analysis: segmentAnalysisOutputSchema,
+  trends: trendsOutputSchema,
+  peer_benchmarking: peerBenchmarkingOutputSchema,
+  sku_opportunities: skuOpportunitiesOutputSchema,
+  recent_news: recentNewsOutputSchema,
+  conversation_starters: conversationStartersOutputSchema,
+  appendix: appendixOutputSchema
+};
+
+export const getValidationSchema = (
+  stageId: ValidationStageId,
+  reportType: ReportTypeId
+) => {
+  // Placeholder for preset-specific overrides (Generic/PE/FS). Defaults to base schema.
+  void reportType;
+  return BASE_SECTION_SCHEMAS[stageId];
+};
+
+// ============================================================================
 // VALIDATION HELPER FUNCTIONS
 // ============================================================================
 

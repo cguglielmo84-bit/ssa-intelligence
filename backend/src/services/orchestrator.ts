@@ -34,7 +34,9 @@ import {
   skuOpportunitiesOutputSchema,
   recentNewsOutputSchema,
   conversationStartersOutputSchema,
-  appendixOutputSchema
+  appendixOutputSchema,
+  getValidationSchema,
+  type ReportTypeId
 } from '../../prompts/validation.js';
 
 // ============================================================================
@@ -524,11 +526,12 @@ export class ResearchOrchestrator {
     try {
       const job = await this.prisma.researchJob.findUnique({
         where: { id: jobId },
-        select: { status: true }
+        select: { status: true, reportType: true }
       });
       if (!job || job.status === 'cancelled') {
         return;
       }
+      const reportType = (job.reportType as ReportTypeId) || 'GENERIC';
       // Mark as running
       await this.updateSubJobStatus(jobId, stageId, 'running');
       await this.updateJobCurrentStage(jobId, stageId);
@@ -550,10 +553,10 @@ export class ResearchOrchestrator {
       response = await this.claudeClient.execute(prompt);
 
       // Parse and validate
-      const config = STAGE_CONFIGS[stageId];
+      const validationSchema = getValidationSchema(stageId, reportType);
       let output = this.claudeClient.validateAndParse(
         response,
-        config.validationSchema
+        validationSchema
       );
 
       // Sanitize common issues before content check/save
