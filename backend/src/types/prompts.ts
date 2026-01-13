@@ -126,6 +126,7 @@ export interface JobStatusResponse {
   reportType?: 'GENERIC' | 'INDUSTRIALS' | 'PE' | 'FS';
   visibilityScope?: 'PRIVATE' | 'GROUP' | 'GENERAL';
   selectedSections?: string[];
+  userAddedPrompt?: string;
   error?: string | null;
   jobs: Array<{
     stage: string;
@@ -156,6 +157,7 @@ export interface ResearchDetailResponse {
     reportType?: 'GENERIC' | 'INDUSTRIALS' | 'PE' | 'FS';
     visibilityScope?: 'PRIVATE' | 'GROUP' | 'GENERAL';
     selectedSections?: string[];
+    userAddedPrompt?: string;
     overallConfidence?: string;
     createdAt: Date;
     updatedAt: Date;
@@ -192,6 +194,7 @@ export interface ListResearchResponse {
     reportType?: 'GENERIC' | 'INDUSTRIALS' | 'PE' | 'FS';
     visibilityScope?: 'PRIVATE' | 'GROUP' | 'GENERAL';
     selectedSections?: string[];
+    userAddedPrompt?: string;
     progress: number;
     currentStage?: string;
     overallConfidence?: string;

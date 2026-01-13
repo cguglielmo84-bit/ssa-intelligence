@@ -79,6 +79,7 @@ export async function getJobStatus(req: Request, res: Response) {
       reportType: (job as any).reportType,
       visibilityScope: (job as any).visibilityScope,
       selectedSections: (job as any).selectedSections,
+      userAddedPrompt: (job as any).userAddedPrompt,
       overallConfidence: job.overallConfidence,
       overallConfidenceScore: job.overallConfidenceScore,
       promptTokens: (job as any).promptTokens,

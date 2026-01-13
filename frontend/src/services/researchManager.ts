@@ -31,6 +31,7 @@ type ApiJobStatus = {
   reportType?: ReportType;
   visibilityScope?: VisibilityScope;
   selectedSections?: string[];
+  userAddedPrompt?: string | null;
   jobs?: ApiSectionStatus[];
   companyName?: string;
   geography?: string;
@@ -52,6 +53,7 @@ type ApiResearchDetail = {
   sectionStatuses?: ApiSectionStatus[];
   domain?: string | null;
   groups?: Array<{ id: string; name: string; slug: string }>;
+  userAddedPrompt?: string | null;
 };
 
 type ApiListItem = {
@@ -66,6 +68,7 @@ type ApiListItem = {
   reportType?: ReportType;
   visibilityScope?: VisibilityScope;
   selectedSections?: string[];
+  userAddedPrompt?: string | null;
   progress?: number | null;
   currentStage?: string | null;
   overallConfidence?: string | null;
@@ -691,6 +694,7 @@ const mapSections = (
     reportType: (metadata.reportType as ReportType) || item.reportType || undefined,
     visibilityScope: (metadata.visibilityScope as VisibilityScope) || item.visibilityScope || undefined,
     selectedSections: (metadata.selectedSections as SectionId[]) || (item.selectedSections as SectionId[]) || undefined,
+    userAddedPrompt: (metadata.userAddedPrompt as string) || item.userAddedPrompt || null,
     queuePosition: null,
     overallConfidence: (metadata.overallConfidence as string) || item.overallConfidence || null,
     overallConfidenceScore:
@@ -741,6 +745,7 @@ const mapJobFromStatus = (
     reportType: status.reportType ?? existing?.reportType,
     visibilityScope: status.visibilityScope ?? existing?.visibilityScope,
     selectedSections: (status.selectedSections as SectionId[]) ?? existing?.selectedSections,
+    userAddedPrompt: status.userAddedPrompt ?? existing?.userAddedPrompt ?? null,
     queuePosition,
     overallConfidence: status.overallConfidence ?? existing?.overallConfidence ?? null,
     overallConfidenceScore: status.overallConfidenceScore ?? existing?.overallConfidenceScore ?? null,
@@ -770,6 +775,7 @@ const mergeDetail = (job: ResearchJob, detail: ApiResearchDetail): ResearchJob =
     reportType: (metadata.reportType as ReportType) || job.reportType,
     visibilityScope: (metadata.visibilityScope as VisibilityScope) || job.visibilityScope,
     selectedSections: (metadata.selectedSections as SectionId[]) || job.selectedSections,
+    userAddedPrompt: (metadata.userAddedPrompt as string) || detail.userAddedPrompt || job.userAddedPrompt || null,
     overallConfidence:
       (metadata.overallConfidence as string) || detail.overallConfidence || job.overallConfidence || null,
     overallConfidenceScore:
@@ -843,6 +849,7 @@ export const useResearchManager = () => {
       visibilityScope: options?.visibilityScope,
       selectedSections: options?.selectedSections,
       groupIds: options?.groupIds,
+      userAddedPrompt: options?.userAddedPrompt || null,
       queuePosition: res.queuePosition ?? 1,
       promptTokens: 0,
       completionTokens: 0,

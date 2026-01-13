@@ -127,6 +127,7 @@ export async function getResearchDetail(req: Request, res: Response) {
         reportType: (job as any).reportType || null,
         visibilityScope: (job as any).visibilityScope || null,
         selectedSections: (job as any).selectedSections || [],
+        userAddedPrompt: (job as any).userAddedPrompt || null,
         overallConfidence: job.overallConfidence,
         overallConfidenceScore: job.overallConfidenceScore,
         promptTokens: job.promptTokens,

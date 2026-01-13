@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { ResearchJob } from '../types';
+import { createPortal } from 'react-dom';
+import { ResearchJob, SECTIONS_CONFIG } from '../types';
 import { StatusPill } from '../components/StatusPill';
 import { ArrowRight, Search, TrendingUp, Building2, MapPin, MoreHorizontal, Loader2 } from 'lucide-react';
 import { ShaderGradientCanvas, ShaderGradient } from '@shadergradient/react';
@@ -16,10 +17,12 @@ export const Home: React.FC<HomeProps> = ({ jobs, onNavigate, onCancel, onDelete
     (a, b) => (b.createdAt || 0) - (a.createdAt || 0)
   );
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
+  const [menuPosition, setMenuPosition] = useState<{ top: number; left: number } | null>(null);
   const [exportingId, setExportingId] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [search, setSearch] = useState('');
   const [selectedCompany, setSelectedCompany] = useState<string | null>(null);
+  const [contextJob, setContextJob] = useState<ResearchJob | null>(null);
   const API_BASE = ((import.meta as any).env?.VITE_API_BASE_URL || '/api').replace(/\/$/, '');
   const [runtimeLogoToken, setRuntimeLogoToken] = useState<string | null>(null);
   const fallbackLogoToken = (import.meta as any).env?.VITE_LOGO_DEV_TOKEN as string | undefined;
@@ -33,6 +36,23 @@ export const Home: React.FC<HomeProps> = ({ jobs, onNavigate, onCancel, onDelete
       if (pa !== pb) return pa - pb;
       return (a.createdAt || 0) - (b.createdAt || 0);
     });
+  useEffect(() => {
+    let isMounted = true;
+    fetch(`${API_BASE}/config`)
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (!isMounted) return;
+        const token = data?.logoToken;
+        if (typeof token === 'string' && token.trim()) {
+          setRuntimeLogoToken(token.trim());
+        }
+      })
+      .catch(() => {});
+    return () => {
+      isMounted = false;
+    };
+  }, [API_BASE]);
+
   const companyGroups = useMemo(() => {
     const map = new Map<string, { key: string; companyName: string; jobs: ResearchJob[]; lastActive: number; hasActive: boolean; domain?: string | null }>();
     jobs.forEach((job) => {
@@ -63,26 +83,23 @@ export const Home: React.FC<HomeProps> = ({ jobs, onNavigate, onCancel, onDelete
       .sort((a, b) => b.lastActive - a.lastActive);
   }, [jobs]);
 
-  useEffect(() => {
-    let isMounted = true;
-    fetch(`${API_BASE}/config`)
-      .then((res) => (res.ok ? res.json() : null))
-      .then((data) => {
-        if (!isMounted) return;
-        const token = data?.logoToken;
-        if (typeof token === 'string' && token.trim()) {
-          setRuntimeLogoToken(token.trim());
-        }
-      })
-      .catch(() => {});
-    return () => {
-      isMounted = false;
-    };
-  }, [API_BASE]);
-
   const filteredGroups = companyGroups.filter((group) =>
     group.companyName.toLowerCase().includes(search.toLowerCase().trim())
   );
+
+  const reportTypeLabel = (type?: string | null) => {
+    if (!type) return 'Generic';
+    if (type === 'INDUSTRIALS') return 'Industrials';
+    if (type === 'PE') return 'Private Equity';
+    if (type === 'FS') return 'Financial Services';
+    return 'Generic';
+  };
+
+  const visibilityLabel = (scope?: string | null) => {
+    if (scope === 'GENERAL') return 'General';
+    if (scope === 'GROUP') return 'Group';
+    return 'Private';
+  };
 
   const handleExport = async (job: ResearchJob) => {
     try {
@@ -109,6 +126,32 @@ export const Home: React.FC<HomeProps> = ({ jobs, onNavigate, onCancel, onDelete
       setExportingId(null);
       setOpenMenuId(null);
     }
+  };
+
+  const handleMenuToggle = (jobId: string, event: React.MouseEvent<HTMLButtonElement>) => {
+    if (openMenuId === jobId) {
+      setOpenMenuId(null);
+      return;
+    }
+    const rect = event.currentTarget.getBoundingClientRect();
+    const menuWidth = 180;
+    const left = Math.min(rect.left, window.innerWidth - menuWidth - 16);
+    setMenuPosition({ top: rect.bottom + 8, left: Math.max(16, left) });
+    setOpenMenuId(jobId);
+  };
+
+  const formatSectionList = (sections?: string[]) => {
+    if (!sections || sections.length === 0) return 'All sections';
+    return sections
+      .map((section) => SECTIONS_CONFIG.find((s) => s.id === section)?.title || section)
+      .join(', ');
+  };
+
+  const formatDate = (value?: number | string | null) => {
+    if (!value) return '';
+    const date = typeof value === 'number' ? new Date(value) : new Date(value);
+    if (Number.isNaN(date.getTime())) return '';
+    return date.toLocaleDateString('en-US');
   };
 
   return (
@@ -248,7 +291,7 @@ export const Home: React.FC<HomeProps> = ({ jobs, onNavigate, onCancel, onDelete
           </div>
         ) : (
           <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-            {filteredGroups.map((group, idx) => {
+            {filteredGroups.map((group) => {
               const palette = ['#1d4ed8', '#0ea5e9', '#16a34a', '#f59e0b', '#f97316', '#8b5cf6', '#ec4899', '#14b8a6'];
               const color = palette[Math.abs(group.key.split('').reduce((a, c) => a + c.charCodeAt(0), 0)) % palette.length] || '#1d4ed8';
               const domain = group.domain || group.jobs.find((j) => j.domain)?.domain || null;
@@ -261,47 +304,47 @@ export const Home: React.FC<HomeProps> = ({ jobs, onNavigate, onCancel, onDelete
                 .join('')
                 .toUpperCase();
               return (
-              <div
-            key={group.key}
-            className="group relative bg-white border border-slate-200 rounded-xl p-5 shadow-sm hover:shadow-md transition-all cursor-pointer overflow-hidden"
-            onClick={() => setSelectedCompany(group.companyName)}
-          >
-            <div className="flex items-start justify-between mb-3">
-              <div>
-                <h4 className="text-lg font-bold text-slate-900">{group.companyName}</h4>
-                <div className="text-xs text-slate-500 mt-1">
-                  {group.jobs.length} {group.jobs.length === 1 ? 'report' : 'reports'}
-                </div>
-              </div>
-              <span className="text-xs text-slate-500">
-                {group.lastActive ? `Updated ${new Date(group.lastActive).toLocaleDateString('en-US')}` : ''}
-              </span>
-            </div>
-            <div
-              className="absolute left-0 right-0 bottom-0 h-1 opacity-100"
-              style={{ backgroundColor: color }}
-            ></div>
-            <div className="absolute bottom-3 right-3 flex items-center gap-2">
-                  <div className="w-10 h-10 rounded-lg bg-slate-100 text-slate-500 flex items-center justify-center font-semibold overflow-hidden">
-                    {logoUrl ? (
-                      <img
-                        src={logoUrl}
-                        alt={`${group.companyName} logo`}
-                        className="w-full h-full object-contain"
-                        onError={(e) => {
-                          e.currentTarget.style.display = 'none';
-                          if (e.currentTarget.parentElement) {
-                            e.currentTarget.parentElement.textContent = initials;
-                          }
-                        }}
-                      />
-                    ) : (
-                      initials
-                    )}
+                <div
+                  key={group.key}
+                  className="group relative bg-white border border-slate-200 rounded-xl p-5 shadow-sm hover:shadow-md transition-all cursor-pointer overflow-hidden"
+                  onClick={() => setSelectedCompany(group.companyName)}
+                >
+                  <div className="flex items-start justify-between mb-3">
+                    <div>
+                      <h4 className="text-lg font-bold text-slate-900">{group.companyName}</h4>
+                      <div className="text-xs text-slate-500 mt-1">
+                        {group.jobs.length} {group.jobs.length === 1 ? 'report' : 'reports'}
+                      </div>
+                    </div>
+                    <span className="text-xs text-slate-500">
+                      {group.lastActive ? `Updated ${new Date(group.lastActive).toLocaleDateString('en-US')}` : ''}
+                    </span>
+                  <div className="absolute bottom-3 right-3 flex items-center gap-2">
+                    <div className="w-10 h-10 rounded-lg bg-slate-100 text-slate-500 flex items-center justify-center font-semibold overflow-hidden">
+                      {logoUrl ? (
+                        <img
+                          src={logoUrl}
+                          alt={`${group.companyName} logo`}
+                          className="w-full h-full object-contain"
+                          onError={(e) => {
+                            e.currentTarget.style.display = 'none';
+                            if (e.currentTarget.parentElement) {
+                              e.currentTarget.parentElement.textContent = initials;
+                            }
+                          }}
+                        />
+                      ) : (
+                        initials
+                      )}
+                    </div>
                   </div>
+                  </div>
+                  <div
+                    className="absolute left-0 right-0 bottom-0 h-1 opacity-100"
+                    style={{ backgroundColor: color }}
+                  ></div>
                 </div>
-              </div>
-            );
+              );
             })}
           </div>
         )}
@@ -336,99 +379,141 @@ export const Home: React.FC<HomeProps> = ({ jobs, onNavigate, onCancel, onDelete
                 </div>
               </div>
               <div className="p-6 overflow-y-auto">
-                <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
-                  {group.jobs.map((job) => (
-                    <div key={job.id} className="border border-slate-200 rounded-xl p-3 bg-white shadow-sm hover:shadow-md transition-all relative">
-                      <div className="relative mb-3">
-                        <div className="absolute top-1 right-1 z-20">
-                          <div className="relative">
+                <div className="space-y-3">
+                  {group.jobs.map((job) => {
+                    const sectionList = formatSectionList(job.selectedSections);
+                    return (
+                      <div
+                        key={job.id}
+                        className="border border-slate-200 rounded-xl p-4 bg-white shadow-sm hover:shadow-md transition-shadow"
+                      >
+                        <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+                          <div className="space-y-2">
+                            <div className="flex flex-wrap items-center gap-2">
+                              <span className="text-base font-semibold text-slate-900">
+                                {reportTypeLabel(job.reportType)}
+                              </span>
+                              <span className="text-xs text-slate-500">
+                                {formatDate(job.createdAt)}
+                              </span>
+                              <StatusPill status={job.status} size="sm" />
+                            </div>
+                            <div className="text-xs text-slate-500">
+                              {job.geography || 'Global'} · {job.industry || 'No industry'} · Visibility: {visibilityLabel(job.visibilityScope)}
+                            </div>
+                            <details>
+                              <summary className="cursor-pointer text-xs text-slate-500">Sections</summary>
+                              <div className="mt-2 text-sm text-slate-700 whitespace-pre-wrap">{sectionList}</div>
+                            </details>
+                            {job.userAddedPrompt ? (
+                              <button
+                                onClick={() => setContextJob(job)}
+                                className="inline-flex items-center rounded-full border border-brand-200 bg-brand-50 px-2.5 py-1 text-[11px] font-semibold text-brand-700 hover:bg-brand-100"
+                              >
+                                Custom Context
+                              </button>
+                            ) : null}
+                          </div>
+
+                          <div className="flex items-start gap-3">
                             <button
-                              onClick={() => setOpenMenuId(openMenuId === job.id ? null : job.id)}
-                              className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-slate-500 hover:bg-slate-200"
+                              onClick={() => onNavigate(`/research/${job.id}`)}
+                              className="text-xs bg-brand-50 text-brand-700 font-semibold px-3 py-2 rounded-lg hover:bg-brand-100 transition-colors"
                             >
-                              ⋮
+                              View Report
                             </button>
-                            {openMenuId === job.id && (
-                              <>
-                                <div
-                                  className="fixed inset-0"
-                                  onClick={() => setOpenMenuId(null)}
-                                ></div>
-                                <div className="absolute right-0 mt-2 w-40 bg-white border border-slate-200 rounded-lg shadow-lg z-30">
-                                  <button
-                                    onClick={() => handleExport(job)}
-                                    disabled={exportingId === job.id}
-                                    className="w-full text-left px-3 py-2 text-sm hover:bg-slate-50 flex items-center gap-2 disabled:opacity-60"
-                                  >
-                                    {exportingId === job.id ? <Loader2 size={14} className="animate-spin text-slate-500" /> : null}
-                                    Export PDF
-                                  </button>
-                                  <button
-                                    disabled
-                                    className="w-full text-left px-3 py-2 text-sm text-slate-400 cursor-not-allowed flex items-center"
-                                    title="Coming soon"
-                                  >
-                                    Rerun
-                                  </button>
-                                  <button
-                                    onClick={() => {
-                                      if (!onDelete) return;
-                                      if (job.status === 'running' || job.status === 'queued') return;
-                                      const confirmed = window.confirm('Delete this report? This cannot be undone.');
-                                      if (!confirmed) return;
-                                      setDeletingId(job.id);
-                                      setOpenMenuId(null);
-                                      onDelete(job.id)
-                                        .catch(() => {})
-                                        .finally(() => setDeletingId(null));
-                                    }}
-                                    disabled={!onDelete || job.status === 'running' || job.status === 'queued' || deletingId === job.id}
-                                    className="w-full text-left px-3 py-2 text-sm text-rose-700 hover:bg-rose-50 disabled:opacity-60"
-                                  >
-                                    {deletingId === job.id ? 'Deleting...' : 'Delete'}
-                                  </button>
-                                </div>
-                              </>
-                            )}
+                            <div className="relative">
+                              <button
+                                onClick={(event) => handleMenuToggle(job.id, event)}
+                                className="w-9 h-9 rounded-full bg-slate-100 flex items-center justify-center text-slate-500 hover:bg-slate-200"
+                              >
+                                <MoreHorizontal size={16} />
+                              </button>
+                              {openMenuId === job.id && (
+                                createPortal(
+                                  <>
+                                    <div
+                                      className="fixed inset-0 z-40"
+                                      onClick={() => setOpenMenuId(null)}
+                                    ></div>
+                                    <div
+                                      className="fixed z-50 w-44 bg-white border border-slate-200 rounded-lg shadow-lg"
+                                      style={{ top: menuPosition?.top ?? 0, left: menuPosition?.left ?? 0 }}
+                                    >
+                                      <button
+                                        onClick={() => handleExport(job)}
+                                        disabled={exportingId === job.id}
+                                        className="w-full text-left px-3 py-2 text-sm hover:bg-slate-50 flex items-center gap-2 disabled:opacity-60"
+                                      >
+                                        {exportingId === job.id ? <Loader2 size={14} className="animate-spin text-slate-500" /> : null}
+                                        Export PDF
+                                      </button>
+                                      <button
+                                        disabled
+                                        className="w-full text-left px-3 py-2 text-sm text-slate-400 cursor-not-allowed flex items-center"
+                                        title="Coming soon"
+                                      >
+                                        Rerun
+                                      </button>
+                                      <button
+                                        onClick={() => {
+                                          if (!onDelete) return;
+                                          if (job.status === 'running' || job.status === 'queued') return;
+                                          const confirmed = window.confirm('Delete this report? This cannot be undone.');
+                                          if (!confirmed) return;
+                                          setDeletingId(job.id);
+                                          setOpenMenuId(null);
+                                          onDelete(job.id)
+                                            .catch(() => {})
+                                            .finally(() => setDeletingId(null));
+                                        }}
+                                        disabled={!onDelete || job.status === 'running' || job.status === 'queued' || deletingId === job.id}
+                                        className="w-full text-left px-3 py-2 text-sm text-rose-700 hover:bg-rose-50 disabled:opacity-60"
+                                      >
+                                        {deletingId === job.id ? 'Deleting...' : 'Delete'}
+                                      </button>
+                                    </div>
+                                  </>,
+                                  document.body
+                                )
+                              )}
+                            </div>
                           </div>
                         </div>
-                        <div className="relative overflow-hidden rounded-lg bg-slate-100 aspect-[3/4]">
-                          {job.thumbnailUrl ? (
-                            <img
-                              src={job.thumbnailUrl}
-                              alt={`${job.companyName} thumbnail`}
-                              className="w-full h-full object-cover transition-transform duration-200 hover:scale-[1.02]"
-                            />
-                          ) : (
-                            <div className="w-full h-full bg-slate-200" />
-                          )}
-                        </div>
                       </div>
-                      <div className="mt-3 space-y-1">
-                        <div className="flex items-center justify-between text-xs text-slate-500">
-                          <span>{job.geography || 'Global'}</span>
-                          <StatusPill status={job.status} size="sm" />
-                        </div>
-                        <div className="text-xs text-slate-400">
-                          {job.industry || 'No industry'} · {new Date(job.createdAt).toLocaleDateString('en-US')}
-                        </div>
-                      </div>
-                      <div className="mt-3 flex items-center gap-2">
-                        <button
-                          onClick={() => onNavigate(`/research/${job.id}`)}
-                          className="w-full text-xs bg-brand-50 text-brand-700 font-semibold px-2 py-2 rounded-lg hover:bg-brand-100 transition-colors"
-                        >
-                          View Report
-                        </button>
-                      </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               </div>
             </div>
           </div>
         );
       })()}
+
+      {contextJob && (
+        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full overflow-hidden">
+            <div className="flex items-center justify-between border-b border-slate-200 px-6 py-4">
+              <div>
+                <div className="text-xs uppercase text-slate-400">Custom Context</div>
+                <div className="text-lg font-bold text-slate-900">{contextJob.companyName}</div>
+              </div>
+              <button
+                onClick={() => setContextJob(null)}
+                className="text-sm text-slate-500 hover:text-slate-700"
+              >
+                Close
+              </button>
+            </div>
+            <div className="p-6 max-h-[70vh] overflow-y-auto whitespace-pre-wrap text-sm text-slate-700">
+              {contextJob.userAddedPrompt}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
+
+
+
