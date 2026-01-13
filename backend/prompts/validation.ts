@@ -323,9 +323,9 @@ export const trendsOutputSchema = z.object({
 
 export const peerInfoSchema = z.object({
   name: z.string(),
-  ticker: z.string().optional(),
-  geography_presence: z.string().min(30),
-  geography_revenue_pct: z.number().min(0).max(100).optional()
+  ticker: z.union([z.string(), z.null()]).optional(),
+  geography_presence: z.union([z.string().min(30), z.null()]),
+  geography_revenue_pct: z.union([z.number().min(0).max(100), z.null()]).optional()
 });
 
 export const peerMetricSchema = z.object({

@@ -509,6 +509,8 @@ export class ResearchOrchestrator {
         output = this.sanitizeExecSummary(output);
       } else if (stageId === 'segment_analysis') {
         output = this.sanitizeSegmentAnalysis(output);
+      } else if (stageId === 'peer_benchmarking') {
+        output = this.sanitizePeerBenchmarking(output);
       }
 
       // Guard against empty/invalid content that passed validation
@@ -676,10 +678,12 @@ export class ResearchOrchestrator {
     const attempts = subJob.attempts + 1;
 
     if (attempts < subJob.maxAttempts) {
-      // Back off briefly on rate limit errors
-      if (this.isRateLimitError(errorMessage)) {
+      const isRateLimit = this.isRateLimitError(errorMessage);
+      const isServerError = this.isServerError(errorMessage);
+      if (isRateLimit || isServerError) {
         await this.delay(2000);
       }
+      console.log(`[retry] ${stageId} attempt ${attempts}/${subJob.maxAttempts} after error: ${errorMessage}`);
       // Retry
       await this.prisma.researchSubJob.update({
         where: { id: subJob.id },
@@ -907,6 +911,26 @@ export class ResearchOrchestrator {
     };
   }
 
+  private sanitizePeerBenchmarking(output: any) {
+    if (!output || typeof output !== 'object') return output;
+    const table = output.peer_comparison_table;
+    if (!table || !Array.isArray(table.peers)) return output;
+
+    const peers = table.peers.map((peer: any) => ({
+      ...peer,
+      ticker: typeof peer?.ticker === 'string' ? peer.ticker.trim() : '',
+      geography_presence: typeof peer?.geography_presence === 'string' ? peer.geography_presence.trim() : ''
+    }));
+
+    return {
+      ...output,
+      peer_comparison_table: {
+        ...table,
+        peers
+      }
+    };
+  }
+
   /**
    * Ensure a section output has meaningful content; throw if empty to force retry/failure
    */
@@ -1033,6 +1057,10 @@ export class ResearchOrchestrator {
 
   private isRateLimitError(message: string): boolean {
     return message.toLowerCase().includes('rate limit') || message.includes('429');
+  }
+
+  private isServerError(message: string): boolean {
+    return message.includes('Status: 500') || message.toLowerCase().includes('internal server error');
   }
 
   /**

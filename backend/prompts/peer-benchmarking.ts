@@ -233,7 +233,7 @@ interface Section6Output {
     company_name: string; // ${companyName}
     peers: Array<{
       name: string;
-      ticker?: string;
+      ticker?: string; // Use empty string if unknown; never return null
       geography_presence: string;
       geography_revenue_pct?: number;
     }>;

@@ -15,7 +15,7 @@
     "db:seed": "tsx prisma/seed.ts",
     "lint": "eslint src --ext .ts",
     "type-check": "tsc --noEmit",
-    "script:backfill-domains": "node --loader ts-node/esm scripts/backfill-domains.ts",
+    "script:backfill-domains": "tsx scripts/backfill-domains.ts",
     "docker:up": "docker-compose up -d",
     "docker:down": "docker-compose down",
     "docker:logs": "docker-compose logs -f",

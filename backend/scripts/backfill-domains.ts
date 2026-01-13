@@ -2,12 +2,45 @@
  * Backfill domains for existing companies using Claude inference.
  * Skips PPG Industries intentionally to test new-run inference.
  */
+import dotenv from 'dotenv';
 import { PrismaClient } from '@prisma/client';
 import { ensureDomainForJob } from '../src/services/domain-infer.ts';
+
+dotenv.config();
 
 const prisma = new PrismaClient();
 
 const SKIP_COMPANIES = ['ppg industries'];
+
+const requiredEnv = ['DATABASE_URL', 'ANTHROPIC_API_KEY'];
+const missingEnv = requiredEnv.filter((key) => !process.env[key]);
+if (missingEnv.length > 0) {
+  console.error(`Missing required environment variables: ${missingEnv.join(', ')}`);
+  process.exit(1);
+}
+
+const logError = (err: unknown) => {
+  if (err instanceof Error) {
+    console.error(err.stack || err.message);
+    return;
+  }
+  try {
+    console.error('Unknown error:', JSON.stringify(err, null, 2));
+  } catch {
+    console.error('Unknown error:', err);
+  }
+};
+
+process.on('unhandledRejection', (reason) => {
+  console.error('Unhandled rejection:');
+  logError(reason);
+});
+
+process.on('uncaughtException', (err) => {
+  console.error('Uncaught exception:');
+  logError(err);
+  process.exit(1);
+});
 
 async function main() {
   const jobs = await prisma.researchJob.findMany({
@@ -35,7 +68,8 @@ async function main() {
 
 main()
   .catch((err) => {
-    console.error(err);
+    console.error('Backfill failed:');
+    logError(err);
     process.exit(1);
   })
   .finally(async () => {
