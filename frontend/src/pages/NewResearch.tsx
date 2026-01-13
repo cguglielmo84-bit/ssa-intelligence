@@ -163,6 +163,12 @@ export const NewResearch: React.FC<NewResearchProps> = ({ createJob, runJob, job
     setError(null);
     setDuplicateInfo(null);
 
+    const nonAppendix = selectedSections.filter((section) => section !== 'appendix');
+    if (!nonAppendix.length) {
+      setError('Select at least one section to generate.');
+      return;
+    }
+
     if (visibilityScope === 'GROUP' && selectedGroupIds.length === 0) {
       setError('Select at least one group for shared access.');
       return;

@@ -122,7 +122,7 @@ export async function generateResearch(req: Request, res: Response) {
       return res.status(400).json({ error: 'Invalid visibilityScope' });
     }
 
-    const groupIds = Array.isArray(body.groupIds)
+    let groupIds = Array.isArray(body.groupIds)
       ? Array.from(
           new Set(
             body.groupIds
@@ -151,6 +151,8 @@ export async function generateResearch(req: Request, res: Response) {
           return res.status(400).json({ error: 'One or more groupIds are invalid' });
         }
       }
+    } else {
+      groupIds = [];
     }
 
     // Check for existing job with same normalized company+geo+industry and running/queued/completed
