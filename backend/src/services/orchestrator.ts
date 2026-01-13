@@ -624,7 +624,11 @@ export class ResearchOrchestrator {
     if (job.skuOpportunities) input.section7 = job.skuOpportunities;
     if (job.recentNews) input.section8 = job.recentNews;
 
-    return config.promptBuilder(input);
+    const basePrompt = config.promptBuilder(input);
+    const userPrompt = typeof job.userAddedPrompt === 'string' ? job.userAddedPrompt.trim() : '';
+    if (!userPrompt) return basePrompt;
+
+    return `${basePrompt}\n\n---\n\n## USER-ADDED CONTEXT\n\n${userPrompt}\n`;
   }
 
   /**
