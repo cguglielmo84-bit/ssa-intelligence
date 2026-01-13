@@ -10,7 +10,7 @@ Expand research brief generation with new preset workflows (Private Equity, Fina
  [x] Audit current stages/dependencies and define required vs optional sections per preset (keep Industrials as current default; PE/FS/Generic use the specified section set).
  [x] Define the PE brief spec from the spreadsheet and map it to prompt builders and output schema.
  [x] Define the FS brief spec from the spreadsheet and map it to prompt builders and output schema.
-[ ] Define the Generic brief spec from the spreadsheet and map it to prompt builders and output schema.
+ [x] Define the Generic brief spec from the spreadsheet and map it to prompt builders and output schema.
 [ ] Extend Prisma schema for reportType/preset, selectedSections, userAddedPrompt, visibility settings (Private/Group/General), RBAC entities, group memberships, and a reportType-aware uniqueness key.
 [ ] Audit current user model usage and ensure job creator attribution is stored from auth headers (email/domain, userId), with room for future comments/mentions.
 [ ] Implement auth/RBAC middleware that reads user identity and groups from headers, uses `ADMIN_EMAILS` overrides for admin, upserts users, and enforces visibility rules on research routes.
