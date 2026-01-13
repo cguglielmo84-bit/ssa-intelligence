@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import { ResearchJob, SECTIONS_CONFIG, SectionId } from '../types';
 import { StatusPill } from '../components/StatusPill';
 import { ChevronRight, BarChart3, Globe, ExternalLink, AlertTriangle, Loader2, CheckCircle2, Circle } from 'lucide-react';
@@ -129,7 +129,18 @@ export const ResearchDetail: React.FC<ResearchDetailProps> = ({ jobs, onNavigate
   const id = hash.split('/research/')[1];
   
   const job = jobs.find(j => j.id === id);
-  const [activeSection, setActiveSection] = useState<SectionId>('exec_summary');
+  const allowedSections = useMemo<SectionId[]>(() => {
+    if (!job?.selectedSections?.length) {
+      return SECTIONS_CONFIG.map((section) => section.id);
+    }
+    return SECTIONS_CONFIG
+      .map((section) => section.id)
+      .filter((id) => job.selectedSections?.includes(id));
+  }, [job?.selectedSections]);
+
+  const [activeSection, setActiveSection] = useState<SectionId>(() => {
+    return allowedSections[0] || 'exec_summary';
+  });
 
   const overallScore = job?.overallConfidenceScore ?? 0;
   const overallPercent = Math.round(overallScore * 100);
@@ -142,6 +153,14 @@ export const ResearchDetail: React.FC<ResearchDetailProps> = ({ jobs, onNavigate
       100
     )}%, #e2e8f0 ${Math.min(Math.max(overallPercent, 0), 100)}% 100%)`
   };
+
+  // Keep active section in sync with allowed selection
+  useEffect(() => {
+    if (!allowedSections.length) return;
+    if (!allowedSections.includes(activeSection)) {
+      setActiveSection(allowedSections[0]);
+    }
+  }, [activeSection, allowedSections]);
 
   // Scroll to top when section changes
   useEffect(() => {
@@ -181,7 +200,9 @@ export const ResearchDetail: React.FC<ResearchDetailProps> = ({ jobs, onNavigate
               </div>
             )}
             <div className="space-y-4">
-              {SECTIONS_CONFIG.map((section) => {
+              {allowedSections.map((sectionId) => {
+                const section = SECTIONS_CONFIG.find((s) => s.id === sectionId);
+                if (!section) return null;
                 const secData = job.sections[section.id];
                 const status = secData?.status || 'pending';
                 let icon = <Circle size={16} className="text-slate-300" />;
@@ -344,7 +365,9 @@ export const ResearchDetail: React.FC<ResearchDetailProps> = ({ jobs, onNavigate
             </div>
 
             <nav className="space-y-1">
-              {SECTIONS_CONFIG.map(config => {
+              {allowedSections.map((sectionId) => {
+                const config = SECTIONS_CONFIG.find((section) => section.id === sectionId);
+                if (!config) return null;
                 const status = job.sections[config.id]?.status;
                 const isActive = activeSection === config.id;
 

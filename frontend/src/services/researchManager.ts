@@ -93,16 +93,16 @@ type ApiGroup = {
 };
 
 const STAGE_TO_SECTION_ID: Record<string, SectionId> = {
-  section_1: 'exec_summary',
-  section_2: 'financial_snapshot',
-  section_3: 'company_overview',
-  section_4: 'segment_analysis',
-  section_5: 'trends',
-  section_6: 'peer_benchmarking',
-  section_7: 'sku_opportunities',
-  section_8: 'recent_news',
-  section_9: 'conversation_starters',
-  section_10: 'appendix',
+  exec_summary: 'exec_summary',
+  financial_snapshot: 'financial_snapshot',
+  company_overview: 'company_overview',
+  segment_analysis: 'segment_analysis',
+  trends: 'trends',
+  peer_benchmarking: 'peer_benchmarking',
+  sku_opportunities: 'sku_opportunities',
+  recent_news: 'recent_news',
+  conversation_starters: 'conversation_starters',
+  appendix: 'appendix',
 };
 
 const SECTION_ID_TO_KEY: Record<SectionId, string> = {
@@ -625,9 +625,12 @@ const mapSections = (
   statuses?: ApiSectionStatus[],
   sectionData?: Record<string, unknown>,
   existing?: Record<SectionId, ResearchSection>,
+  selectedSections?: SectionId[],
 ): Record<SectionId, ResearchSection> => {
   const statusMap = new Map<string, ApiSectionStatus>();
   (statuses || []).forEach((s) => statusMap.set(s.stage, s));
+
+  const sectionSet = new Set<SectionId>(selectedSections || SECTIONS_CONFIG.map((section) => section.id));
 
   return SECTIONS_CONFIG.reduce((acc, config) => {
     const stage = Object.keys(STAGE_TO_SECTION_ID).find((k) => STAGE_TO_SECTION_ID[k] === config.id);
@@ -648,7 +651,9 @@ const mapSections = (
     acc[config.id] = {
       id: config.id,
       title: config.title,
-      status: toSectionStatus(rawStatus?.status || existingSection?.status),
+      status: sectionSet.has(config.id)
+        ? toSectionStatus(rawStatus?.status || existingSection?.status)
+        : SectionStatus.PENDING,
       content: formattedContent !== undefined ? formattedContent : existingSection?.content || '',
       confidence: confidenceToNumber(
         rawStatus?.confidence ??
@@ -656,7 +661,9 @@ const mapSections = (
           (rawSection as { confidence?: { level?: unknown } })?.confidence?.level ??
           existingSection?.confidence,
       ),
-      sources: extractSources(rawSection, rawStatus?.sourcesUsed) || existingSection?.sources || [],
+      sources: sectionSet.has(config.id)
+        ? extractSources(rawSection, rawStatus?.sourcesUsed) || existingSection?.sources || []
+        : [],
       lastError: rawStatus?.lastError || existingSection?.lastError,
       updatedAt: rawSection ? Date.now() : existingSection?.updatedAt,
     };
@@ -668,9 +675,10 @@ const mapSections = (
   const mapListItem = (item: ApiListItem): ResearchJob => {
     const metadata = (item.metadata as Record<string, unknown>) || {};
     const generated = item.generatedSections || [];
+    const fallbackTotal = item.selectedSections?.length || 10;
     const progress = item.progress !== null && item.progress !== undefined
       ? Math.round(item.progress * 100)
-      : (generated.length ? Math.round((generated.length / 10) * 100) : 0);
+      : (generated.length ? Math.round((generated.length / fallbackTotal) * 100) : 0);
     const status = (item.status as JobStatus) || 'idle';
   const currentAction = status === 'queued' ? 'Queued...' : '';
 
@@ -704,7 +712,7 @@ const mapJobFromStatus = (
   existing?: ResearchJob,
   overrides?: Partial<ResearchJob>,
 ): ResearchJob => {
-  const sections = mapSections(status.jobs, undefined, existing?.sections);
+  const sections = mapSections(status.jobs, undefined, existing?.sections, (status.selectedSections as SectionId[]) ?? existing?.selectedSections);
   const queuePosition = status.queuePosition ?? existing?.queuePosition ?? null;
   const derivedStatus = (status.status as JobStatus) || existing?.status || 'running';
   let currentAction = existing?.currentAction || '';
@@ -750,7 +758,7 @@ const mapJobFromStatus = (
 
 const mergeDetail = (job: ResearchJob, detail: ApiResearchDetail): ResearchJob => {
   const metadata = (detail.metadata as Record<string, unknown>) || {};
-  const sections = mapSections(detail.sectionStatuses, detail.sections, job.sections);
+  const sections = mapSections(detail.sectionStatuses, detail.sections, job.sections, job.selectedSections);
 
   return {
     ...job,
