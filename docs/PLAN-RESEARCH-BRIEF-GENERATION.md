@@ -8,7 +8,7 @@ Expand research brief generation with new preset workflows (Private Equity, Fina
 
 ## Action items
  [x] Audit current stages/dependencies and define required vs optional sections per preset (keep Industrials as current default; PE/FS/Generic use the specified section set).
-[ ] Define the PE brief spec from the spreadsheet and map it to prompt builders and output schema.
+ [x] Define the PE brief spec from the spreadsheet and map it to prompt builders and output schema.
 [ ] Define the FS brief spec from the spreadsheet and map it to prompt builders and output schema.
 [ ] Define the Generic brief spec from the spreadsheet and map it to prompt builders and output schema.
 [ ] Extend Prisma schema for reportType/preset, selectedSections, userAddedPrompt, visibility settings (Private/Group/General), RBAC entities, group memberships, and a reportType-aware uniqueness key.
