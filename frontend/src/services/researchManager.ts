@@ -78,6 +78,7 @@ type ApiListItem = {
   costUsd?: number | null;
   thumbnailUrl?: string | null;
   generatedSections?: number[];
+  groups?: Array<{ id: string; name: string; slug: string }>;
 };
 
 type ApiMe = {
@@ -694,6 +695,7 @@ const mapSections = (
     reportType: (metadata.reportType as ReportType) || item.reportType || undefined,
     visibilityScope: (metadata.visibilityScope as VisibilityScope) || item.visibilityScope || undefined,
     selectedSections: (metadata.selectedSections as SectionId[]) || (item.selectedSections as SectionId[]) || undefined,
+    groups: item.groups || [],
     userAddedPrompt: (metadata.userAddedPrompt as string) || item.userAddedPrompt || null,
     queuePosition: null,
     overallConfidence: (metadata.overallConfidence as string) || item.overallConfidence || null,
@@ -775,6 +777,7 @@ const mergeDetail = (job: ResearchJob, detail: ApiResearchDetail): ResearchJob =
     reportType: (metadata.reportType as ReportType) || job.reportType,
     visibilityScope: (metadata.visibilityScope as VisibilityScope) || job.visibilityScope,
     selectedSections: (metadata.selectedSections as SectionId[]) || job.selectedSections,
+    groups: detail.groups ?? job.groups ?? [],
     userAddedPrompt: (metadata.userAddedPrompt as string) || detail.userAddedPrompt || job.userAddedPrompt || null,
     overallConfidence:
       (metadata.overallConfidence as string) || detail.overallConfidence || job.overallConfidence || null,

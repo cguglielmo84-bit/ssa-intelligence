@@ -107,6 +107,7 @@ export const NewResearch: React.FC<NewResearchProps> = ({ createJob, runJob, job
   const [reportType, setReportType] = useState<ReportType>('GENERIC');
   const [selectedSections, setSelectedSections] = useState<SectionId[]>(DEFAULT_SECTIONS_BY_REPORT.GENERIC);
   const [visibilityScope, setVisibilityScope] = useState<VisibilityScope>('PRIVATE');
+  const [visibilitySelection, setVisibilitySelection] = useState<string>('PRIVATE');
   const [selectedGroupIds, setSelectedGroupIds] = useState<string[]>([]);
   const [userPrompt, setUserPrompt] = useState('');
 
@@ -135,10 +136,16 @@ export const NewResearch: React.FC<NewResearchProps> = ({ createJob, runJob, job
     setSelectedSections(ensureDependencies(Array.from(next)));
   };
 
-  const toggleGroup = (groupId: string) => {
-    setSelectedGroupIds((prev) =>
-      prev.includes(groupId) ? prev.filter((id) => id !== groupId) : [...prev, groupId]
-    );
+  const handleVisibilityChange = (value: string) => {
+    setVisibilitySelection(value);
+    if (value.startsWith('GROUP:')) {
+      const groupId = value.slice('GROUP:'.length);
+      setVisibilityScope('GROUP');
+      setSelectedGroupIds(groupId ? [groupId] : []);
+      return;
+    }
+    setVisibilityScope(value as VisibilityScope);
+    setSelectedGroupIds([]);
   };
 
   const handleSubmit = async (e?: React.FormEvent, force = false) => {
@@ -278,12 +285,16 @@ export const NewResearch: React.FC<NewResearchProps> = ({ createJob, runJob, job
               <div>
                 <label className="block text-sm font-semibold text-slate-700 mb-2">Visibility</label>
                 <select
-                  value={visibilityScope}
-                  onChange={(e) => setVisibilityScope(e.target.value as VisibilityScope)}
+                  value={visibilitySelection}
+                  onChange={(e) => handleVisibilityChange(e.target.value)}
                   className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-lg focus:bg-white focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 outline-none transition-all"
                 >
                   <option value="PRIVATE">Private (Only Me)</option>
-                  {canShareToGroups ? <option value="GROUP">My Groups</option> : null}
+                  {availableGroups.map((group) => (
+                    <option key={group.id} value={`GROUP:${group.id}`}>
+                      Group: {group.name}
+                    </option>
+                  ))}
                   <option value="GENERAL">General Use</option>
                 </select>
                 {!canShareToGroups && (
@@ -291,27 +302,6 @@ export const NewResearch: React.FC<NewResearchProps> = ({ createJob, runJob, job
                 )}
               </div>
             </div>
-
-            {visibilityScope === 'GROUP' && canShareToGroups && (
-              <div>
-                <label className="block text-sm font-semibold text-slate-700 mb-2">Share With Groups</label>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                  {availableGroups.map((group) => {
-                    const checked = selectedGroupIds.includes(group.id);
-                    return (
-                      <label key={group.id} className="flex items-center gap-2 text-sm text-slate-600">
-                        <input
-                          type="checkbox"
-                          checked={checked}
-                          onChange={() => toggleGroup(group.id)}
-                        />
-                        {group.name}
-                      </label>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
 
             <div>
               <label className="block text-sm font-semibold text-slate-700 mb-2">Sections to Generate</label>

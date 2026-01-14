@@ -73,6 +73,11 @@ export async function listResearch(req: Request, res: Response) {
           subJobs: {
             where: { status: 'completed' },
             select: { stage: true }
+          },
+          jobGroups: {
+            select: {
+              group: { select: { id: true, name: true, slug: true } }
+            }
           }
         }
       }),
@@ -127,6 +132,8 @@ export async function listResearch(req: Request, res: Response) {
           return sectionMap[subJob.stage] || 0;
         })
         .filter(n => n > 0)
+      ,
+      groups: job.jobGroups.map((entry) => entry.group)
     }));
 
     return res.json({

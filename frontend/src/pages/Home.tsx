@@ -95,9 +95,12 @@ export const Home: React.FC<HomeProps> = ({ jobs, onNavigate, onCancel, onDelete
     return 'Generic';
   };
 
-  const visibilityLabel = (scope?: string | null) => {
+  const visibilityLabel = (scope?: string | null, groups?: Array<{ name: string }>) => {
     if (scope === 'GENERAL') return 'General';
-    if (scope === 'GROUP') return 'Group';
+    if (scope === 'GROUP') {
+      const names = (groups || []).map((group) => group.name).filter(Boolean);
+      return names.length ? names.join(', ') : 'Group';
+    }
     return 'Private';
   };
 
@@ -437,7 +440,7 @@ export const Home: React.FC<HomeProps> = ({ jobs, onNavigate, onCancel, onDelete
                               {job.industry || 'No industry'}
                             </td>
                             <td className="px-6 py-5 whitespace-nowrap text-sm text-slate-600 align-top">
-                              {visibilityLabel(job.visibilityScope)}
+                              {visibilityLabel(job.visibilityScope, job.groups)}
                             </td>
                             <td className="px-6 py-5 whitespace-nowrap text-sm text-slate-600 align-top">
                               {formatDate(job.createdAt)}

@@ -50,6 +50,7 @@ export interface ResearchJob {
   visibilityScope?: VisibilityScope;
   selectedSections?: SectionId[];
   groupIds?: string[];
+  groups?: Array<{ id: string; name: string; slug: string }>;
   userAddedPrompt?: string | null;
   queuePosition?: number | null;
   overallConfidence?: string | null;
