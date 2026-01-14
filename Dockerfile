@@ -1,7 +1,7 @@
 # Multi-stage build for full app (backend + frontend)
 # This does not change local dev; existing backend Dockerfile/docker-compose remain untouched.
 
-FROM mcr.microsoft.com/playwright:v1.47.2-jammy AS backend-build
+FROM mcr.microsoft.com/playwright:v1.57.0-jammy AS backend-build
 WORKDIR /app/backend
 
 COPY backend/package*.json ./
@@ -21,7 +21,7 @@ RUN npm ci
 COPY frontend ./
 RUN npm run build
 
-FROM mcr.microsoft.com/playwright:v1.47.2-jammy AS runner
+FROM mcr.microsoft.com/playwright:v1.57.0-jammy AS runner
 WORKDIR /app
 ENV NODE_ENV=production
 ENV PORT=3000

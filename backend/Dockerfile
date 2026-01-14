@@ -1,7 +1,7 @@
 # Playwright-ready Dockerfile for SSA Intelligence Backend
 
 # Stage 1: Dependencies (Playwright base image includes Chromium and deps)
-FROM mcr.microsoft.com/playwright:v1.47.2-jammy AS deps
+FROM mcr.microsoft.com/playwright:v1.57.0-jammy AS deps
 WORKDIR /app
 
 # Install dependencies
@@ -9,7 +9,7 @@ COPY package.json package-lock.json* ./
 RUN npm ci --only=production
 
 # Stage 2: Builder
-FROM mcr.microsoft.com/playwright:v1.47.2-jammy AS builder
+FROM mcr.microsoft.com/playwright:v1.57.0-jammy AS builder
 WORKDIR /app
 
 # Copy dependencies
@@ -29,7 +29,7 @@ RUN npx prisma generate
 RUN npm run build
 
 # Stage 3: Production
-FROM mcr.microsoft.com/playwright:v1.47.2-jammy AS runner
+FROM mcr.microsoft.com/playwright:v1.57.0-jammy AS runner
 WORKDIR /app
 
 # Set environment
