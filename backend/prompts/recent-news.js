@@ -150,7 +150,7 @@ interface Section8Output {
 - Timeline/milestones if mentioned
 
 **Example:**
-"Signals confidence in European aerospace demand recovery; will add 150 jobs and 20% capacity by Q4 2025. Strengthens competitive position vs. Bosch Rexroth in German market by expanding high-precision hydraulics manufacturing. Investment follows three consecutive quarters of order growth in commercial aerospace segment."
+"Signals confidence in European demand recovery; will add 150 jobs and 20% capacity by Q4 2025. Strengthens competitive position in the German market by expanding high-precision capabilities. Investment follows three consecutive quarters of order growth in a core segment."
 
 ### 5. Geography Relevance (1-2 sentences)
 **Explain ${geography}-specific impact:**
@@ -159,7 +159,7 @@ interface Section8Output {
 - Implications for local market, customers, or competition
 
 **Example:**
-"Direct investment in target region; largest German facility expansion in 5 years. Positions Stuttgart as European center of excellence for aerospace hydraulics, consolidating previously distributed capabilities."
+"Direct investment in target region; largest German facility expansion in 5 years. Positions Stuttgart as a European center of excellence, consolidating previously distributed capabilities."
 
 ### 6. Category
 **Assign ONE category:**
@@ -187,7 +187,7 @@ interface Section8Output {
 
 2. **Tier 2: Global news with clear ${geography} impact** (Include selectively)
    - Company acquisition that affects ${geography} operations
-   - Global product launch with regional manufacturing
+   - Global product launch with regional operations
    - Corporate strategy shift impacting ${geography}
 
 3. **Tier 3: Global news with implied ${geography} relevance** (Include rarely, only if significant)

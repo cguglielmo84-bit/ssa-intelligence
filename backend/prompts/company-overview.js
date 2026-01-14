@@ -34,7 +34,7 @@ ${foundationJson}
 **Extract:**
 - **Core business:** What products/services the company provides
 - **Customer base:** Who they serve (industries, end markets)
-- **Business model:** How they make money (OEM, aftermarket, distribution, etc.)
+- **Business model:** How they make money (product, services, subscription, transaction, recurring revenue)
 - **Competitive positioning:** Market position (leader, challenger, niche)
 - **Segments:** Primary business segments with brief descriptions
 - **Geography presence:** Global footprint and key regions
@@ -50,11 +50,11 @@ ${foundationJson}
 **Search for:**
 - "${companyName} ${geography} facilities"
 - "${companyName} ${geography} locations" OR "${companyName} ${geography} operations"
-- "${companyName} manufacturing footprint"
+- "${companyName} operational footprint"
 - "${companyName} global locations 2024"
 
 **Extract for ${geography}:**
-- **Manufacturing facilities:** Locations, size, products made
+- **Core facilities:** Locations, size, products made
 - **R&D centers:** Locations, focus areas
 - **Distribution centers:** Locations, capabilities
 - **Sales offices:** Major office locations
@@ -189,21 +189,21 @@ interface Section3Output {
 **Overview paragraph (4-6 sentences):**
 
 1. **Company core business** (1-2 sentences)
-   - "Parker Hannifin is a global leader in motion and control technologies, providing precision-engineered solutions across aerospace, industrial, and mobility markets (S1)."
+   - "${companyName} is a global provider of products and services across multiple end markets, with a portfolio spanning priority business lines (S1)."
 
 2. **Revenue/scale** (1 sentence)
    - "The company generated $18.5B in revenue in FY2024 with 58,000 employees globally (S1)."
 
 3. **${geography} operations** (2-3 sentences - 75-80% FOCUS)
-   - "**${geography} operations** represent 18% of global revenue with 12 manufacturing facilities and 4,200 employees concentrated in hydraulics and aerospace segments (S1, S3)."
-   - "The region serves primarily industrial OEMs and aerospace customers, with strong presence in automotive and machine building markets (S3)."
+   - "**${geography} operations** represent 18% of global revenue with 12 facilities and 4,200 employees concentrated in priority business lines (S1, S3)."
+   - "The region serves primarily enterprise and commercial customers, with strong presence in automotive and machine building markets (S3)."
 
 **Segment descriptions:**
 - For EACH major segment (typically 3-5 segments)
 - 2-3 sentences per segment
 - Include revenue % of total if available
 - **Critical:** Add "geography_relevance" field explaining ${geography} presence
-  - "Hydraulics segment has 8 manufacturing facilities in ${geography}, representing 25% of segment global capacity (S3)"
+  - "Hydraulics segment has 8 Core facilities in ${geography}, representing 25% of segment global capacity (S3)"
 
 **Geography positioning paragraph (3-4 sentences):**
 - Market position in ${geography}
@@ -215,10 +215,10 @@ interface Section3Output {
 
 **Summary (3-4 sentences):**
 - Total facilities in ${geography}
-- Types of facilities (manufacturing, R&D, distribution)
+- Types of facilities (operations, R&D, distribution, offices)
 - Major facility locations
 - Recent expansions or changes
-- **Compare to global:** "${geography} hosts 12 of 85 global manufacturing facilities (14% of footprint) (S1, S3)"
+- **Compare to global:** "${geography} hosts 12 of 85 global Core facilities (14% of footprint) (S1, S3)"
 
 **Facilities array:**
 - List ALL ${geography} facilities (use foundation data + new research)
@@ -248,8 +248,8 @@ interface Section3Output {
 **Geography-specific initiatives (bullet array):**
 - ONLY initiatives that specifically mention ${geography}
 - Examples:
-  - "€75M hydraulics capacity expansion in Stuttgart, completion Q4 2025 (S8)"
-  - "New aerospace R&D center in Munich focusing on sustainable aviation, 150 engineers (S12)"
+  - "€75M capacity expansion in Stuttgart, completion Q4 2025 (S8)"
+  - "New R&D center in Munich focusing on sustainable aviation, 150 engineers (S12)"
 
 ### 3.4 Key Leadership
 
@@ -274,15 +274,15 @@ interface Section3Output {
 **CORRECT patterns:**
 
 **3.1 Business Description:**
-- "**${geography}** operations focus on hydraulics and aerospace, serving industrial OEMs and Airbus supply chain..."
-- "Regional market position is #2 in hydraulics behind Bosch Rexroth, with estimated 18% market share (S7)..."
+- "**${geography}** operations focus on priority business lines, serving core regional customers and partners..."
+- "Regional market position is #2 in a key segment, with estimated 18% market share (S7)..."
 
 **3.2 Geographic Footprint:**
-- "**${geography}** hosts 12 manufacturing facilities concentrated in southern region..."
-- "Stuttgart hydraulics plant is largest in Europe with 850 employees and 92% OEE (S3)..."
+- "**${geography}** hosts 12 Core facilities concentrated in southern region..."
+- "Largest regional operations site employs 850 people with leading utilization metrics (S3)..."
 
 **3.3 Strategic Priorities:**
-- "Digital transformation priority includes €25M investment in ${geography} factory automation (S5)..."
+- "Digital transformation priority includes €25M investment in ${geography} process automation (S5)..."
 - "**${geography}** is pilot region for AI-powered predictive maintenance program across 6 facilities (S8)..."
 
 **3.4 Key Leadership:**
@@ -461,3 +461,4 @@ export function formatSection3ForDocument(output) {
     return markdown;
 }
 //# sourceMappingURL=company-overview.js.map
+

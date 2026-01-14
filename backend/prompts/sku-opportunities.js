@@ -84,7 +84,7 @@ Reference these when mapping opportunities:
 **When to map:**
 - Capacity utilization <80%
 - Production bottlenecks mentioned
-- OEE <75%
+- Operational efficiency index <75%
 - Quality/defect issues
 - Equipment downtime problems
 
@@ -212,7 +212,7 @@ interface Section7Output {
 ## GEOGRAPHY FOCUS (75-80%)
 
 **Prioritize problems that are:**
-1. **Geography-specific:** "${geography} plants OEE of 72%..." → HIGH
+1. **Geography-specific:** "${geography} operations show efficiency index of 72%..." → HIGH
 2. **Regional underperformance:** "${geography} DSO worse than global..." → HIGH
 3. **Global with regional relevance:** "Company-wide ERP includes ${geography}..." → MEDIUM
 

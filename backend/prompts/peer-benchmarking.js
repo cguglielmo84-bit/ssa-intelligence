@@ -46,8 +46,8 @@ ${section2Json}
 **Selection criteria for peers:**
 
 **Must have:**
-- Geographic overlap with ${geography} (operations, manufacturing, or significant revenue)
-- Business model overlap (industrial, B2B, similar segments)
+- Geographic overlap with ${geography} (operations, facilities, or significant revenue)
+- Business model overlap (sector, B2B, similar segments)
 - Publicly traded (need financial data for comparison)
 - Similar scale (0.5x to 2x revenue of ${companyName})
 
@@ -182,7 +182,7 @@ Focus on ${geography}-specific competitive standing
 
 ✅ **CORRECT patterns:**
 - "Superior margin performance driven by higher capacity utilization in **${geography}** facilities (88% vs peer average of 82%)"
-- "In **${geography}** hydraulics market specifically, company ranks #2 behind [competitor]"
+- "In **${geography}** a key market segment, company ranks #2 behind [competitor]"
 
 ❌ **WRONG patterns:**
 - Pure global comparisons without regional context
