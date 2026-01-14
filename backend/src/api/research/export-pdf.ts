@@ -101,7 +101,10 @@ export async function exportResearchPdf(req: Request, res: Response) {
 
     let browser;
     try {
-      browser = await chromium.launch({ headless: true });
+      browser = await chromium.launch({
+        headless: true,
+        args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage']
+      });
     } catch (err) {
       console.error('Playwright launch failed:', err);
       return res.status(500).json({ error: 'PDF export unavailable: browser failed to start' });
