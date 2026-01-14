@@ -65,7 +65,8 @@ export const REPORT_TYPE_ADDENDUMS: AddendumMap = {
 - Keep metrics limited and interpretive; avoid forcing detailed line-item KPIs.`,
     GENERIC: `## REPORT TYPE ADDENDUM: GENERIC
 - Include only material metrics tied to the topic of interest.
-- Prefer concise tables and short interpretation over exhaustive coverage.`
+- Prefer concise tables and short interpretation over exhaustive coverage.
+- Keep the summary focused on 2-3 material drivers within the 4-6 sentence limit.`
   },
   company_overview: {
     INDUSTRIALS: `## REPORT TYPE ADDENDUM: INDUSTRIALS
@@ -79,7 +80,8 @@ export const REPORT_TYPE_ADDENDUMS: AddendumMap = {
 - Highlight investment strategy and operating model signals.`,
     GENERIC: `## REPORT TYPE ADDENDUM: GENERIC
 - Keep overview concise and context-specific; prioritize key products/services and segments.
-- Limit segments to the most relevant and high-signal items.`
+- Limit segments to the most relevant and high-signal items.
+- Avoid deep dives; keep descriptions short and decision-oriented.`
   },
   segment_analysis: {
     INDUSTRIALS: `## REPORT TYPE ADDENDUM: INDUSTRIALS
@@ -92,7 +94,8 @@ export const REPORT_TYPE_ADDENDUMS: AddendumMap = {
 - Use portfolio clusters or sector buckets instead of traditional product segments.
 - Emphasize operating complexity and value-creation themes within clusters.`,
     GENERIC: `## REPORT TYPE ADDENDUM: GENERIC
-- Limit to key segments only; focus on the most material drivers and context.`
+- Limit to key segments only; focus on the most material drivers and context.
+- Keep segment narratives brief and avoid excess detail.`
   },
   trends: {
     INDUSTRIALS: `## REPORT TYPE ADDENDUM: INDUSTRIALS
@@ -105,7 +108,8 @@ export const REPORT_TYPE_ADDENDUMS: AddendumMap = {
 - Emphasize deal environment, sector tailwinds/headwinds, and value-creation themes.
 - Tie trends to portfolio exposure and strategy.`,
     GENERIC: `## REPORT TYPE ADDENDUM: GENERIC
-- Include only 2-4 high-impact trends; explain why they matter now.`
+- Include only 2-4 high-impact trends; explain why they matter now.
+- Keep trend rationale concise.`
   },
   peer_benchmarking: {
     INDUSTRIALS: `## REPORT TYPE ADDENDUM: INDUSTRIALS
@@ -118,7 +122,8 @@ export const REPORT_TYPE_ADDENDUMS: AddendumMap = {
 - Compare to peer firms or similar portfolio strategies where meaningful.
 - Avoid forcing detailed financial comparisons if not available.`,
     GENERIC: `## REPORT TYPE ADDENDUM: GENERIC
-- Keep peer set small and focus on 2-3 differentiators.`
+- Keep peer set small and focus on 2-3 differentiators.
+- Keep benchmarking commentary brief and high-signal.`
   },
   sku_opportunities: {
     INDUSTRIALS: `## REPORT TYPE ADDENDUM: INDUSTRIALS
@@ -131,7 +136,8 @@ export const REPORT_TYPE_ADDENDUMS: AddendumMap = {
 - Translate value-creation themes into SSA-relevant problem areas.
 - Focus on operating model improvements and transformation themes.`,
     GENERIC: `## REPORT TYPE ADDENDUM: GENERIC
-- Limit to 1-3 themes; prioritize relevance to the stated context.`
+- Limit to 1-3 themes; prioritize relevance to the stated context.
+- Keep issue descriptions short and direct.`
   },
   recent_news: {
     INDUSTRIALS: `## REPORT TYPE ADDENDUM: INDUSTRIALS
@@ -176,5 +182,10 @@ export function appendReportTypeAddendum(
   if (!reportType) return basePrompt;
   const addendum = REPORT_TYPE_ADDENDUMS[sectionId]?.[reportType];
   if (!addendum) return basePrompt;
+  const marker = '## CRITICAL INSTRUCTIONS';
+  const insertion = `${marker}\n\n### CRITICAL REPORT TYPE ADDENDUM\n\n${addendum}\n\n`;
+  if (basePrompt.includes(marker)) {
+    return basePrompt.replace(marker, insertion);
+  }
   return `${basePrompt}\n\n---\n\n${addendum}\n`;
 }

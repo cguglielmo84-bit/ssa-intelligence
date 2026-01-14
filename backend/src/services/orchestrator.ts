@@ -627,9 +627,11 @@ export class ResearchOrchestrator {
 
     const basePrompt = config.promptBuilder(input);
     const userPrompt = typeof job.userAddedPrompt === 'string' ? job.userAddedPrompt.trim() : '';
-    if (!userPrompt) return basePrompt;
+    const prompt = userPrompt
+      ? `${basePrompt}\n\n---\n\n## USER-ADDED CONTEXT\n\n${userPrompt}\n`
+      : basePrompt;
 
-    return `${basePrompt}\n\n---\n\n## USER-ADDED CONTEXT\n\n${userPrompt}\n`;
+    return prompt;
   }
 
   /**
