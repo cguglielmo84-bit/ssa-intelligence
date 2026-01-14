@@ -218,7 +218,7 @@ export const NewResearch: React.FC<NewResearchProps> = ({ createJob, runJob, job
           </div>
           <h2 className="text-3xl font-bold text-slate-900 mb-3">Who are we analyzing today?</h2>
           <p className="text-slate-500 text-lg">
-            Enter a company name to generate a comprehensive 10-point research dossier including financials, competitors, and market opportunities.
+            Enter a company name to generate a comprehensive research dossier.
           </p>
         </div>
 
@@ -270,7 +270,7 @@ export const NewResearch: React.FC<NewResearchProps> = ({ createJob, runJob, job
                   className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-lg focus:bg-white focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 outline-none transition-all"
                 >
                   <option value="GENERIC">Company Brief (Generic)</option>
-                  <option value="INDUSTRIALS">Industrials (Full Report)</option>
+                  <option value="INDUSTRIALS">Industrials Brief</option>
                   <option value="PE">Private Equity Brief</option>
                   <option value="FS">Financial Services Brief</option>
                 </select>
