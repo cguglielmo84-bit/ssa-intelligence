@@ -379,110 +379,143 @@ export const Home: React.FC<HomeProps> = ({ jobs, onNavigate, onCancel, onDelete
                 </div>
               </div>
               <div className="p-6 overflow-y-auto">
-                <div className="space-y-3">
-                  {group.jobs.map((job) => {
-                    const sectionList = formatSectionList(job.selectedSections);
-                    return (
-                      <div
-                        key={job.id}
-                        className="border border-slate-200 rounded-xl p-4 bg-white shadow-sm hover:shadow-md transition-shadow"
-                      >
-                        <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
-                          <div className="space-y-2">
-                            <div className="flex flex-wrap items-center gap-2">
-                              <span className="text-base font-semibold text-slate-900">
-                                {reportTypeLabel(job.reportType)}
-                              </span>
-                              <span className="text-xs text-slate-500">
-                                {formatDate(job.createdAt)}
-                              </span>
+                <div className="border border-slate-200 rounded-lg overflow-hidden bg-white">
+                  <table className="min-w-full divide-y divide-slate-200">
+                    <thead className="bg-slate-50">
+                      <tr>
+                        <th className="px-6 py-4 text-left text-sm font-semibold text-slate-900 tracking-wide w-1/5">
+                          Report
+                        </th>
+                        <th className="px-6 py-4 text-left text-sm font-semibold text-slate-900 tracking-wide">
+                          Geography
+                        </th>
+                        <th className="px-6 py-4 text-left text-sm font-semibold text-slate-900 tracking-wide">
+                          Industry
+                        </th>
+                        <th className="px-6 py-4 text-left text-sm font-semibold text-slate-900 tracking-wide">
+                          Visibility
+                        </th>
+                        <th className="px-6 py-4 text-left text-sm font-semibold text-slate-900 tracking-wide">
+                          Date
+                        </th>
+                        <th className="px-6 py-4 text-left text-sm font-semibold text-slate-900 tracking-wide">
+                          Status
+                        </th>
+                        <th className="px-6 py-4 text-left text-sm font-semibold text-slate-900 tracking-wide">
+                          Actions
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody className="bg-white divide-y divide-slate-100">
+                      {group.jobs.map((job) => {
+                        const sectionList = formatSectionList(job.selectedSections);
+                        return (
+                          <tr key={job.id} className="hover:bg-slate-50 transition-colors">
+                            <td className="px-6 py-5 align-top">
+                              <div className="space-y-2">
+                                <div className="text-sm font-semibold text-slate-900">
+                                  {reportTypeLabel(job.reportType)}
+                                </div>
+                                <details>
+                                  <summary className="cursor-pointer text-xs text-slate-500">Sections</summary>
+                                  <div className="mt-2 text-sm text-slate-700 whitespace-pre-wrap">{sectionList}</div>
+                                </details>
+                                {job.userAddedPrompt ? (
+                                  <button
+                                    onClick={() => setContextJob(job)}
+                                    className="inline-flex items-center rounded-full border border-brand-200 bg-brand-50 px-2.5 py-1 text-[11px] font-semibold text-brand-700 hover:bg-brand-100"
+                                  >
+                                    Custom Context
+                                  </button>
+                                ) : null}
+                              </div>
+                            </td>
+                            <td className="px-6 py-5 whitespace-nowrap text-sm text-slate-600 align-top">
+                              {job.geography || 'Global'}
+                            </td>
+                            <td className="px-6 py-5 whitespace-nowrap text-sm text-slate-600 align-top">
+                              {job.industry || 'No industry'}
+                            </td>
+                            <td className="px-6 py-5 whitespace-nowrap text-sm text-slate-600 align-top">
+                              {visibilityLabel(job.visibilityScope)}
+                            </td>
+                            <td className="px-6 py-5 whitespace-nowrap text-sm text-slate-600 align-top">
+                              {formatDate(job.createdAt)}
+                            </td>
+                            <td className="px-6 py-5 whitespace-nowrap align-top">
                               <StatusPill status={job.status} size="sm" />
-                            </div>
-                            <div className="text-xs text-slate-500">
-                              {job.geography || 'Global'} · {job.industry || 'No industry'} · Visibility: {visibilityLabel(job.visibilityScope)}
-                            </div>
-                            <details>
-                              <summary className="cursor-pointer text-xs text-slate-500">Sections</summary>
-                              <div className="mt-2 text-sm text-slate-700 whitespace-pre-wrap">{sectionList}</div>
-                            </details>
-                            {job.userAddedPrompt ? (
-                              <button
-                                onClick={() => setContextJob(job)}
-                                className="inline-flex items-center rounded-full border border-brand-200 bg-brand-50 px-2.5 py-1 text-[11px] font-semibold text-brand-700 hover:bg-brand-100"
-                              >
-                                Custom Context
-                              </button>
-                            ) : null}
-                          </div>
-
-                          <div className="flex items-start gap-3">
-                            <button
-                              onClick={() => onNavigate(`/research/${job.id}`)}
-                              className="text-xs bg-brand-50 text-brand-700 font-semibold px-3 py-2 rounded-lg hover:bg-brand-100 transition-colors"
-                            >
-                              View Report
-                            </button>
-                            <div className="relative">
-                              <button
-                                onClick={(event) => handleMenuToggle(job.id, event)}
-                                className="w-9 h-9 rounded-full bg-slate-100 flex items-center justify-center text-slate-500 hover:bg-slate-200"
-                              >
-                                <MoreHorizontal size={16} />
-                              </button>
-                              {openMenuId === job.id && (
-                                createPortal(
-                                  <>
-                                    <div
-                                      className="fixed inset-0 z-40"
-                                      onClick={() => setOpenMenuId(null)}
-                                    ></div>
-                                    <div
-                                      className="fixed z-50 w-44 bg-white border border-slate-200 rounded-lg shadow-lg"
-                                      style={{ top: menuPosition?.top ?? 0, left: menuPosition?.left ?? 0 }}
-                                    >
-                                      <button
-                                        onClick={() => handleExport(job)}
-                                        disabled={exportingId === job.id}
-                                        className="w-full text-left px-3 py-2 text-sm hover:bg-slate-50 flex items-center gap-2 disabled:opacity-60"
-                                      >
-                                        {exportingId === job.id ? <Loader2 size={14} className="animate-spin text-slate-500" /> : null}
-                                        Export PDF
-                                      </button>
-                                      <button
-                                        disabled
-                                        className="w-full text-left px-3 py-2 text-sm text-slate-400 cursor-not-allowed flex items-center"
-                                        title="Coming soon"
-                                      >
-                                        Rerun
-                                      </button>
-                                      <button
-                                        onClick={() => {
-                                          if (!onDelete) return;
-                                          if (job.status === 'running' || job.status === 'queued') return;
-                                          const confirmed = window.confirm('Delete this report? This cannot be undone.');
-                                          if (!confirmed) return;
-                                          setDeletingId(job.id);
-                                          setOpenMenuId(null);
-                                          onDelete(job.id)
-                                            .catch(() => {})
-                                            .finally(() => setDeletingId(null));
-                                        }}
-                                        disabled={!onDelete || job.status === 'running' || job.status === 'queued' || deletingId === job.id}
-                                        className="w-full text-left px-3 py-2 text-sm text-rose-700 hover:bg-rose-50 disabled:opacity-60"
-                                      >
-                                        {deletingId === job.id ? 'Deleting...' : 'Delete'}
-                                      </button>
-                                    </div>
-                                  </>,
-                                  document.body
-                                )
-                              )}
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    );
-                  })}
+                            </td>
+                            <td className="px-6 py-5 whitespace-nowrap text-left align-top">
+                              <div className="flex items-center justify-start gap-3">
+                                <button
+                                  onClick={() => onNavigate(`/research/${job.id}`)}
+                                  className="inline-flex items-center text-xs bg-brand-50 text-brand-700 font-semibold px-2 py-0.5 rounded-lg hover:bg-brand-100 transition-colors"
+                                >
+                                  View Report
+                                </button>
+                                <div className="relative">
+                                  <button
+                                    onClick={(event) => handleMenuToggle(job.id, event)}
+                                    className="w-6 h-6 rounded-full bg-slate-100 flex items-center justify-center text-slate-500 hover:bg-slate-200"
+                                  >
+                                    <MoreHorizontal size={14} />
+                                  </button>
+                                  {openMenuId === job.id && (
+                                    createPortal(
+                                      <>
+                                        <div
+                                          className="fixed inset-0 z-40"
+                                          onClick={() => setOpenMenuId(null)}
+                                        ></div>
+                                        <div
+                                          className="fixed z-50 w-44 bg-white border border-slate-200 rounded-lg shadow-lg"
+                                          style={{ top: menuPosition?.top ?? 0, left: menuPosition?.left ?? 0 }}
+                                        >
+                                          <button
+                                            onClick={() => handleExport(job)}
+                                            disabled={exportingId === job.id}
+                                            className="w-full text-left px-3 py-2 text-sm hover:bg-slate-50 flex items-center gap-2 disabled:opacity-60"
+                                          >
+                                            {exportingId === job.id ? <Loader2 size={14} className="animate-spin text-slate-500" /> : null}
+                                            Export PDF
+                                          </button>
+                                          <button
+                                            disabled
+                                            className="w-full text-left px-3 py-2 text-sm text-slate-400 cursor-not-allowed flex items-center"
+                                            title="Coming soon"
+                                          >
+                                            Rerun
+                                          </button>
+                                          <button
+                                            onClick={() => {
+                                              if (!onDelete) return;
+                                              if (job.status === 'running' || job.status === 'queued') return;
+                                              const confirmed = window.confirm('Delete this report? This cannot be undone.');
+                                              if (!confirmed) return;
+                                              setDeletingId(job.id);
+                                              setOpenMenuId(null);
+                                              onDelete(job.id)
+                                                .catch(() => {})
+                                                .finally(() => setDeletingId(null));
+                                            }}
+                                            disabled={!onDelete || job.status === 'running' || job.status === 'queued' || deletingId === job.id}
+                                            className="w-full text-left px-3 py-2 text-sm text-rose-700 hover:bg-rose-50 disabled:opacity-60"
+                                          >
+                                            {deletingId === job.id ? 'Deleting...' : 'Delete'}
+                                          </button>
+                                        </div>
+                                      </>,
+                                      document.body
+                                    )
+                                  )}
+                                </div>
+                              </div>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
                 </div>
               </div>
             </div>
