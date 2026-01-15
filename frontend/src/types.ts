@@ -8,6 +8,14 @@ export type SectionId =
   | 'exec_summary'
   | 'financial_snapshot'
   | 'company_overview'
+  | 'investment_strategy'
+  | 'portfolio_snapshot'
+  | 'deal_activity'
+  | 'deal_team'
+  | 'portfolio_maturity'
+  | 'leadership_and_governance'
+  | 'strategic_priorities'
+  | 'operating_capabilities'
   | 'segment_analysis'
   | 'trends'
   | 'peer_benchmarking'
@@ -64,6 +72,40 @@ export interface ResearchJob {
   progress: number; // 0-100
   currentAction: string; // "Analyzing annual reports..."
   sections: Record<SectionId, ResearchSection>;
+}
+
+export type BlueprintInputType = 'text' | 'textarea' | 'select';
+
+export interface BlueprintInputOption {
+  value: string;
+  label: string;
+}
+
+export interface BlueprintInput {
+  id: string;
+  label: string;
+  type: BlueprintInputType;
+  required: boolean;
+  options?: BlueprintInputOption[];
+  helperText?: string;
+}
+
+export interface BlueprintSection {
+  id: SectionId;
+  title: string;
+  defaultSelected: boolean;
+  focus: string;
+  dependencies?: SectionId[];
+  reportSpecific?: boolean;
+}
+
+export interface ReportBlueprint {
+  version: string;
+  reportType: ReportType;
+  title: string;
+  purpose: string;
+  sections: BlueprintSection[];
+  inputs: BlueprintInput[];
 }
 
 export const SECTIONS_CONFIG: {id: SectionId, title: string}[] = [

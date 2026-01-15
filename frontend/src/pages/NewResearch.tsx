@@ -1,6 +1,6 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Loader2, Sparkles, CheckCircle2, Circle, ArrowRight, BrainCircuit } from 'lucide-react';
-import { ReportType, SectionId, SECTIONS_CONFIG, VisibilityScope } from '../types';
+import { BlueprintSection, ReportBlueprint, ReportType, SectionId, SECTIONS_CONFIG, VisibilityScope } from '../types';
 
 interface NewResearchProps {
   createJob: (
@@ -23,6 +23,7 @@ interface NewResearchProps {
     groups: Array<{ id: string; name: string; slug: string }>;
     loading: boolean;
   };
+  reportBlueprints?: ReportBlueprint[];
   onNavigate: (path: string) => void;
 }
 
@@ -70,6 +71,14 @@ const SECTION_DEPENDENCIES: Record<SectionId, SectionId[]> = {
   exec_summary: ['financial_snapshot', 'company_overview'],
   financial_snapshot: [],
   company_overview: [],
+  investment_strategy: [],
+  portfolio_snapshot: [],
+  deal_activity: [],
+  deal_team: [],
+  portfolio_maturity: [],
+  leadership_and_governance: [],
+  strategic_priorities: [],
+  operating_capabilities: [],
   segment_analysis: [],
   trends: [],
   peer_benchmarking: ['financial_snapshot'],
@@ -79,14 +88,24 @@ const SECTION_DEPENDENCIES: Record<SectionId, SectionId[]> = {
   appendix: []
 };
 
-const ensureDependencies = (sections: SectionId[]) => {
+const buildDependencyMap = (sections?: BlueprintSection[]) => {
+  const map: Record<SectionId, SectionId[]> = { ...SECTION_DEPENDENCIES };
+  if (sections) {
+    sections.forEach((section) => {
+      map[section.id] = section.dependencies?.length ? section.dependencies : map[section.id] || [];
+    });
+  }
+  return map;
+};
+
+const ensureDependencies = (sections: SectionId[], dependencies: Record<SectionId, SectionId[]>) => {
   const set = new Set<SectionId>(sections);
   set.add('appendix');
   let updated = true;
   while (updated) {
     updated = false;
     for (const section of Array.from(set)) {
-      const deps = SECTION_DEPENDENCIES[section] || [];
+      const deps = dependencies[section] || [];
       deps.forEach((dep) => {
         if (!set.has(dep)) {
           set.add(dep);
@@ -98,7 +117,14 @@ const ensureDependencies = (sections: SectionId[]) => {
   return Array.from(set);
 };
 
-export const NewResearch: React.FC<NewResearchProps> = ({ createJob, runJob, jobs, userContext, onNavigate }) => {
+export const NewResearch: React.FC<NewResearchProps> = ({
+  createJob,
+  runJob,
+  jobs,
+  userContext,
+  reportBlueprints = [],
+  onNavigate
+}) => {
   const [step, setStep] = useState<'input' | 'processing'>('input');
   const [formData, setFormData] = useState({ company: '', geo: '', industry: '' });
   const [currentJobId, setCurrentJobId] = useState<string | null>(null);
@@ -114,10 +140,31 @@ export const NewResearch: React.FC<NewResearchProps> = ({ createJob, runJob, job
   const activeJob = jobs.find(j => j.id === currentJobId);
   const availableGroups = userContext?.groups || [];
   const canShareToGroups = availableGroups.length > 0;
+  const reportBlueprint = useMemo(
+    () => reportBlueprints.find((bp) => bp.reportType === reportType),
+    [reportBlueprints, reportType]
+  );
+  const dependencyMap = useMemo(
+    () => buildDependencyMap(reportBlueprint?.sections),
+    [reportBlueprint]
+  );
+
+  const availableSections: BlueprintSection[] = useMemo(() => {
+    if (reportBlueprint?.sections) return reportBlueprint.sections;
+    return SECTIONS_CONFIG.map((section) => ({
+      ...section,
+      defaultSelected: true,
+      focus: '',
+      reportSpecific: false
+    }));
+  }, [reportBlueprint]);
 
   useEffect(() => {
-    setSelectedSections(ensureDependencies(DEFAULT_SECTIONS_BY_REPORT[reportType]));
-  }, [reportType]);
+    const defaults = reportBlueprint?.sections
+      ? reportBlueprint.sections.filter((section) => section.defaultSelected).map((section) => section.id)
+      : DEFAULT_SECTIONS_BY_REPORT[reportType];
+    setSelectedSections(ensureDependencies(defaults, dependencyMap));
+  }, [dependencyMap, reportBlueprint, reportType]);
 
   useEffect(() => {
     if (visibilityScope !== 'GROUP' && selectedGroupIds.length) {
@@ -133,7 +180,7 @@ export const NewResearch: React.FC<NewResearchProps> = ({ createJob, runJob, job
     } else {
       next.add(sectionId);
     }
-    setSelectedSections(ensureDependencies(Array.from(next)));
+    setSelectedSections(ensureDependencies(Array.from(next), dependencyMap));
   };
 
   const handleVisibilityChange = (value: string) => {
@@ -306,7 +353,7 @@ export const NewResearch: React.FC<NewResearchProps> = ({ createJob, runJob, job
             <div>
               <label className="block text-sm font-semibold text-slate-700 mb-2">Sections to Generate</label>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                {SECTIONS_CONFIG.map((section) => {
+                {availableSections.map((section) => {
                   const checked = selectedSections.includes(section.id);
                   const disabled = section.id === 'appendix';
                   return (
@@ -393,7 +440,7 @@ export const NewResearch: React.FC<NewResearchProps> = ({ createJob, runJob, job
               </div>
             )}
             <div className="space-y-4">
-               {SECTIONS_CONFIG.map((section, idx) => {
+               {availableSections.map((section) => {
                  const secData = activeJob?.sections[section.id];
                  const status = secData?.status || 'pending';
                  

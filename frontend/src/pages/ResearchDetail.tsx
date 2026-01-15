@@ -1,5 +1,5 @@
 import React, { useMemo, useState, useEffect } from 'react';
-import { ResearchJob, SECTIONS_CONFIG, SectionId } from '../types';
+import { ReportBlueprint, ResearchJob, SECTIONS_CONFIG, SectionId } from '../types';
 import { StatusPill } from '../components/StatusPill';
 import { ChevronRight, BarChart3, Globe, ExternalLink, AlertTriangle, Loader2, CheckCircle2, Circle } from 'lucide-react';
 
@@ -120,23 +120,33 @@ const MarkdownText = ({ content }: { content: string }) => {
 
 interface ResearchDetailProps {
   jobs: ResearchJob[];
+  reportBlueprints?: ReportBlueprint[];
   onNavigate: (path: string) => void;
 }
 
-export const ResearchDetail: React.FC<ResearchDetailProps> = ({ jobs, onNavigate }) => {
+export const ResearchDetail: React.FC<ResearchDetailProps> = ({ jobs, reportBlueprints = [], onNavigate }) => {
   // Extract ID from URL hash manually since we are using a custom hash router
   const hash = window.location.hash;
   const id = hash.split('/research/')[1];
   
   const job = jobs.find(j => j.id === id);
+  const reportBlueprint = useMemo(
+    () => reportBlueprints.find((bp) => bp.reportType === job?.reportType),
+    [job?.reportType, reportBlueprints]
+  );
+  const sectionsConfig = useMemo(
+    () => reportBlueprint?.sections || SECTIONS_CONFIG,
+    [reportBlueprint]
+  );
+
   const allowedSections = useMemo<SectionId[]>(() => {
     if (!job?.selectedSections?.length) {
-      return SECTIONS_CONFIG.map((section) => section.id);
+      return sectionsConfig.map((section) => section.id);
     }
-    return SECTIONS_CONFIG
+    return sectionsConfig
       .map((section) => section.id)
       .filter((id) => job.selectedSections?.includes(id));
-  }, [job?.selectedSections]);
+  }, [job?.selectedSections, sectionsConfig]);
 
   const [activeSection, setActiveSection] = useState<SectionId>(() => {
     return allowedSections[0] || 'exec_summary';
@@ -201,7 +211,7 @@ export const ResearchDetail: React.FC<ResearchDetailProps> = ({ jobs, onNavigate
             )}
             <div className="space-y-4">
               {allowedSections.map((sectionId) => {
-                const section = SECTIONS_CONFIG.find((s) => s.id === sectionId);
+                const section = sectionsConfig.find((s) => s.id === sectionId);
                 if (!section) return null;
                 const secData = job.sections[section.id];
                 const status = secData?.status || 'pending';
@@ -365,7 +375,7 @@ export const ResearchDetail: React.FC<ResearchDetailProps> = ({ jobs, onNavigate
 
             <nav className="space-y-1">
               {allowedSections.map((sectionId) => {
-                const config = SECTIONS_CONFIG.find((section) => section.id === sectionId);
+                const config = sectionsConfig.find((section) => section.id === sectionId);
                 if (!config) return null;
                 const status = job.sections[config.id]?.status;
                 const isActive = activeSection === config.id;
@@ -410,7 +420,7 @@ export const ResearchDetail: React.FC<ResearchDetailProps> = ({ jobs, onNavigate
             {/* Content Header */}
             <div className="px-8 py-5 border-b border-slate-100 bg-slate-50/50 flex justify-between items-center">
                <h2 className="text-lg font-bold text-slate-800 flex items-center gap-2">
-                 {SECTIONS_CONFIG.find(s => s.id === activeSection)?.title}
+                 {sectionsConfig.find(s => s.id === activeSection)?.title}
                </h2>
                <span
                  className={`text-xs font-semibold px-3 py-1 rounded-full border ${sectionConfidenceColor}`}

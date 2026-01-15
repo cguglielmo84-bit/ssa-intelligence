@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { JobStatus, ResearchJob, ResearchSection, ResearchSource, ReportType, SectionId, SectionStatus, SECTIONS_CONFIG, VisibilityScope } from '../types';
+import { JobStatus, ReportBlueprint, ResearchJob, ResearchSection, ResearchSource, ReportType, SectionId, SectionStatus, SECTIONS_CONFIG, VisibilityScope } from '../types';
 
 const API_BASE = (import.meta as any).env?.VITE_API_BASE_URL || '/api';
 
@@ -96,10 +96,23 @@ type ApiGroup = {
   slug: string;
 };
 
+type ApiBlueprintResponse = {
+  version: string;
+  results: ReportBlueprint[];
+};
+
 const STAGE_TO_SECTION_ID: Record<string, SectionId> = {
   exec_summary: 'exec_summary',
   financial_snapshot: 'financial_snapshot',
   company_overview: 'company_overview',
+  investment_strategy: 'investment_strategy',
+  portfolio_snapshot: 'portfolio_snapshot',
+  deal_activity: 'deal_activity',
+  deal_team: 'deal_team',
+  portfolio_maturity: 'portfolio_maturity',
+  leadership_and_governance: 'leadership_and_governance',
+  strategic_priorities: 'strategic_priorities',
+  operating_capabilities: 'operating_capabilities',
   segment_analysis: 'segment_analysis',
   trends: 'trends',
   peer_benchmarking: 'peer_benchmarking',
@@ -113,6 +126,14 @@ const SECTION_ID_TO_KEY: Record<SectionId, string> = {
   exec_summary: 'exec_summary',
   financial_snapshot: 'financial_snapshot',
   company_overview: 'company_overview',
+  investment_strategy: 'investment_strategy',
+  portfolio_snapshot: 'portfolio_snapshot',
+  deal_activity: 'deal_activity',
+  deal_team: 'deal_team',
+  portfolio_maturity: 'portfolio_maturity',
+  leadership_and_governance: 'leadership_and_governance',
+  strategic_priorities: 'strategic_priorities',
+  operating_capabilities: 'operating_capabilities',
   segment_analysis: 'segment_analysis',
   trends: 'trends',
   peer_benchmarking: 'peer_benchmarking',
@@ -625,6 +646,10 @@ const listGroupsApi = async () => {
   return data.results || [];
 };
 
+const listReportBlueprintsApi = async () => {
+  return (await fetchJson('/report-blueprints')) as ApiBlueprintResponse;
+};
+
 const mapSections = (
   statuses?: ApiSectionStatus[],
   sectionData?: Record<string, unknown>,
@@ -982,4 +1007,31 @@ export const useUserContext = () => {
   }, []);
 
   return { user, groups, loading };
+};
+
+export const useReportBlueprints = () => {
+  const [blueprints, setBlueprints] = useState<ReportBlueprint[]>([]);
+  const [version, setVersion] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let mounted = true;
+    listReportBlueprintsApi()
+      .then((data) => {
+        if (!mounted) return;
+        setBlueprints(data.results || []);
+        setVersion(data.version || null);
+      })
+      .catch((err) => console.error(err))
+      .finally(() => {
+        if (!mounted) return;
+        setLoading(false);
+      });
+
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
+  return { blueprints, version, loading };
 };
