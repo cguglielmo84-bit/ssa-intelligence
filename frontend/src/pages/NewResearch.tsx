@@ -137,6 +137,7 @@ export const NewResearch: React.FC<NewResearchProps> = ({
   const [selectedSections, setSelectedSections] = useState<SectionId[]>(DEFAULT_SECTIONS_BY_REPORT.GENERIC);
   const [reportInputs, setReportInputs] = useState<Record<string, string>>({});
   const [wizardStep, setWizardStep] = useState<'reportType' | 'details' | 'context' | 'review'>('reportType');
+  const [showIncluded, setShowIncluded] = useState(false);
   const [visibilityScope, setVisibilityScope] = useState<VisibilityScope>('PRIVATE');
   const [visibilitySelection, setVisibilitySelection] = useState<string>('PRIVATE');
   const [selectedGroupIds, setSelectedGroupIds] = useState<string[]>([]);
@@ -567,7 +568,16 @@ export const NewResearch: React.FC<NewResearchProps> = ({
                     );
                   })}
                 </div>
-                <p className="text-xs text-slate-400 mt-2">Dependencies are added automatically.</p>
+                <div className="flex items-center justify-between mt-2">
+                  <p className="text-xs text-slate-400">Dependencies are added automatically.</p>
+                  <button
+                    type="button"
+                    onClick={() => setShowIncluded(true)}
+                    className="text-xs text-brand-600 hover:underline"
+                  >
+                    What's included?
+                  </button>
+                </div>
               </div>
 
               <div className="flex items-center justify-between pt-2">
@@ -709,6 +719,42 @@ export const NewResearch: React.FC<NewResearchProps> = ({
                 </div>
               </div>
             )}
+          </div>
+        )}
+
+        {showIncluded && (
+          <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+            <div className="bg-white rounded-2xl shadow-2xl max-w-3xl w-full max-h-[85vh] overflow-hidden flex flex-col">
+              <div className="flex items-center justify-between border-b border-slate-200 px-6 py-4">
+                <div>
+                  <div className="text-xs uppercase text-slate-400">What's included</div>
+                  <div className="text-lg font-bold text-slate-900">Section focus</div>
+                </div>
+                <button
+                  onClick={() => setShowIncluded(false)}
+                  className="text-sm text-slate-500 hover:text-slate-700"
+                >
+                  Close
+                </button>
+              </div>
+              <div className="p-6 overflow-y-auto space-y-4">
+                {availableSections.map((section) => (
+                  <div key={section.id} className="border border-slate-100 rounded-lg p-4">
+                    <div className="flex items-center justify-between">
+                      <div className="text-sm font-semibold text-slate-900">{section.title}</div>
+                      {section.reportSpecific ? (
+                        <span className="text-[10px] uppercase tracking-wide text-brand-600 bg-brand-50 border border-brand-100 px-2 py-1 rounded-full">
+                          Report-specific
+                        </span>
+                      ) : null}
+                    </div>
+                    <p className="text-sm text-slate-600 mt-2">
+                      {section.focus?.trim() || 'Focus description not set yet.'}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            </div>
           </div>
         )}
       </div>
