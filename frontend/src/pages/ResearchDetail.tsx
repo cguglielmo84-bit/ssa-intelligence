@@ -258,7 +258,6 @@ export const ResearchDetail: React.FC<ResearchDetailProps> = ({ jobs, onNavigate
                 return (
                   <div key={sec.id} className="opacity-70 border-l-2 border-slate-700 pl-4 py-1">
                     <span className="text-xs uppercase tracking-wider text-slate-500">Completed: {sec.title}</span>
-                    <div className="text-slate-400 truncate">Generated {sec.content?.length || 0} characters of analysis.</div>
                   </div>
                 );
               })}
