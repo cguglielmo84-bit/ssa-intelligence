@@ -34,7 +34,9 @@ import {
   skuOpportunitiesOutputSchema,
   recentNewsOutputSchema,
   conversationStartersOutputSchema,
-  appendixOutputSchema
+  appendixOutputSchema,
+  getValidationSchema,
+  type ReportTypeId
 } from '../../prompts/validation.js';
 
 // ============================================================================
@@ -91,6 +93,33 @@ export const STAGE_DEPENDENCIES: Record<StageId, StageId[]> = {
   // Phase 5 - Appendix (auto-generated)
   'appendix': ['foundation'],
 };
+
+const USER_SELECTABLE_STAGES: StageId[] = [
+  'exec_summary',
+  'financial_snapshot',
+  'company_overview',
+  'segment_analysis',
+  'trends',
+  'peer_benchmarking',
+  'sku_opportunities',
+  'recent_news',
+  'conversation_starters',
+  'appendix'
+];
+
+const DEFAULT_STAGE_ORDER: StageId[] = [
+  'foundation',
+  'financial_snapshot',
+  'company_overview',
+  'segment_analysis',
+  'trends',
+  'peer_benchmarking',
+  'sku_opportunities',
+  'recent_news',
+  'exec_summary',
+  'conversation_starters',
+  'appendix'
+];
 
 // ============================================================================
 // STAGE CONFIGURATIONS
@@ -213,7 +242,32 @@ export class ResearchOrchestrator {
     normalizedIndustry?: string | null;
     domain?: string | null;
     normalizedDomain?: string | null;
+    reportType?: 'GENERIC' | 'INDUSTRIALS' | 'PE' | 'FS';
+    selectedSections?: string[];
+    userAddedPrompt?: string;
+    visibilityScope?: 'PRIVATE' | 'GROUP' | 'GENERAL';
+    groupIds?: string[];
   }) {
+    const requestedSections = Array.isArray(input.selectedSections) ? input.selectedSections : [];
+    const normalizedSections = requestedSections
+      .map((section) => section.trim())
+      .filter((section) => section.length > 0);
+    const requestedStageIds = normalizedSections.filter((section): section is StageId =>
+      USER_SELECTABLE_STAGES.includes(section as StageId)
+    );
+    const requestedSet = requestedStageIds.length ? new Set(requestedStageIds) : new Set(USER_SELECTABLE_STAGES);
+    requestedSet.add('appendix');
+
+    const expandedStages = new Set<StageId>(['foundation']);
+    const addStageWithDeps = (stage: StageId) => {
+      expandedStages.add(stage);
+      const deps = STAGE_DEPENDENCIES[stage] || [];
+      deps.forEach((dep) => addStageWithDeps(dep));
+    };
+    requestedSet.forEach((stage) => addStageWithDeps(stage));
+
+    const effectiveStages = DEFAULT_STAGE_ORDER.filter((stage) => expandedStages.has(stage));
+
     const job = await this.prisma.researchJob.create({
       data: {
         companyName: input.companyName,
@@ -225,12 +279,17 @@ export class ResearchOrchestrator {
         domain: input.domain || null,
         normalizedDomain: input.normalizedDomain || (input.domain ? input.domain.toLowerCase() : null),
         focusAreas: input.focusAreas || [],
+        reportType: input.reportType || 'GENERIC',
+        selectedSections: Array.from(requestedSet),
+        userAddedPrompt: input.userAddedPrompt,
+        visibilityScope: input.visibilityScope || 'PRIVATE',
         status: 'queued',
         queuedAt: new Date(),
         progress: 0,
         userId: input.userId,
         metadata: {
           focusAreas: input.focusAreas || [],
+          requestedSections: requestedStageIds,
           sourceTracking: {
             baseSourceCount: 0,
             sectionSources: {},
@@ -240,23 +299,8 @@ export class ResearchOrchestrator {
       }
     });
 
-    // Create sub-jobs for all 11 stages (foundation + 10 sections)
-    const allStages: StageId[] = [
-      'foundation',
-      'financial_snapshot',
-      'company_overview',
-      'segment_analysis',
-      'trends',
-      'peer_benchmarking',
-      'sku_opportunities',
-      'recent_news',
-      'exec_summary',
-      'conversation_starters',
-      'appendix'
-    ];
-
     await Promise.all(
-      allStages.map(stage =>
+      effectiveStages.map(stage =>
         this.prisma.researchSubJob.create({
           data: {
             researchId: job.id,
@@ -267,6 +311,16 @@ export class ResearchOrchestrator {
         })
       )
     );
+
+    if (input.groupIds && input.groupIds.length) {
+      await this.prisma.researchJobGroup.createMany({
+        data: input.groupIds.map((groupId) => ({
+          jobId: job.id,
+          groupId
+        })),
+        skipDuplicates: true
+      });
+    }
 
     // Kick off queue processor in background (force restart to avoid stale flag)
     this.processQueue(true).catch(console.error);
@@ -472,11 +526,12 @@ export class ResearchOrchestrator {
     try {
       const job = await this.prisma.researchJob.findUnique({
         where: { id: jobId },
-        select: { status: true }
+        select: { status: true, reportType: true }
       });
       if (!job || job.status === 'cancelled') {
         return;
       }
+      const reportType = (job.reportType as ReportTypeId) || 'GENERIC';
       // Mark as running
       await this.updateSubJobStatus(jobId, stageId, 'running');
       await this.updateJobCurrentStage(jobId, stageId);
@@ -498,10 +553,10 @@ export class ResearchOrchestrator {
       response = await this.claudeClient.execute(prompt);
 
       // Parse and validate
-      const config = STAGE_CONFIGS[stageId];
+      const validationSchema = getValidationSchema(stageId, reportType);
       let output = this.claudeClient.validateAndParse(
         response,
-        config.validationSchema
+        validationSchema
       );
 
       // Sanitize common issues before content check/save
@@ -557,7 +612,8 @@ export class ResearchOrchestrator {
     const input: any = {
       companyName: job.companyName,
       geography: job.geography,
-      foundation: job.foundation
+      foundation: job.foundation,
+      reportType: (job.reportType as ReportTypeId) || 'GENERIC'
     };
 
     // Add optional context based on dependencies
@@ -569,7 +625,13 @@ export class ResearchOrchestrator {
     if (job.skuOpportunities) input.section7 = job.skuOpportunities;
     if (job.recentNews) input.section8 = job.recentNews;
 
-    return config.promptBuilder(input);
+    const basePrompt = config.promptBuilder(input);
+    const userPrompt = typeof job.userAddedPrompt === 'string' ? job.userAddedPrompt.trim() : '';
+    const prompt = userPrompt
+      ? `${basePrompt}\n\n---\n\n## USER-ADDED CONTEXT\n\n${userPrompt}\n`
+      : basePrompt;
+
+    return prompt;
   }
 
   /**
@@ -770,7 +832,7 @@ export class ResearchOrchestrator {
 
     if (!job) return;
 
-    const total = 11; // foundation + 10 sections
+    const total = job.subJobs.length || 1;
     const completed = job.subJobs.filter(j => j.status === 'completed').length;
     const progress = completed / total;
 

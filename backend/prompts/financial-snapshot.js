@@ -1,7 +1,8 @@
+import { appendReportTypeAddendum } from './report-type-addendums.js';
 export function buildFinancialSnapshotPrompt(input) {
     const { foundation, companyName, geography } = input;
     const foundationJson = JSON.stringify(foundation, null, 2);
-    return `# Section 2: Financial Snapshot - Research Prompt
+    const basePrompt = `# Section 2: Financial Snapshot - Research Prompt
 
 ## CRITICAL INSTRUCTIONS
 
@@ -73,9 +74,9 @@ ${foundationJson}
      - Working capital as % of revenue*
 
 6. **Industry Benchmarks (Priority: CRITICAL)**
-   - Search: "industrial machinery sector benchmarks 2024"
+   - Search: "sector benchmarks 2024"
    - Search: "${companyName} peer comparison" OR "${companyName} vs competitors"
-   - Search: "Damodaran industry averages industrial" OR "S&P Capital IQ industrial"
+   - Search: "Damodaran industry averages" OR "S&P Capital IQ sector"
    - Extract:
      - Industry average for EACH metric above
      - Source: Note if true industry avg (A) or peer set (B)
@@ -291,8 +292,8 @@ Industry average source: {A/B/C}
 **Priority order:**
 
 **Source A (Preferred):**
-- Search: "Damodaran industry data industrial machinery"
-- Search: "S&P Capital IQ industrial sector averages"
+- Search: "Damodaran industry data"
+- Search: "S&P Capital IQ sector averages"
 - Search: "[Industry association] benchmarks 2024"
 - True industry dataset from authoritative source
 
@@ -386,6 +387,7 @@ Industry average source: {A/B/C}
 
 **OUTPUT ONLY VALID JSON MATCHING THE SCHEMA. START RESEARCH NOW.**
 `;
+    return appendReportTypeAddendum('financial_snapshot', input.reportType, basePrompt);
 }
 export function validateSection2Output(output) {
     if (!output || typeof output !== 'object')

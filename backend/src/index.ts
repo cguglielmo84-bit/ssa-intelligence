@@ -8,7 +8,7 @@ import type { RequestHandler } from 'express';
 import cors from 'cors';
 import rateLimit from 'express-rate-limit';
 import dotenv from 'dotenv';
-import { PrismaClient } from '@prisma/client';
+import { prisma } from './lib/prisma.js';
 import path from 'path';
 import fs from 'fs';
 import { fileURLToPath } from 'url';
@@ -26,6 +26,11 @@ import { deleteResearchJob } from './api/research/delete.js';
 import { submitFeedback } from './api/feedback.js';
 import { exportResearchPdf } from './api/research/export-pdf.js';
 import { getResearchOrchestrator } from './services/orchestrator.js';
+import { authMiddleware, requireAdmin } from './middleware/auth.js';
+import { getMe } from './api/me.js';
+import { listGroups } from './api/groups/list.js';
+import { listUsers } from './api/admin/users.js';
+import { addGroupMember, createGroup, listAdminGroups, removeGroupMember } from './api/admin/groups.js';
 
 // ============================================================================
 // SERVER SETUP
@@ -33,7 +38,6 @@ import { getResearchOrchestrator } from './services/orchestrator.js';
 
 const app = express();
 const PORT = process.env.PORT || 3000;
-const prisma = new PrismaClient();
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
@@ -148,20 +152,52 @@ app.get('/api/config', (req, res) => {
 });
 
 // Research API routes
-app.post('/api/research/generate', ...applyLimiter(generateLimiter), generateResearch);
-app.get('/api/research/jobs/:id', ...applyLimiter(getLimiter), getJobStatus);
-app.get('/api/research/:id', ...applyLimiter(getLimiter), getResearchDetail);
-app.get('/api/research', ...applyLimiter(getLimiter), listResearch);
-app.post('/api/research/:id/cancel', ...applyLimiter(writeLimiter), cancelResearchJob);
-app.delete('/api/research/:id', ...applyLimiter(writeLimiter), deleteResearchJob);
-app.get('/api/research/:id/export/pdf', ...applyLimiter(exportLimiter), exportResearchPdf);
+app.post('/api/research/generate', ...applyLimiter(generateLimiter), authMiddleware, generateResearch);
+app.get('/api/research/jobs/:id', ...applyLimiter(getLimiter), authMiddleware, getJobStatus);
+app.get('/api/research/:id', ...applyLimiter(getLimiter), authMiddleware, getResearchDetail);
+app.get('/api/research', ...applyLimiter(getLimiter), authMiddleware, listResearch);
+app.post('/api/research/:id/cancel', ...applyLimiter(writeLimiter), authMiddleware, cancelResearchJob);
+app.delete('/api/research/:id', ...applyLimiter(writeLimiter), authMiddleware, deleteResearchJob);
+app.get('/api/research/:id/export/pdf', ...applyLimiter(exportLimiter), authMiddleware, exportResearchPdf);
 app.post('/api/feedback', ...applyLimiter(writeLimiter), submitFeedback);
+app.get('/api/me', authMiddleware, getMe);
+app.get('/api/groups', authMiddleware, listGroups);
+app.get('/api/admin/users', authMiddleware, requireAdmin, listUsers);
+app.get('/api/admin/groups', authMiddleware, requireAdmin, listAdminGroups);
+app.post('/api/admin/groups', authMiddleware, requireAdmin, createGroup);
+app.post('/api/admin/groups/:groupId/members', authMiddleware, requireAdmin, addGroupMember);
+app.delete('/api/admin/groups/:groupId/members/:userId', authMiddleware, requireAdmin, removeGroupMember);
 
 // Regenerate specific sections (optional - for future implementation)
 app.post('/api/research/:id/regenerate', async (req, res) => {
   res.status(501).json({
     error: 'Not implemented',
     message: 'Section regeneration feature coming soon'
+  });
+});
+
+// Dev-only auth echo to inspect forwarded headers
+app.get('/api/debug/auth', authMiddleware, (req, res) => {
+  if (process.env.NODE_ENV === 'production') {
+    return res.status(404).json({ error: 'Not found' });
+  }
+  const headerAllowlist = [
+    'x-auth-request-email',
+    'x-auth-request-user',
+    'x-auth-request-groups',
+    'x-email',
+    'x-user',
+    'x-user-id',
+    'x-groups'
+  ];
+  const forwardedHeaders = Object.fromEntries(
+    headerAllowlist
+      .map((key) => [key, req.headers[key]])
+      .filter(([, value]) => value !== undefined)
+  );
+  return res.json({
+    auth: req.auth || null,
+    headers: forwardedHeaders
   });
 });
 

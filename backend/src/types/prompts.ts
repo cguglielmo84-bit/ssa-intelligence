@@ -101,6 +101,11 @@ export interface CreateJobRequest {
   industry?: string;
   focusAreas?: string[];
   requestedBy?: string;
+  reportType?: 'GENERIC' | 'INDUSTRIALS' | 'PE' | 'FS';
+  selectedSections?: string[];
+  userAddedPrompt?: string;
+  visibilityScope?: 'PRIVATE' | 'GROUP' | 'GENERAL';
+  groupIds?: string[];
 }
 
 export interface CreateJobResponse {
@@ -118,6 +123,10 @@ export interface JobStatusResponse {
   currentStage?: string;
   companyName: string;
   geography: string;
+  reportType?: 'GENERIC' | 'INDUSTRIALS' | 'PE' | 'FS';
+  visibilityScope?: 'PRIVATE' | 'GROUP' | 'GENERAL';
+  selectedSections?: string[];
+  userAddedPrompt?: string;
   error?: string | null;
   jobs: Array<{
     stage: string;
@@ -145,6 +154,10 @@ export interface ResearchDetailResponse {
     companyName: string;
     geography: string;
     industry?: string;
+    reportType?: 'GENERIC' | 'INDUSTRIALS' | 'PE' | 'FS';
+    visibilityScope?: 'PRIVATE' | 'GROUP' | 'GENERAL';
+    selectedSections?: string[];
+    userAddedPrompt?: string;
     overallConfidence?: string;
     createdAt: Date;
     updatedAt: Date;
@@ -178,6 +191,10 @@ export interface ListResearchResponse {
     companyName: string;
     geography: string;
     industry?: string;
+    reportType?: 'GENERIC' | 'INDUSTRIALS' | 'PE' | 'FS';
+    visibilityScope?: 'PRIVATE' | 'GROUP' | 'GENERAL';
+    selectedSections?: string[];
+    userAddedPrompt?: string;
     progress: number;
     currentStage?: string;
     overallConfidence?: string;

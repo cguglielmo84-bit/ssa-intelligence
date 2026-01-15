@@ -4,9 +4,8 @@
  */
 
 import { Request, Response } from 'express';
-import { PrismaClient } from '@prisma/client';
-
-const prisma = new PrismaClient();
+import { prisma } from '../../lib/prisma.js';
+import { buildVisibilityWhere } from '../../middleware/auth.js';
 
 interface ListQueryParams {
   limit?: string;
@@ -20,9 +19,9 @@ export async function listResearch(req: Request, res: Response) {
   try {
     const query = req.query as ListQueryParams;
 
-    // For demo purposes, use a default user
-    // In production, get this from auth middleware
-    const userId = req.headers['x-user-id'] as string || 'demo-user';
+    if (!req.auth) {
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
 
     // Parse pagination
     const limit = Math.min(parseInt(query.limit || '50'), 100);
@@ -33,10 +32,10 @@ export async function listResearch(req: Request, res: Response) {
     const sortOrder = query.sortOrder || 'desc';
 
     // Build where clause
-    const where: any = { userId };
-    if (query.status) {
-      where.status = query.status;
-    }
+    const visibilityWhere = buildVisibilityWhere(req.auth);
+    const where: any = query.status
+      ? { AND: [visibilityWhere, { status: query.status }] }
+      : visibilityWhere;
 
     // Fetch jobs
     const [jobs, total] = await Promise.all([
@@ -54,6 +53,10 @@ export async function listResearch(req: Request, res: Response) {
           domain: true,
           progress: true,
           currentStage: true,
+          reportType: true,
+          visibilityScope: true,
+          selectedSections: true,
+          userAddedPrompt: true,
           overallConfidence: true,
           overallConfidenceScore: true,
           promptTokens: true,
@@ -68,6 +71,11 @@ export async function listResearch(req: Request, res: Response) {
           subJobs: {
             where: { status: 'completed' },
             select: { stage: true }
+          },
+          jobGroups: {
+            select: {
+              group: { select: { id: true, name: true, slug: true } }
+            }
           }
         }
       }),
@@ -81,7 +89,11 @@ export async function listResearch(req: Request, res: Response) {
       companyName: job.companyName,
       geography: job.geography,
       industry: job.industry,
-      domain: (job as any).domain || null,
+      domain: job.domain || null,
+      reportType: job.reportType,
+      visibilityScope: job.visibilityScope,
+      selectedSections: job.selectedSections,
+      userAddedPrompt: job.userAddedPrompt,
       progress: job.progress,
       currentStage: job.currentStage,
       overallConfidence: job.overallConfidence,
@@ -93,7 +105,7 @@ export async function listResearch(req: Request, res: Response) {
       queuedAt: job.queuedAt,
       updatedAt: job.updatedAt,
       completedAt: job.completedAt,
-      thumbnailUrl: (job as any).thumbnailUrl || null,
+      thumbnailUrl: job.thumbnailUrl || null,
       metadata: {
         companyName: job.companyName,
         geography: job.geography,
@@ -118,6 +130,8 @@ export async function listResearch(req: Request, res: Response) {
           return sectionMap[subJob.stage] || 0;
         })
         .filter(n => n > 0)
+      ,
+      groups: job.jobGroups.map((entry) => entry.group)
     }));
 
     return res.json({

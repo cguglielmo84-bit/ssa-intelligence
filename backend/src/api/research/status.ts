@@ -4,17 +4,21 @@
  */
 
 import { Request, Response } from 'express';
-import { PrismaClient } from '@prisma/client';
+import { prisma } from '../../lib/prisma.js';
 import { getResearchOrchestrator } from '../../services/orchestrator.js';
-
-const prisma = new PrismaClient();
+import { buildVisibilityWhere } from '../../middleware/auth.js';
 
 export async function getJobStatus(req: Request, res: Response) {
   try {
     const { id } = req.params;
 
-    const job = await prisma.researchJob.findUnique({
-      where: { id },
+    if (!req.auth) {
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
+
+    const visibilityWhere = buildVisibilityWhere(req.auth);
+    const job = await prisma.researchJob.findFirst({
+      where: { AND: [{ id }, visibilityWhere] },
       include: {
         subJobs: {
           select: {
@@ -68,13 +72,17 @@ export async function getJobStatus(req: Request, res: Response) {
       currentStage: job.currentStage,
       companyName: job.companyName,
       geography: job.geography,
-      domain: (job as any).domain || null,
-      thumbnailUrl: (job as any).thumbnailUrl || null,
+      domain: job.domain || null,
+      thumbnailUrl: job.thumbnailUrl || null,
+      reportType: job.reportType,
+      visibilityScope: job.visibilityScope,
+      selectedSections: job.selectedSections,
+      userAddedPrompt: job.userAddedPrompt,
       overallConfidence: job.overallConfidence,
       overallConfidenceScore: job.overallConfidenceScore,
-      promptTokens: (job as any).promptTokens,
-      completionTokens: (job as any).completionTokens,
-      costUsd: (job as any).costUsd,
+      promptTokens: job.promptTokens,
+      completionTokens: job.completionTokens,
+      costUsd: job.costUsd,
       error: job.status === 'failed' ? 'Job execution failed' : null,
       jobs: job.subJobs,
       summary: {

@@ -1,8 +1,9 @@
+import { appendReportTypeAddendum } from './report-type-addendums.js';
 export function buildPeerBenchmarkingPrompt(input) {
     const { foundation, companyName, geography, section2Context } = input;
     const foundationJson = JSON.stringify(foundation, null, 2);
     const section2Json = JSON.stringify(section2Context, null, 2);
-    return `# Section 6: Peer Benchmarking - Research Prompt
+    const basePrompt = `# Section 6: Peer Benchmarking - Research Prompt
 
 ## CRITICAL INSTRUCTIONS
 
@@ -46,8 +47,8 @@ ${section2Json}
 **Selection criteria for peers:**
 
 **Must have:**
-- Geographic overlap with ${geography} (operations, manufacturing, or significant revenue)
-- Business model overlap (industrial, B2B, similar segments)
+- Geographic overlap with ${geography} (operations, facilities, or significant revenue)
+- Business model overlap (sector, B2B, similar segments)
 - Publicly traded (need financial data for comparison)
 - Similar scale (0.5x to 2x revenue of ${companyName})
 
@@ -182,7 +183,7 @@ Focus on ${geography}-specific competitive standing
 
 ✅ **CORRECT patterns:**
 - "Superior margin performance driven by higher capacity utilization in **${geography}** facilities (88% vs peer average of 82%)"
-- "In **${geography}** hydraulics market specifically, company ranks #2 behind [competitor]"
+- "In **${geography}** a key market segment, company ranks #2 behind [competitor]"
 
 ❌ **WRONG patterns:**
 - Pure global comparisons without regional context
@@ -219,6 +220,7 @@ Focus on ${geography}-specific competitive standing
 
 **OUTPUT ONLY VALID JSON MATCHING THE SCHEMA. START RESEARCH NOW.**
 `;
+    return appendReportTypeAddendum('peer_benchmarking', input.reportType, basePrompt);
 }
 export function validateSection6Output(output) {
     if (!output || typeof output !== 'object')

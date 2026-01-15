@@ -25,12 +25,13 @@ export const SKU_SUB_OFFERINGS = {
     DIGITAL_OPS: 'Digital Operations',
     ENTERPRISE_ENABLE: 'Enterprise Enablement'
 };
+import { appendReportTypeAddendum } from './report-type-addendums.js';
 export function buildSkuOpportunitiesPrompt(input) {
     const { foundation, companyName, geography, section5Context, section6Context } = input;
     const foundationJson = JSON.stringify(foundation, null, 2);
     const section5Json = section5Context ? JSON.stringify(section5Context, null, 2) : 'Not provided';
     const section6Json = section6Context ? JSON.stringify(section6Context, null, 2) : 'Not provided';
-    return `# Section 7: SKU-Relevant Opportunity Mapping - Research Prompt
+    const basePrompt = `# Section 7: SKU-Relevant Opportunity Mapping - Research Prompt
 
 ## CRITICAL INSTRUCTIONS
 
@@ -84,7 +85,7 @@ Reference these when mapping opportunities:
 **When to map:**
 - Capacity utilization <80%
 - Production bottlenecks mentioned
-- OEE <75%
+- Operational efficiency index <75%
 - Quality/defect issues
 - Equipment downtime problems
 
@@ -212,7 +213,7 @@ interface Section7Output {
 ## GEOGRAPHY FOCUS (75-80%)
 
 **Prioritize problems that are:**
-1. **Geography-specific:** "${geography} plants OEE of 72%..." → HIGH
+1. **Geography-specific:** "${geography} operations show efficiency index of 72%..." → HIGH
 2. **Regional underperformance:** "${geography} DSO worse than global..." → HIGH
 3. **Global with regional relevance:** "Company-wide ERP includes ${geography}..." → MEDIUM
 
@@ -263,6 +264,7 @@ interface Section7Output {
 
 **OUTPUT ONLY VALID JSON MATCHING THE SCHEMA. START RESEARCH NOW.**
 `;
+    return appendReportTypeAddendum('sku_opportunities', input.reportType, basePrompt);
 }
 export function validateSection7Output(output) {
     if (!output || typeof output !== 'object')

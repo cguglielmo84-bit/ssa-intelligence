@@ -4,11 +4,10 @@
  */
 
 import { Request, Response } from 'express';
-import { PrismaClient } from '@prisma/client';
+import { prisma } from '../../lib/prisma.js';
 import { createSourceCatalog } from '../../services/source-resolver.js';
 import type { FoundationOutput } from '../../types/prompts.js';
-
-const prisma = new PrismaClient();
+import { buildVisibilityWhere } from '../../middleware/auth.js';
 
 // Map database fields to section keys
 const SECTION_FIELD_MAP = {
@@ -28,8 +27,13 @@ export async function getResearchDetail(req: Request, res: Response) {
   try {
     const { id } = req.params;
 
-    const job = await prisma.researchJob.findUnique({
-      where: { id },
+    if (!req.auth) {
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
+
+    const visibilityWhere = buildVisibilityWhere(req.auth);
+    const job = await prisma.researchJob.findFirst({
+      where: { AND: [{ id }, visibilityWhere] },
       include: {
         subJobs: {
           select: {
@@ -43,6 +47,12 @@ export async function getResearchDetail(req: Request, res: Response) {
             completionTokens: true,
             costUsd: true,
             output: true
+          }
+        },
+        jobGroups: {
+          select: {
+            groupId: true,
+            group: { select: { id: true, name: true, slug: true } }
           }
         }
       }
@@ -69,7 +79,11 @@ export async function getResearchDetail(req: Request, res: Response) {
     const sections: any = {};
     
     for (const [sectionId, fieldName] of Object.entries(SECTION_FIELD_MAP)) {
-      const sectionData = (job as any)[fieldName];
+      const sectionDataRaw = job[fieldName as keyof typeof job];
+      const sectionData =
+        sectionDataRaw && typeof sectionDataRaw === 'object'
+          ? (sectionDataRaw as Record<string, any>)
+          : null;
       const subJob = job.subJobs.find(j => j.stage === sectionId);
       
       sections[sectionId] = {
@@ -111,7 +125,11 @@ export async function getResearchDetail(req: Request, res: Response) {
         companyName: job.companyName,
         geography: job.geography,
         industry: job.industry,
-        domain: (job as any).domain || null,
+        domain: job.domain || null,
+        reportType: job.reportType || null,
+        visibilityScope: job.visibilityScope || null,
+        selectedSections: job.selectedSections || [],
+        userAddedPrompt: job.userAddedPrompt || null,
         overallConfidence: job.overallConfidence,
         overallConfidenceScore: job.overallConfidenceScore,
         promptTokens: job.promptTokens,
@@ -121,7 +139,8 @@ export async function getResearchDetail(req: Request, res: Response) {
         updatedAt: job.updatedAt,
         completedAt: job.completedAt
       },
-      thumbnailUrl: (job as any).thumbnailUrl || null,
+      thumbnailUrl: job.thumbnailUrl || null,
+      groups: job.jobGroups.map((entry) => entry.group),
       foundation: job.foundation,
       sections,
       sectionsCompleted: completedSections,

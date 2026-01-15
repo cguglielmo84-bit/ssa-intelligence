@@ -1,11 +1,28 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Loader2, Sparkles, CheckCircle2, Circle, ArrowRight, BrainCircuit } from 'lucide-react';
-import { SECTIONS_CONFIG } from '../types';
+import { ReportType, SectionId, SECTIONS_CONFIG, VisibilityScope } from '../types';
 
 interface NewResearchProps {
-  createJob: (name: string, geo: string, industry: string, force?: boolean) => Promise<string>;
+  createJob: (
+    name: string,
+    geo: string,
+    industry: string,
+    options?: {
+      force?: boolean;
+      reportType?: ReportType;
+      selectedSections?: SectionId[];
+      visibilityScope?: VisibilityScope;
+      groupIds?: string[];
+      userAddedPrompt?: string;
+    }
+  ) => Promise<string>;
   runJob: (id: string, companyName?: string) => Promise<void>;
   jobs: any[]; // Using any for simplicity in props mapping, but strongly typed inside
+  userContext?: {
+    user: { id: string; email: string; role: string; isAdmin: boolean } | null;
+    groups: Array<{ id: string; name: string; slug: string }>;
+    loading: boolean;
+  };
   onNavigate: (path: string) => void;
 }
 
@@ -18,14 +35,118 @@ const toTitleLike = (value: string) =>
     .join(' ');
 const hasMeaningfulChars = (value: string) => /[A-Za-z0-9]/.test(value);
 
-export const NewResearch: React.FC<NewResearchProps> = ({ createJob, runJob, jobs, onNavigate }) => {
+const DEFAULT_SECTIONS_BY_REPORT: Record<ReportType, SectionId[]> = {
+  GENERIC: [
+    'exec_summary',
+    'financial_snapshot',
+    'company_overview',
+    'trends',
+    'sku_opportunities',
+    'conversation_starters',
+    'appendix'
+  ],
+  INDUSTRIALS: SECTIONS_CONFIG.map((section) => section.id),
+  PE: [
+    'exec_summary',
+    'financial_snapshot',
+    'company_overview',
+    'trends',
+    'sku_opportunities',
+    'conversation_starters',
+    'appendix'
+  ],
+  FS: [
+    'exec_summary',
+    'financial_snapshot',
+    'company_overview',
+    'trends',
+    'sku_opportunities',
+    'conversation_starters',
+    'appendix'
+  ]
+};
+
+const SECTION_DEPENDENCIES: Record<SectionId, SectionId[]> = {
+  exec_summary: ['financial_snapshot', 'company_overview'],
+  financial_snapshot: [],
+  company_overview: [],
+  segment_analysis: [],
+  trends: [],
+  peer_benchmarking: ['financial_snapshot'],
+  sku_opportunities: [],
+  recent_news: [],
+  conversation_starters: [],
+  appendix: []
+};
+
+const ensureDependencies = (sections: SectionId[]) => {
+  const set = new Set<SectionId>(sections);
+  set.add('appendix');
+  let updated = true;
+  while (updated) {
+    updated = false;
+    for (const section of Array.from(set)) {
+      const deps = SECTION_DEPENDENCIES[section] || [];
+      deps.forEach((dep) => {
+        if (!set.has(dep)) {
+          set.add(dep);
+          updated = true;
+        }
+      });
+    }
+  }
+  return Array.from(set);
+};
+
+export const NewResearch: React.FC<NewResearchProps> = ({ createJob, runJob, jobs, userContext, onNavigate }) => {
   const [step, setStep] = useState<'input' | 'processing'>('input');
   const [formData, setFormData] = useState({ company: '', geo: '', industry: '' });
   const [currentJobId, setCurrentJobId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [duplicateInfo, setDuplicateInfo] = useState<{ jobId?: string; status?: string; message?: string } | null>(null);
+  const [reportType, setReportType] = useState<ReportType>('GENERIC');
+  const [selectedSections, setSelectedSections] = useState<SectionId[]>(DEFAULT_SECTIONS_BY_REPORT.GENERIC);
+  const [visibilityScope, setVisibilityScope] = useState<VisibilityScope>('PRIVATE');
+  const [visibilitySelection, setVisibilitySelection] = useState<string>('PRIVATE');
+  const [selectedGroupIds, setSelectedGroupIds] = useState<string[]>([]);
+  const [userPrompt, setUserPrompt] = useState('');
 
   const activeJob = jobs.find(j => j.id === currentJobId);
+  const availableGroups = userContext?.groups || [];
+  const canShareToGroups = availableGroups.length > 0;
+
+  useEffect(() => {
+    setSelectedSections(ensureDependencies(DEFAULT_SECTIONS_BY_REPORT[reportType]));
+  }, [reportType]);
+
+  useEffect(() => {
+    if (visibilityScope !== 'GROUP' && selectedGroupIds.length) {
+      setSelectedGroupIds([]);
+    }
+  }, [visibilityScope, selectedGroupIds.length]);
+
+  const toggleSection = (sectionId: SectionId) => {
+    if (sectionId === 'appendix') return;
+    const next = new Set(selectedSections);
+    if (next.has(sectionId)) {
+      next.delete(sectionId);
+    } else {
+      next.add(sectionId);
+    }
+    setSelectedSections(ensureDependencies(Array.from(next)));
+  };
+
+  const handleVisibilityChange = (value: string) => {
+    setVisibilitySelection(value);
+    if (value.startsWith('GROUP:')) {
+      const groupId = value.slice('GROUP:'.length);
+      setVisibilityScope('GROUP');
+      setSelectedGroupIds(groupId ? [groupId] : []);
+      return;
+    }
+    setVisibilityScope(value as VisibilityScope);
+    setSelectedGroupIds([]);
+  };
 
   const handleSubmit = async (e?: React.FormEvent, force = false) => {
     if (e) e.preventDefault();
@@ -49,8 +170,26 @@ export const NewResearch: React.FC<NewResearchProps> = ({ createJob, runJob, job
     setError(null);
     setDuplicateInfo(null);
 
+    const nonAppendix = selectedSections.filter((section) => section !== 'appendix');
+    if (!nonAppendix.length) {
+      setError('Select at least one section to generate.');
+      return;
+    }
+
+    if (visibilityScope === 'GROUP' && selectedGroupIds.length === 0) {
+      setError('Select at least one group for shared access.');
+      return;
+    }
+
     try {
-      const id = await createJob(normalized.company, normalized.geo, normalized.industry, force);
+      const id = await createJob(normalized.company, normalized.geo, normalized.industry, {
+        force,
+        reportType,
+        selectedSections,
+        visibilityScope,
+        groupIds: visibilityScope === 'GROUP' ? selectedGroupIds : [],
+        userAddedPrompt: userPrompt.trim() || undefined
+      });
       setCurrentJobId(id);
       setStep('processing');
       
@@ -86,7 +225,7 @@ export const NewResearch: React.FC<NewResearchProps> = ({ createJob, runJob, job
           </div>
           <h2 className="text-3xl font-bold text-slate-900 mb-3">Who are we analyzing today?</h2>
           <p className="text-slate-500 text-lg">
-            Enter a company name to generate a comprehensive 10-point research dossier including financials, competitors, and market opportunities.
+            Enter a company name to generate a comprehensive research dossier.
           </p>
         </div>
 
@@ -127,6 +266,75 @@ export const NewResearch: React.FC<NewResearchProps> = ({ createJob, runJob, job
                   onChange={e => setFormData({...formData, industry: e.target.value})}
                 />
               </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div>
+                <label className="block text-sm font-semibold text-slate-700 mb-2">Report Type</label>
+                <select
+                  value={reportType}
+                  onChange={(e) => setReportType(e.target.value as ReportType)}
+                  className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-lg focus:bg-white focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 outline-none transition-all"
+                >
+                  <option value="GENERIC">Generic</option>
+                  <option value="INDUSTRIALS">Industrials</option>
+                  <option value="PE">Private Equity</option>
+                  <option value="FS">Financial Services</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-semibold text-slate-700 mb-2">Visibility</label>
+                <select
+                  value={visibilitySelection}
+                  onChange={(e) => handleVisibilityChange(e.target.value)}
+                  className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-lg focus:bg-white focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 outline-none transition-all"
+                >
+                  <option value="PRIVATE">Private (Only Me)</option>
+                  {availableGroups.map((group) => (
+                    <option key={group.id} value={`GROUP:${group.id}`}>
+                      Group: {group.name}
+                    </option>
+                  ))}
+                  <option value="GENERAL">General Use</option>
+                </select>
+                {!canShareToGroups && (
+                  <p className="text-xs text-slate-400 mt-2">You are not assigned to any groups yet.</p>
+                )}
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-sm font-semibold text-slate-700 mb-2">Sections to Generate</label>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                {SECTIONS_CONFIG.map((section) => {
+                  const checked = selectedSections.includes(section.id);
+                  const disabled = section.id === 'appendix';
+                  return (
+                    <label key={section.id} className="flex items-center gap-2 text-sm text-slate-600">
+                      <input
+                        type="checkbox"
+                        checked={checked}
+                        disabled={disabled}
+                        onChange={() => toggleSection(section.id)}
+                      />
+                      {section.title}
+                      {disabled ? <span className="text-xs text-slate-400">(required)</span> : null}
+                    </label>
+                  );
+                })}
+              </div>
+              <p className="text-xs text-slate-400 mt-2">Dependencies are added automatically.</p>
+            </div>
+
+            <div>
+              <label className="block text-sm font-semibold text-slate-700 mb-2">Custom Prompt (Optional)</label>
+              <textarea
+                rows={3}
+                value={userPrompt}
+                onChange={(e) => setUserPrompt(e.target.value)}
+                placeholder="Add specific context or constraints for this report..."
+                className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-lg focus:bg-white focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 outline-none transition-all"
+              />
             </div>
 
             <button 

@@ -1,20 +1,26 @@
 import { Request, Response } from 'express';
-import { PrismaClient } from '@prisma/client';
-
-const prisma = new PrismaClient();
+import { prisma } from '../../lib/prisma.js';
+import { buildVisibilityWhere } from '../../middleware/auth.js';
 
 export async function deleteResearchJob(req: Request, res: Response) {
   try {
     const { id } = req.params;
-    const userId = (req.headers['x-user-id'] as string) || 'demo-user';
+    if (!req.auth) {
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
 
+    const visibilityWhere = buildVisibilityWhere(req.auth);
     const job = await prisma.researchJob.findFirst({
-      where: { id, userId },
-      select: { status: true }
+      where: { AND: [{ id }, visibilityWhere] },
+      select: { status: true, userId: true }
     });
 
     if (!job) {
       return res.status(404).json({ error: 'Job not found', jobId: id });
+    }
+
+    if (!req.auth.isAdmin && job.userId !== req.auth.userId) {
+      return res.status(403).json({ error: 'Not authorized to delete this job' });
     }
 
     if (job.status === 'running' || job.status === 'queued') {

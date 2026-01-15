@@ -1,9 +1,10 @@
+import { appendReportTypeAddendum } from './report-type-addendums.js';
 export function buildTrendsPrompt(input) {
     const { foundation, companyName, geography, section3Context, section4Context } = input;
     const foundationJson = JSON.stringify(foundation, null, 2);
     const section3Json = section3Context ? JSON.stringify(section3Context, null, 2) : 'Not provided';
     const section4Json = section4Context ? JSON.stringify(section4Context, null, 2) : 'Not provided';
-    return `# Section 5: Trends - Research Prompt
+    const basePrompt = `# Section 5: Trends - Research Prompt
 
 ## CRITICAL INSTRUCTIONS
 
@@ -44,17 +45,17 @@ ${section4Json}
 **Priority: CRITICAL**
 
 **Search for:**
-- "industrial sector trends 2024"
-- "${geography} manufacturing outlook 2024"
+- "sector trends 2024"
+- "${geography} sector outlook 2024"
 - "${geography} economic indicators 2024"
 - "global supply chain trends 2024"
-- "industrial automation trends"
-- "sustainability manufacturing 2024"
+- "automation trends"
+- "sustainability trends 2024"
 
 **Extract trends in these categories:**
 
 **Economic Trends:**
-- GDP growth, industrial production indices
+- GDP growth, production indices
 - Inflation, labor costs, commodity prices
 - Interest rates, credit conditions
 - Trade flows, tariffs, regulations
@@ -73,8 +74,8 @@ ${section4Json}
 - Labor regulations
 
 **Geography-specific emphasis (75-80%):**
-- ${geography} manufacturing PMI
-- ${geography} industrial policy changes
+- ${geography} business activity PMI
+- ${geography} sector policy changes
 - ${geography} infrastructure investments
 - Regional economic forecasts
 
@@ -141,7 +142,7 @@ ${section4Json}
 
 **Operational Trends:**
 - Capacity utilization changes
-- Efficiency improvements (OEE, productivity)
+- Efficiency improvements (utilization, productivity)
 - Quality metrics trends
 - Supply chain performance
 
@@ -275,16 +276,16 @@ interface Section5Output {
 ✅ **CORRECT patterns:**
 
 **Macro trend:**
-- Trend: "European manufacturing PMI stabilizing"
-- Geography relevance: "**${geography}** industrial production index improved to 48.5 in Q3 2024 from 42.1 in Q1, signaling demand stabilization for industrial hydraulics customers (S15)."
+- Trend: "European PMI stabilizing"
+- Geography relevance: "**${geography}** production index improved to 48.5 in Q3 2024 from 42.1 in Q1, signaling demand stabilization for key sector customers (S15)."
 
 **Micro trend:**
 - Trend: "Commercial aerospace aftermarket strengthening"
 - Geography relevance: "Lufthansa and other **${geography}** carriers increasing MRO spending by 15% in 2024; benefits Parker's **Stuttgart** aftermarket operations which serve European airline base (S18, S20)."
 
 **Company trend:**
-- Trend: "Market share gains in ${geography} hydraulics"
-- Geography relevance: "**${companyName}** increased market share to 19% from 17% in **${geography}** mobile hydraulics over last 18 months, primarily at expense of local specialists (S7, S12)."
+- Trend: "Market share gains in ${geography} core segment"
+- Geography relevance: "**${companyName}** increased market share to 19% from 17% in **${geography}** core segment over last 18 months, primarily at expense of local specialists (S7, S12)."
 
 ---
 
@@ -328,6 +329,7 @@ interface Section5Output {
 
 **OUTPUT ONLY VALID JSON MATCHING THE SCHEMA. START RESEARCH NOW.**
 `;
+    return appendReportTypeAddendum('trends', input.reportType, basePrompt);
 }
 export function validateSection5Output(output) {
     if (!output || typeof output !== 'object')

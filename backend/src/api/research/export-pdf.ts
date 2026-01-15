@@ -1,10 +1,9 @@
 import { Request, Response } from 'express';
-import { PrismaClient } from '@prisma/client';
+import { prisma } from '../../lib/prisma.js';
 import { chromium } from 'playwright';
 import { marked } from 'marked';
 import { formatSectionContent, sectionOrder } from '../../services/section-formatter.js';
-
-const prisma = new PrismaClient();
+import { buildVisibilityWhere } from '../../middleware/auth.js';
 
 const htmlTemplate = (params: { title: string; meta: string[]; body: string }) => `
 <!DOCTYPE html>
@@ -42,8 +41,13 @@ export async function exportResearchPdf(req: Request, res: Response) {
   try {
     const { id } = req.params;
 
-    const job = await prisma.researchJob.findUnique({
-      where: { id },
+    if (!req.auth) {
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
+
+    const visibilityWhere = buildVisibilityWhere(req.auth);
+    const job = await prisma.researchJob.findFirst({
+      where: { AND: [{ id }, visibilityWhere] },
       include: {
         subJobs: {
           select: { stage: true, status: true, lastError: true }
@@ -66,7 +70,7 @@ export async function exportResearchPdf(req: Request, res: Response) {
     const chunks: string[] = [];
 
     sectionOrder.forEach(({ id: sectionId, title, field }) => {
-      const data = (job as any)[field];
+      const data = job[field as keyof typeof job];
       const status = job.subJobs.find((s) => s.stage === sectionId)?.status || 'unknown';
       chunks.push(`## ${title}`);
       chunks.push(`_Status: ${status}_`);
@@ -95,7 +99,10 @@ export async function exportResearchPdf(req: Request, res: Response) {
 
     let browser;
     try {
-      browser = await chromium.launch({ headless: true });
+      browser = await chromium.launch({
+        headless: true,
+        args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage']
+      });
     } catch (err) {
       console.error('Playwright launch failed:', err);
       return res.status(500).json({ error: 'PDF export unavailable: browser failed to start' });

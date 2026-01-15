@@ -6,16 +6,19 @@
  *   const prompt = buildFoundationPrompt({
  *     companyName: "Parker Hannifin",
  *     geography: "Germany",
- *     focusAreas: ["hydraulics", "aerospace"],
+ *     focusAreas: ["core segments", "priority offerings"],
  *     userFiles: [{name: "financials.xlsx", type: "Excel workbook"}]
  *   });
  */
+
+import { appendReportTypeAddendum, type ReportTypeId } from './report-type-addendums.js';
 
 interface FoundationPromptInputs {
   companyName: string;
   geography: string;
   focusAreas?: string[];
   userFiles?: Array<{name: string; type: string}>;
+  reportType?: ReportTypeId;
 }
 
 export function buildFoundationPrompt(inputs: FoundationPromptInputs): string {
@@ -37,7 +40,7 @@ export function buildFoundationPrompt(inputs: FoundationPromptInputs): string {
     : "None provided";
   
   // Build the complete prompt
-  return `# Phase 0: Foundation Research - Company Intelligence System
+  const basePrompt = `# Phase 0: Foundation Research - Company Intelligence System
 
 ## CRITICAL EXECUTION REQUIREMENTS
 
@@ -124,7 +127,7 @@ Follow this priority order for data gathering:
 - "**${companyName}** ${geography} analyst report"
 - "**${companyName}** equity research" + last 12 months
 - "**${companyName}** investment thesis"
-- "**${companyName}** sector research industrial"
+- "**${companyName}** sector research"
 
 **Extract:**
 - Revenue/earnings estimates for ${geography}
@@ -163,10 +166,10 @@ Follow this priority order for data gathering:
 
 #### 5. Industry/Analyst Reports (Priority: MEDIUM)
 **Search for:**
-- "Industrial machinery sector report" + current year
+- "Sector report" + current year
 - "**${companyName}** industry Gartner OR Forrester OR IDC"
-- "Industrial sector trends ${geography}"
-- "Manufacturing PMI ${geography}" + current year
+- "Sector trends ${geography}"
+- "Business activity PMI ${geography}" + current year
 
 **Extract:**
 - Industry growth rates and forecasts
@@ -180,10 +183,10 @@ Follow this priority order for data gathering:
 
 #### 6. Government/Regulatory Data (Priority: MEDIUM)
 **Search for:**
-- "${geography} industrial production statistics"
-- "${geography} manufacturing PMI data"
-- "${geography} trade data industrial equipment"
-- "${geography} employment statistics manufacturing"
+- "${geography} production statistics"
+- "${geography} business activity PMI data"
+- "${geography} trade data for key products/services"
+- "${geography} employment statistics by sector"
 
 **Extract:**
 - Regional economic indicators
@@ -219,7 +222,7 @@ For EACH business segment the company operates:
 - "**${companyName}** competitors ${geography}"
 - "[Competitor name] ${geography} revenue" (for 3-5 peers)
 - "[Competitor name] market share ${geography}"
-- "competitive landscape industrial [segment]"
+- "competitive landscape [segment]"
 
 **Extract:**
 - Key competitors by segment
@@ -233,7 +236,7 @@ For EACH business segment the company operates:
 #### 9. Supply Chain & Operations (Priority: MEDIUM)
 **Search for:**
 - "**${companyName}** supply chain ${geography}"
-- "**${companyName}** manufacturing footprint"
+- "**${companyName}** operational footprint"
 - "**${companyName}** facilities ${geography}"
 - "**${companyName}** distribution network"
 
@@ -250,12 +253,12 @@ For EACH business segment the company operates:
 
 #### 10. Trends & Market Dynamics (Priority: HIGH)
 **Search for:**
-- "industrial sector trends 2024"
-- "${geography} manufacturing outlook 2024"
-- "nearshoring manufacturing ${geography}"
-- "digitalization industrial sector"
-- "ESG industrial companies"
-- "supply chain resilience manufacturing"
+- "sector trends 2024"
+- "${geography} sector outlook 2024"
+- "nearshoring trends ${geography}"
+- "digitalization trends"
+- "ESG sector companies"
+- "supply chain resilience"
 
 **Extract:**
 - Macro trends (economic, industry-wide)
@@ -457,6 +460,7 @@ Before returning JSON, verify:
 
 **START COMPREHENSIVE RESEARCH NOW. DO NOT STOP UNTIL ALL SECTIONS ARE COMPLETE.**
 `;
+  return appendReportTypeAddendum('foundation', inputs.reportType, basePrompt);
 }
 
 // Returns the markdown prompt with variables injected
