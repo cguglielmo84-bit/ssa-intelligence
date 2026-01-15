@@ -19,6 +19,14 @@ import { buildPeerBenchmarkingPrompt } from '../../prompts/peer-benchmarking.js'
 import { buildSkuOpportunitiesPrompt } from '../../prompts/sku-opportunities.js';
 import { buildRecentNewsPrompt } from '../../prompts/recent-news.js';
 import { buildConversationStartersPrompt } from '../../prompts/conversation-starters.js';
+import { buildInvestmentStrategyPrompt } from '../../prompts/investment-strategy.js';
+import { buildPortfolioSnapshotPrompt } from '../../prompts/portfolio-snapshot.js';
+import { buildDealActivityPrompt } from '../../prompts/deal-activity.js';
+import { buildDealTeamPrompt } from '../../prompts/deal-team.js';
+import { buildPortfolioMaturityPrompt } from '../../prompts/portfolio-maturity.js';
+import { buildLeadershipAndGovernancePrompt } from '../../prompts/leadership-and-governance.js';
+import { buildStrategicPrioritiesPrompt } from '../../prompts/strategic-priorities.js';
+import { buildOperatingCapabilitiesPrompt } from '../../prompts/operating-capabilities.js';
 import { generateAppendix } from '../../prompts/appendix.js';
 import { generateThumbnailForJob } from './thumbnail.js';
 
@@ -35,6 +43,14 @@ import {
   recentNewsOutputSchema,
   conversationStartersOutputSchema,
   appendixOutputSchema,
+  investmentStrategyOutputSchema,
+  portfolioSnapshotOutputSchema,
+  dealActivityOutputSchema,
+  dealTeamOutputSchema,
+  portfolioMaturityOutputSchema,
+  leadershipAndGovernanceOutputSchema,
+  strategicPrioritiesOutputSchema,
+  operatingCapabilitiesOutputSchema,
   getValidationSchema,
   type ReportTypeId
 } from '../../prompts/validation.js';
@@ -48,6 +64,14 @@ export type StageId =
   | 'exec_summary'
   | 'financial_snapshot'
   | 'company_overview'
+  | 'investment_strategy'
+  | 'portfolio_snapshot'
+  | 'deal_activity'
+  | 'deal_team'
+  | 'portfolio_maturity'
+  | 'leadership_and_governance'
+  | 'strategic_priorities'
+  | 'operating_capabilities'
   | 'segment_analysis'
   | 'trends'
   | 'peer_benchmarking'
@@ -76,6 +100,12 @@ export const STAGE_DEPENDENCIES: Record<StageId, StageId[]> = {
   // Phase 1 - Core sections (parallel execution)
   'financial_snapshot': ['foundation'],
   'company_overview': ['foundation'],
+  'investment_strategy': ['foundation'],
+  'portfolio_snapshot': ['foundation'],
+  'deal_activity': ['foundation'],
+  'leadership_and_governance': ['foundation'],
+  'strategic_priorities': ['foundation'],
+  'operating_capabilities': ['foundation'],
   'recent_news': ['foundation'],
   
   // Phase 2 - Complex section
@@ -85,6 +115,8 @@ export const STAGE_DEPENDENCIES: Record<StageId, StageId[]> = {
   'trends': ['foundation'],
   'peer_benchmarking': ['foundation', 'financial_snapshot'],
   'sku_opportunities': ['foundation'],
+  'portfolio_maturity': ['foundation'],
+  'deal_team': ['foundation'],
   
   // Phase 4 - Synthesis
   'exec_summary': ['foundation', 'financial_snapshot', 'company_overview'],
@@ -98,11 +130,19 @@ const USER_SELECTABLE_STAGES: StageId[] = [
   'exec_summary',
   'financial_snapshot',
   'company_overview',
+  'investment_strategy',
+  'portfolio_snapshot',
+  'deal_activity',
+  'leadership_and_governance',
+  'strategic_priorities',
+  'operating_capabilities',
   'segment_analysis',
   'trends',
   'peer_benchmarking',
   'sku_opportunities',
   'recent_news',
+  'portfolio_maturity',
+  'deal_team',
   'conversation_starters',
   'appendix'
 ];
@@ -111,11 +151,19 @@ const DEFAULT_STAGE_ORDER: StageId[] = [
   'foundation',
   'financial_snapshot',
   'company_overview',
+  'investment_strategy',
+  'portfolio_snapshot',
+  'deal_activity',
+  'leadership_and_governance',
+  'strategic_priorities',
+  'operating_capabilities',
   'segment_analysis',
   'trends',
   'peer_benchmarking',
   'sku_opportunities',
   'recent_news',
+  'portfolio_maturity',
+  'deal_team',
   'exec_summary',
   'conversation_starters',
   'appendix'
@@ -153,6 +201,62 @@ export const STAGE_CONFIGS: Record<StageId, StageConfig> = {
     dependencies: STAGE_DEPENDENCIES.company_overview,
     promptBuilder: buildCompanyOverviewPrompt,
     validationSchema: companyOverviewOutputSchema
+  },
+  investment_strategy: {
+    id: 'investment_strategy',
+    title: 'Investment Strategy and Focus',
+    dependencies: STAGE_DEPENDENCIES.investment_strategy,
+    promptBuilder: buildInvestmentStrategyPrompt,
+    validationSchema: investmentStrategyOutputSchema
+  },
+  portfolio_snapshot: {
+    id: 'portfolio_snapshot',
+    title: 'Portfolio Snapshot',
+    dependencies: STAGE_DEPENDENCIES.portfolio_snapshot,
+    promptBuilder: buildPortfolioSnapshotPrompt,
+    validationSchema: portfolioSnapshotOutputSchema
+  },
+  deal_activity: {
+    id: 'deal_activity',
+    title: 'Recent Investments and Add-ons',
+    dependencies: STAGE_DEPENDENCIES.deal_activity,
+    promptBuilder: buildDealActivityPrompt,
+    validationSchema: dealActivityOutputSchema
+  },
+  deal_team: {
+    id: 'deal_team',
+    title: 'Deal Team and Key Stakeholders',
+    dependencies: STAGE_DEPENDENCIES.deal_team,
+    promptBuilder: buildDealTeamPrompt,
+    validationSchema: dealTeamOutputSchema
+  },
+  portfolio_maturity: {
+    id: 'portfolio_maturity',
+    title: 'Portfolio Maturity and Exit Watchlist',
+    dependencies: STAGE_DEPENDENCIES.portfolio_maturity,
+    promptBuilder: buildPortfolioMaturityPrompt,
+    validationSchema: portfolioMaturityOutputSchema
+  },
+  leadership_and_governance: {
+    id: 'leadership_and_governance',
+    title: 'Leadership and Governance',
+    dependencies: STAGE_DEPENDENCIES.leadership_and_governance,
+    promptBuilder: buildLeadershipAndGovernancePrompt,
+    validationSchema: leadershipAndGovernanceOutputSchema
+  },
+  strategic_priorities: {
+    id: 'strategic_priorities',
+    title: 'Strategic Priorities and Transformation',
+    dependencies: STAGE_DEPENDENCIES.strategic_priorities,
+    promptBuilder: buildStrategicPrioritiesPrompt,
+    validationSchema: strategicPrioritiesOutputSchema
+  },
+  operating_capabilities: {
+    id: 'operating_capabilities',
+    title: 'Operating Capabilities',
+    dependencies: STAGE_DEPENDENCIES.operating_capabilities,
+    promptBuilder: buildOperatingCapabilitiesPrompt,
+    validationSchema: operatingCapabilitiesOutputSchema
   },
   segment_analysis: {
     id: 'segment_analysis',
@@ -676,11 +780,19 @@ export class ResearchOrchestrator {
    * Save stage output to database
    */
   private async saveStageOutput(jobId: string, stageId: StageId, output: any) {
-    const fieldMap: Record<StageId, string> = {
+    const fieldMap: Record<StageId, string | undefined> = {
       foundation: 'foundation',
       exec_summary: 'execSummary',
       financial_snapshot: 'financialSnapshot',
       company_overview: 'companyOverview',
+      investment_strategy: undefined,
+      portfolio_snapshot: undefined,
+      deal_activity: undefined,
+      deal_team: undefined,
+      portfolio_maturity: undefined,
+      leadership_and_governance: undefined,
+      strategic_priorities: undefined,
+      operating_capabilities: undefined,
       segment_analysis: 'segmentAnalysis',
       trends: 'trends',
       peer_benchmarking: 'peerBenchmarking',
@@ -691,15 +803,22 @@ export class ResearchOrchestrator {
     };
 
     const field = fieldMap[stageId];
-    if (!field) throw new Error(`Unknown stage: ${stageId}`);
-
-    await this.prisma.researchJob.update({
-      where: { id: jobId },
-      data: {
-        [field]: output,
-        overallConfidence: output.confidence?.level || 'MEDIUM'
-      }
-    });
+    if (field) {
+      await this.prisma.researchJob.update({
+        where: { id: jobId },
+        data: {
+          [field]: output,
+          overallConfidence: output.confidence?.level || 'MEDIUM'
+        }
+      });
+    } else {
+      await this.prisma.researchJob.update({
+        where: { id: jobId },
+        data: {
+          overallConfidence: output.confidence?.level || 'MEDIUM'
+        }
+      });
+    }
 
     await this.prisma.researchSubJob.updateMany({
       where: { researchId: jobId, stage: stageId },

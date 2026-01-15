@@ -433,6 +433,107 @@ export const conversationStartersOutputSchema = z.object({
 });
 
 // ============================================================================
+// REPORT-SPECIFIC SECTIONS
+// ============================================================================
+
+export const investmentStrategyOutputSchema = z.object({
+  confidence: confidenceSchema,
+  strategy_summary: z.string().min(80),
+  focus_areas: z.array(z.string()).min(3).max(6),
+  sector_focus: z.array(z.string()).min(2).max(6),
+  platform_vs_addon_patterns: z.array(z.string()).min(2).max(5),
+  sources_used: z.array(z.string().regex(/^S\d+$/))
+});
+
+export const portfolioSnapshotOutputSchema = z.object({
+  confidence: confidenceSchema,
+  summary: z.string().min(80),
+  portfolio_companies: z.array(z.object({
+    name: z.string(),
+    sector: z.string(),
+    platform_or_addon: z.string(),
+    geography: z.string().optional(),
+    notes: z.string().optional(),
+    source: z.string().regex(/^S\d+$/)
+  })).min(4),
+  sources_used: z.array(z.string().regex(/^S\d+$/))
+});
+
+export const dealActivityOutputSchema = z.object({
+  confidence: confidenceSchema,
+  summary: z.string().min(80),
+  deals: z.array(z.object({
+    company: z.string(),
+    date: z.string(),
+    deal_type: z.string(),
+    rationale: z.string().min(30),
+    source: z.string().regex(/^S\d+$/)
+  })).min(3),
+  sources_used: z.array(z.string().regex(/^S\d+$/))
+});
+
+export const dealTeamOutputSchema = z.object({
+  confidence: confidenceSchema,
+  stakeholders: z.array(z.object({
+    name: z.string(),
+    title: z.string(),
+    role: z.string(),
+    focus_area: z.string().optional(),
+    source: z.string().regex(/^S\d+$/)
+  })).min(2),
+  notes: z.string().min(50).optional(),
+  sources_used: z.array(z.string().regex(/^S\d+$/))
+});
+
+export const portfolioMaturityOutputSchema = z.object({
+  confidence: confidenceSchema,
+  summary: z.string().min(80),
+  holdings: z.array(z.object({
+    company: z.string(),
+    acquisition_period: z.string().optional(),
+    holding_period_years: z.number().optional(),
+    exit_signal: z.string().min(30),
+    source: z.string().regex(/^S\d+$/)
+  })).min(2),
+  sources_used: z.array(z.string().regex(/^S\d+$/))
+});
+
+export const leadershipAndGovernanceOutputSchema = z.object({
+  confidence: confidenceSchema,
+  leadership: z.array(z.object({
+    name: z.string(),
+    title: z.string(),
+    focus_area: z.string().optional(),
+    source: z.string().regex(/^S\d+$/)
+  })).min(3),
+  governance_notes: z.string().min(50),
+  sources_used: z.array(z.string().regex(/^S\d+$/))
+});
+
+export const strategicPrioritiesOutputSchema = z.object({
+  confidence: confidenceSchema,
+  priorities: z.array(z.object({
+    priority: z.string(),
+    description: z.string().min(40),
+    source: z.string().regex(/^S\d+$/)
+  })).min(3).max(6),
+  transformation_themes: z.array(z.string()).min(2).max(5),
+  sources_used: z.array(z.string().regex(/^S\d+$/))
+});
+
+export const operatingCapabilitiesOutputSchema = z.object({
+  confidence: confidenceSchema,
+  capabilities: z.array(z.object({
+    capability: z.string(),
+    description: z.string().min(40),
+    maturity: z.enum(['Early', 'Developing', 'Advanced']).optional(),
+    source: z.string().regex(/^S\d+$/)
+  })).min(3).max(8),
+  gaps: z.array(z.string()).optional(),
+  sources_used: z.array(z.string().regex(/^S\d+$/))
+});
+
+// ============================================================================
 // SECTION 10: APPENDIX
 // ============================================================================
 
@@ -477,6 +578,14 @@ export type ValidationStageId =
   | 'exec_summary'
   | 'financial_snapshot'
   | 'company_overview'
+  | 'investment_strategy'
+  | 'portfolio_snapshot'
+  | 'deal_activity'
+  | 'deal_team'
+  | 'portfolio_maturity'
+  | 'leadership_and_governance'
+  | 'strategic_priorities'
+  | 'operating_capabilities'
   | 'segment_analysis'
   | 'trends'
   | 'peer_benchmarking'
@@ -490,6 +599,14 @@ const BASE_SECTION_SCHEMAS: Record<ValidationStageId, z.ZodSchema<any>> = {
   exec_summary: execSummaryOutputSchema,
   financial_snapshot: financialSnapshotOutputSchema,
   company_overview: companyOverviewOutputSchema,
+  investment_strategy: investmentStrategyOutputSchema,
+  portfolio_snapshot: portfolioSnapshotOutputSchema,
+  deal_activity: dealActivityOutputSchema,
+  deal_team: dealTeamOutputSchema,
+  portfolio_maturity: portfolioMaturityOutputSchema,
+  leadership_and_governance: leadershipAndGovernanceOutputSchema,
+  strategic_priorities: strategicPrioritiesOutputSchema,
+  operating_capabilities: operatingCapabilitiesOutputSchema,
   segment_analysis: segmentAnalysisOutputSchema,
   trends: trendsOutputSchema,
   peer_benchmarking: peerBenchmarkingOutputSchema,
