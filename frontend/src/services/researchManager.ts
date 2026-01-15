@@ -568,6 +568,8 @@ const createJobApi = async (payload: {
   userAddedPrompt?: string;
   visibilityScope?: VisibilityScope;
   groupIds?: string[];
+  blueprintVersion?: string;
+  reportInputs?: Record<string, string>;
 }) => {
   const body = {
     companyName: payload.companyName,
@@ -576,6 +578,8 @@ const createJobApi = async (payload: {
     requestedBy: 'web-user',
     force: !!payload.force,
     reportType: payload.reportType,
+    blueprintVersion: payload.blueprintVersion,
+    reportInputs: payload.reportInputs,
     selectedSections: payload.selectedSections,
     userAddedPrompt: payload.userAddedPrompt,
     visibilityScope: payload.visibilityScope,
@@ -855,6 +859,8 @@ export const useResearchManager = () => {
       visibilityScope?: VisibilityScope;
       groupIds?: string[];
       userAddedPrompt?: string;
+      blueprintVersion?: string;
+      reportInputs?: Record<string, string>;
     }
   ) => {
     const res = await createJobApi({
@@ -866,7 +872,9 @@ export const useResearchManager = () => {
       selectedSections: options?.selectedSections,
       visibilityScope: options?.visibilityScope,
       groupIds: options?.groupIds,
-      userAddedPrompt: options?.userAddedPrompt
+      userAddedPrompt: options?.userAddedPrompt,
+      blueprintVersion: options?.blueprintVersion,
+      reportInputs: options?.reportInputs
     });
     const job: ResearchJob = {
       id: res.jobId,

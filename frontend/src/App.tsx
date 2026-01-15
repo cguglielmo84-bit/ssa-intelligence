@@ -53,6 +53,7 @@ export default function App() {
           jobs={jobs}
           userContext={userContext}
           reportBlueprints={reportBlueprints.blueprints}
+          reportBlueprintVersion={reportBlueprints.version}
           onNavigate={navigate}
         />
       );
