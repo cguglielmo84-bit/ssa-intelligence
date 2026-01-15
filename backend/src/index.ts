@@ -31,6 +31,7 @@ import { getMe } from './api/me.js';
 import { listGroups } from './api/groups/list.js';
 import { listUsers } from './api/admin/users.js';
 import { addGroupMember, createGroup, listAdminGroups, removeGroupMember } from './api/admin/groups.js';
+import { getReportBlueprints } from './api/report-blueprints.js';
 
 // ============================================================================
 // SERVER SETUP
@@ -167,6 +168,7 @@ app.get('/api/admin/groups', authMiddleware, requireAdmin, listAdminGroups);
 app.post('/api/admin/groups', authMiddleware, requireAdmin, createGroup);
 app.post('/api/admin/groups/:groupId/members', authMiddleware, requireAdmin, addGroupMember);
 app.delete('/api/admin/groups/:groupId/members/:userId', authMiddleware, requireAdmin, removeGroupMember);
+app.get('/api/report-blueprints', ...applyLimiter(getLimiter), authMiddleware, getReportBlueprints);
 
 // Regenerate specific sections (optional - for future implementation)
 app.post('/api/research/:id/regenerate', async (req, res) => {
