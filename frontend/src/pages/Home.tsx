@@ -53,6 +53,24 @@ export const Home: React.FC<HomeProps> = ({ jobs, onNavigate, onCancel, onDelete
     };
   }, [API_BASE]);
 
+  useEffect(() => {
+    if (!openMenuId) return;
+    const closeMenu = () => setOpenMenuId(null);
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        closeMenu();
+      }
+    };
+    window.addEventListener('scroll', closeMenu, true);
+    window.addEventListener('resize', closeMenu);
+    window.addEventListener('keydown', handleKeyDown);
+    return () => {
+      window.removeEventListener('scroll', closeMenu, true);
+      window.removeEventListener('resize', closeMenu);
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [openMenuId]);
+
   const companyGroups = useMemo(() => {
     const map = new Map<string, { key: string; companyName: string; jobs: ResearchJob[]; lastActive: number; hasActive: boolean; domain?: string | null }>();
     jobs.forEach((job) => {

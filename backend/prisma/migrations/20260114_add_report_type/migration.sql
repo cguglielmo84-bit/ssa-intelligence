@@ -12,8 +12,7 @@ UPDATE "ResearchJob"
 SET "reportType" = 'GENERIC'
 WHERE "reportType" IS NULL;
 
-ALTER TABLE "ResearchJob"
-  DROP CONSTRAINT IF EXISTS "ResearchJob_userId_normalizedCompany_normalizedGeography_normalizedIndustry_key";
+DROP INDEX IF EXISTS "ResearchJob_userId_normalizedCompany_normalizedGeography_normalizedIndustry_key";
 
 ALTER TABLE "ResearchJob"
   ADD CONSTRAINT "ResearchJob_userId_normalizedCompany_normalizedGeography_normalizedIndustry_reportType_key"
