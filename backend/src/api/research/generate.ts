@@ -18,6 +18,8 @@ interface GenerateRequestBody {
   force?: boolean;
   domain?: string;
   reportType?: string;
+  blueprintVersion?: string;
+  reportInputs?: Record<string, unknown>;
   selectedSections?: string[];
   userAddedPrompt?: string;
   visibilityScope?: string;
@@ -51,6 +53,10 @@ const normalizeDomain = (value: string | undefined | null) => {
     .replace(/^https?:\/\//i, '')
     .replace(/\/.*$/, '')
     .toLowerCase();
+};
+
+const isRecord = (value: unknown): value is Record<string, unknown> => {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
 };
 
 export async function generateResearch(req: Request, res: Response) {
@@ -89,6 +95,9 @@ export async function generateResearch(req: Request, res: Response) {
     if (!allowedReportTypes.has(reportType)) {
       return res.status(400).json({ error: 'Invalid reportType' });
     }
+
+    const blueprintVersion = typeof body.blueprintVersion === 'string' ? body.blueprintVersion.trim() : undefined;
+    const reportInputs = isRecord(body.reportInputs) ? body.reportInputs : undefined;
 
     const allowedSections = new Set([
       'exec_summary',
@@ -221,6 +230,8 @@ export async function generateResearch(req: Request, res: Response) {
       domain,
       normalizedDomain: normalizedDomainKey || null,
       reportType,
+      blueprintVersion,
+      reportInputs,
       selectedSections,
       userAddedPrompt: typeof body.userAddedPrompt === 'string' ? body.userAddedPrompt.trim() : undefined,
       visibilityScope,

@@ -243,6 +243,8 @@ export class ResearchOrchestrator {
     domain?: string | null;
     normalizedDomain?: string | null;
     reportType?: 'GENERIC' | 'INDUSTRIALS' | 'PE' | 'FS';
+    blueprintVersion?: string;
+    reportInputs?: Record<string, unknown>;
     selectedSections?: string[];
     userAddedPrompt?: string;
     visibilityScope?: 'PRIVATE' | 'GROUP' | 'GENERAL';
@@ -290,6 +292,8 @@ export class ResearchOrchestrator {
         metadata: {
           focusAreas: input.focusAreas || [],
           requestedSections: requestedStageIds,
+          blueprintVersion: input.blueprintVersion || null,
+          reportInputs: input.reportInputs || {},
           sourceTracking: {
             baseSourceCount: 0,
             sectionSources: {},
