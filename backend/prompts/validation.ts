@@ -91,27 +91,41 @@ export const competitorSchema = z.object({
 // FOUNDATION SCHEMA
 // ============================================================================
 
+const coerceNumber = (value: unknown) => {
+  if (typeof value !== 'string') return value;
+  const cleaned = value.replace(/[^0-9.+-]/g, '').trim();
+  if (!cleaned) return value;
+  const num = Number(cleaned);
+  return Number.isFinite(num) ? num : value;
+};
+
+const positiveNumber = z.preprocess(coerceNumber, z.number().positive());
+const positiveNumberOrString = z.preprocess(coerceNumber, z.union([z.number().positive(), z.string()]));
+const positiveInt = z.preprocess(coerceNumber, z.number().int().positive());
+const nonNegativeInt = z.preprocess(coerceNumber, z.number().int().nonnegative());
+const percentNumber = z.preprocess(coerceNumber, z.number().min(0).max(100));
+
 export const companyBasicsSchema = z.object({
   legal_name: z.string(),
   ticker: z.string().optional(),
   ownership: z.enum(['Public', 'Private', 'Subsidiary']),
   headquarters: z.string(),
-  global_revenue_usd: z.number().positive(),
-  global_employees: z.number().int().positive(),
+  global_revenue_usd: positiveNumberOrString,
+  global_employees: positiveInt,
   fiscal_year_end: z.string()
 });
 
 export const geographySpecificsSchema = z.object({
-  regional_revenue_usd: z.number().positive(),
-  regional_revenue_pct: z.number().min(0).max(100),
-  regional_employees: z.number().int().nonnegative(),
+  regional_revenue_usd: positiveNumberOrString,
+  regional_revenue_pct: percentNumber,
+  regional_employees: nonNegativeInt,
   facilities: z.array(facilityInfoSchema),
   key_facts: z.array(z.string())
 });
 
 export const segmentStructureSchema = z.object({
   name: z.string(),
-  revenue_pct: z.number().min(0).max(100),
+  revenue_pct: percentNumber,
   description: z.string()
 });
 
@@ -121,7 +135,7 @@ export const foundationOutputSchema = z.object({
   source_catalog: z.array(sourceReferenceSchema),
   segment_structure: z.array(segmentStructureSchema),
   fx_rates: z.record(z.object({
-    rate: z.number().positive(),
+    rate: positiveNumber,
     source: fxSourceSchema
   })),
   industry_averages: z.object({

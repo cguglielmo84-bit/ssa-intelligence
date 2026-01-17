@@ -61,6 +61,111 @@ const formatValue = (raw: any): string => {
   return String(raw);
 };
 
+type MetricUnit = {
+  type: 'currency' | 'percent' | 'ratio' | 'days' | 'years' | 'number' | 'bps';
+  suffix?: string;
+  prefix?: string;
+};
+
+const resolveMetricUnit = (metricName: string, unitHint?: string, valueType?: string): MetricUnit | null => {
+  const match = metricName.match(/\(([^)]+)\)\s*$/);
+  const token = match?.[1]?.toLowerCase();
+
+  if (token) {
+    if (token.includes('bps') || token.includes('bp')) return { type: 'bps', suffix: ' bps' };
+    if (token.includes('%') || token.includes('percent')) return { type: 'percent', suffix: '%' };
+    if (token.includes('x')) return { type: 'ratio', suffix: 'x' };
+    if (token.includes('day')) return { type: 'days', suffix: ' days' };
+    if (token.includes('year')) return { type: 'years', suffix: ' years' };
+    if (token.includes('count') || token.includes('score')) return { type: 'number' };
+    if (token.includes('$b')) return { type: 'currency', prefix: '$', suffix: 'B' };
+    if (token.includes('$m')) return { type: 'currency', prefix: '$', suffix: 'M' };
+    if (token.includes('$k')) return { type: 'currency', prefix: '$', suffix: 'K' };
+    if (token.includes('$')) return { type: 'currency', prefix: '$' };
+  }
+
+  const normalizedUnit = unitHint?.toLowerCase();
+  if (normalizedUnit) {
+    if (normalizedUnit.includes('%') || normalizedUnit.includes('percent')) return { type: 'percent', suffix: '%' };
+    if (normalizedUnit.includes('bps') || normalizedUnit.includes('bp')) return { type: 'bps', suffix: ' bps' };
+    if (normalizedUnit.includes('day')) return { type: 'days', suffix: ' days' };
+    if (normalizedUnit.includes('year')) return { type: 'years', suffix: ' years' };
+    if (normalizedUnit.includes('count') || normalizedUnit.includes('score')) return { type: 'number' };
+    if (normalizedUnit.includes('usd') && normalizedUnit.includes('b')) return { type: 'currency', prefix: '$', suffix: 'B' };
+    if (normalizedUnit.includes('usd') && normalizedUnit.includes('m')) return { type: 'currency', prefix: '$', suffix: 'M' };
+    if (normalizedUnit.includes('usd') && normalizedUnit.includes('k')) return { type: 'currency', prefix: '$', suffix: 'K' };
+    if (normalizedUnit.includes('usd') || normalizedUnit.includes('$')) return { type: 'currency', prefix: '$' };
+  }
+
+  const normalizedType = valueType?.toLowerCase();
+  if (normalizedType === 'percent') return { type: 'percent', suffix: '%' };
+  if (normalizedType === 'ratio') return { type: 'ratio', suffix: 'x' };
+  if (normalizedType === 'number') return { type: 'number' };
+  if (normalizedType === 'currency') return { type: 'currency', prefix: '$' };
+
+  return null;
+};
+
+const parseNumeric = (raw: string): number | null => {
+  const cleaned = raw.replace(/,/g, '');
+  const match = cleaned.match(/-?\d+(\.\d+)?/);
+  if (!match) return null;
+  const num = Number.parseFloat(match[0]);
+  return Number.isNaN(num) ? null : num;
+};
+
+const formatMetricValue = (
+  metricName: string,
+  raw: any,
+  unitHint?: string,
+  valueType?: string
+): string => {
+  if (raw === null || raw === undefined) return '';
+  const unit = resolveMetricUnit(metricName, unitHint, valueType);
+  if (typeof raw === 'string') {
+    const trimmed = raw.trim();
+    if (trimmed === '-') return '-';
+    if (trimmed === '') return '';
+    const hasLetters = /[a-z]/i.test(trimmed);
+    if (hasLetters && !unit) return trimmed;
+  }
+
+  const numeric =
+    typeof raw === 'number'
+      ? raw
+      : typeof raw === 'string'
+        ? parseNumeric(raw)
+        : null;
+
+  if (numeric === null) {
+    return typeof raw === 'string' ? raw.trim() : String(raw);
+  }
+
+  if (!unit) return formatNumber(numeric);
+
+  switch (unit.type) {
+    case 'percent':
+      return formatPercent(numeric);
+    case 'bps':
+      return `${formatNumber(numeric)}${unit.suffix ?? ''}`;
+    case 'ratio':
+      return `${formatNumber(numeric)}${unit.suffix ?? 'x'}`;
+    case 'days':
+      return `${formatNumber(numeric)}${unit.suffix ?? ' days'}`;
+    case 'years':
+      return `${formatNumber(numeric)}${unit.suffix ?? ' years'}`;
+    case 'currency': {
+      const formatted = formatNumber(numeric);
+      const prefix = unit.prefix ?? '$';
+      const suffix = unit.suffix ?? '';
+      return `${prefix}${formatted}${suffix}`;
+    }
+    case 'number':
+    default:
+      return formatNumber(numeric);
+  }
+};
+
 const mdTable = (headers: string[], rows: (string | number | null | undefined)[][]): string => {
   if (!rows.length) return '';
   const headerRow = `| ${headers.join(' | ')} |`;
@@ -97,10 +202,12 @@ export const formatSectionContent = (sectionId: SectionId, data: any): string =>
             ['Metric', 'Company', 'Industry Avg', 'Source'],
             data.kpi_table.metrics.map((m: any) => {
               const metricName = m.unit ? `${m.metric} (${m.unit})` : m.metric;
+              const companyValue = formatMetricValue(metricName, m.company, m.unit, m.value_type);
+              const industryValue = formatMetricValue(metricName, m.industry_avg, m.unit, m.value_type);
               return [
                 metricName,
-                formatValue(m.company),
-                formatValue(m.industry_avg),
+                companyValue,
+                industryValue,
                 m.source || '',
               ];
             })
@@ -178,11 +285,14 @@ export const formatSectionContent = (sectionId: SectionId, data: any): string =>
                 ['Metric', 'Segment', 'Company Avg', 'Industry Avg', 'Source'],
                 seg.financial_snapshot.table.map((m: any) => {
                   const metricName = m.unit ? `${m.metric} (${m.unit})` : m.metric;
+                  const segmentValue = formatMetricValue(metricName, m.segment, m.unit, m.value_type);
+                  const companyValue = formatMetricValue(metricName, m.company_avg, m.unit, m.value_type);
+                  const industryValue = formatMetricValue(metricName, m.industry_avg, m.unit, m.value_type);
                   return [
                     metricName,
-                    m.segment,
-                    formatValue(m.company_avg),
-                    formatValue(m.industry_avg),
+                    segmentValue,
+                    companyValue,
+                    industryValue,
                     m.source || '',
                   ];
                 })
@@ -345,4 +455,3 @@ export const sectionOrder: { id: SectionId; title: string; field: string }[] = [
   { id: 'conversation_starters', title: 'Conversation Starters', field: 'conversationStarters' },
   { id: 'appendix', title: 'Appendix & Sources', field: 'appendix' }
 ];
-

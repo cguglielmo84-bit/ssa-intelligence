@@ -2,7 +2,7 @@
  * Report-Specific Section: Leadership and Governance
  */
 
-import type { ReportTypeId } from './report-type-addendums.js';
+import { appendReportTypeAddendum, type ReportTypeId } from './report-type-addendums.js';
 
 export interface FoundationOutput {
   company_basics: {
@@ -60,17 +60,26 @@ export function buildLeadershipAndGovernancePrompt(input: LeadershipAndGovernanc
   const { foundation, companyName } = input;
   const foundationJson = JSON.stringify(foundation, null, 2);
 
-  return `# Leadership and Governance - Research Prompt
+  const basePrompt = `# Leadership and Governance - Research Prompt
 
-Summarize leadership and governance signals for ${companyName}. Highlight key leaders, accountability signals, and governance notes that matter for exec-level conversations.
+## CRITICAL INSTRUCTIONS
 
-## Input context (foundation)
+**Follow ALL rules in style-guide.md** - This is mandatory for formatting consistency.
+
+**Your mission:** Summarize leadership and governance signals for **${companyName}**. Highlight key leaders, accountability signals, and governance notes that matter for exec-level conversations.
+
+---
+
+## INPUT CONTEXT (From Foundation)
 \`\`\`json
 ${foundationJson}
 \`\`\`
 
-## Output requirements
-Return ONLY valid JSON matching this schema:
+---
+
+## OUTPUT REQUIREMENTS
+
+**You MUST output valid JSON matching this EXACT schema:**
 
 \`\`\`typescript
 interface LeadershipAndGovernanceOutput {
@@ -89,5 +98,54 @@ interface LeadershipAndGovernanceOutput {
 ## Guidance
 - Include at least 3 leaders with source references.
 - Governance notes should focus on accountability and operating structure.
-`;
+
+## Example output (format only)
+\`\`\`json
+{
+  "confidence": { "level": "MEDIUM", "reason": "Leadership bios confirm roles but limited governance disclosures." },
+  "leadership": [
+    {
+      "name": "Jordan Patel",
+      "title": "Chief Executive Officer",
+      "focus_area": "Portfolio strategy",
+      "source": "S1"
+    },
+    {
+      "name": "Casey Rivera",
+      "title": "Chief Operating Officer",
+      "focus_area": "Operating model",
+      "source": "S4"
+    }
+  ],
+  "governance_notes": "Board and operating committee changes over the past year indicate increased focus on portfolio oversight.",
+  "sources_used": ["S1", "S4"]
+}
+\`\`\`
+
+## CRITICAL REMINDERS
+
+1. Follow style guide: All formatting rules apply
+2. Valid JSON only: No markdown, no headings, no prose outside JSON
+3. Source everything: No unsourced claims
+4. Geography focus: Emphasize the target geography throughout
+5. Exact schema match: Follow the TypeScript interface exactly
+
+---
+
+## Source rules (STRICT)
+1. **Source IDs must be S# only.** Reuse IDs from \`foundation.source_catalog\`; do **not** renumber existing sources.
+2. **One source per field.** Every \`source\` field must be a single S# (no commas or ranges).
+3. **If multiple sources apply,** pick the most authoritative for the field and list all relevant S# in \`sources_used\`.
+4. **Never invent IDs or use non-S formats.** Only S# strings are valid.
+
+**Example:** \`"source": "S3"\` and \`"sources_used": ["S1","S3","S8"]\`.
+
+**Before outputting JSON, verify:**
+- [ ] Valid JSON syntax (no markdown)
+- [ ] All \`source\` fields are single S# values
+- [ ] \`sources_used\` only contains S# values
+
+**OUTPUT ONLY VALID JSON MATCHING THE SCHEMA.**`;
+
+  return appendReportTypeAddendum('leadership_and_governance', input.reportType, basePrompt);
 }

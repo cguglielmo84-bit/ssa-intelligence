@@ -231,6 +231,108 @@ const formatValue = (raw: any): string => {
   return String(raw);
 };
 
+type MetricUnit = {
+  type: 'currency' | 'percent' | 'ratio' | 'days' | 'years' | 'number' | 'bps';
+  suffix?: string;
+  prefix?: string;
+};
+
+const resolveMetricUnit = (metricName: string, unitHint?: string, valueType?: string): MetricUnit | null => {
+  const match = metricName.match(/\(([^)]+)\)\s*$/);
+  const token = match?.[1]?.toLowerCase();
+
+  if (token) {
+    if (token.includes('$b')) return { type: 'currency', prefix: '$', suffix: 'B' };
+    if (token.includes('$m')) return { type: 'currency', prefix: '$', suffix: 'M' };
+    if (token.includes('$k')) return { type: 'currency', prefix: '$', suffix: 'K' };
+    if (token.includes('bps') || token.includes('bp')) return { type: 'bps', suffix: ' bps' };
+    if (token.includes('%') || token.includes('percent')) return { type: 'percent', suffix: '%' };
+    if (token.includes('x')) return { type: 'ratio', suffix: 'x' };
+    if (token.includes('day')) return { type: 'days', suffix: ' days' };
+    if (token.includes('year')) return { type: 'years', suffix: ' years' };
+    if (token.includes('count') || token.includes('score')) return { type: 'number' };
+    if (token.includes('$')) return { type: 'currency', prefix: '$' };
+  }
+
+  const normalizedUnit = unitHint?.toLowerCase();
+  if (normalizedUnit) {
+    if (normalizedUnit.includes('%') || normalizedUnit.includes('percent')) return { type: 'percent', suffix: '%' };
+    if (normalizedUnit.includes('bps') || normalizedUnit.includes('bp')) return { type: 'bps', suffix: ' bps' };
+    if (normalizedUnit.includes('day')) return { type: 'days', suffix: ' days' };
+    if (normalizedUnit.includes('year')) return { type: 'years', suffix: ' years' };
+    if (normalizedUnit.includes('count') || normalizedUnit.includes('score')) return { type: 'number' };
+    if (normalizedUnit.includes('usd') || normalizedUnit.includes('$')) return { type: 'currency', prefix: '$' };
+  }
+
+  const normalizedType = valueType?.toLowerCase();
+  if (normalizedType === 'percent') return { type: 'percent', suffix: '%' };
+  if (normalizedType === 'ratio') return { type: 'ratio', suffix: 'x' };
+  if (normalizedType === 'number') return { type: 'number' };
+  if (normalizedType === 'currency') return { type: 'currency', prefix: '$' };
+
+  return null;
+};
+
+const parseNumeric = (raw: string): number | null => {
+  const cleaned = raw.replace(/,/g, '');
+  const match = cleaned.match(/-?\d+(\.\d+)?/);
+  if (!match) return null;
+  const num = Number.parseFloat(match[0]);
+  return Number.isNaN(num) ? null : num;
+};
+
+const formatMetricValue = (
+  metricName: string,
+  raw: any,
+  unitHint?: string,
+  valueType?: string
+): string => {
+  if (raw === null || raw === undefined) return '';
+  const unit = resolveMetricUnit(metricName, unitHint, valueType);
+  if (typeof raw === 'string') {
+    const trimmed = raw.trim();
+    if (trimmed === '-') return '-';
+    if (trimmed === '') return '';
+    const hasLetters = /[a-z]/i.test(trimmed);
+    if (hasLetters && !unit) return trimmed;
+  }
+
+  const numeric =
+    typeof raw === 'number'
+      ? raw
+      : typeof raw === 'string'
+        ? parseNumeric(raw)
+        : null;
+
+  if (numeric === null) {
+    return typeof raw === 'string' ? raw.trim() : String(raw);
+  }
+
+  if (!unit) return formatNumber(numeric);
+
+  switch (unit.type) {
+    case 'percent':
+      return formatPercent(numeric);
+    case 'bps':
+      return `${formatNumber(numeric)}${unit.suffix ?? ''}`;
+    case 'ratio':
+      return `${formatNumber(numeric)}${unit.suffix ?? 'x'}`;
+    case 'days':
+      return `${formatNumber(numeric)}${unit.suffix ?? ' days'}`;
+    case 'years':
+      return `${formatNumber(numeric)}${unit.suffix ?? ' years'}`;
+    case 'currency': {
+      const formatted = formatNumber(numeric);
+      const prefix = unit.prefix ?? '$';
+      const suffix = unit.suffix ?? '';
+      return `${prefix}${formatted}${suffix}`;
+    }
+    case 'number':
+    default:
+      return formatNumber(numeric);
+  }
+};
+
 // Simple Markdown table builder
 const mdTable = (headers: string[], rows: (string | number | null | undefined)[][]): string => {
   if (!rows.length) return '';
@@ -269,10 +371,12 @@ const formatSectionContent = (sectionId: SectionId, data: any): string => {
             ['Metric', 'Company', 'Industry Avg', 'Source'],
             data.kpi_table.metrics.map((m: any) => {
               const metricName = m.unit ? `${m.metric} (${m.unit})` : m.metric;
+              const companyValue = formatMetricValue(metricName, m.company, m.unit, m.value_type);
+              const industryValue = formatMetricValue(metricName, m.industry_avg, m.unit, m.value_type);
               return [
                 metricName,
-                formatValue(m.company),
-                formatValue(m.industry_avg),
+                companyValue,
+                industryValue,
                 m.source || '',
               ];
             })
@@ -338,6 +442,144 @@ const formatSectionContent = (sectionId: SectionId, data: any): string => {
       }
       return parts.filter(Boolean).join('\n\n');
     }
+    case 'investment_strategy': {
+      const parts: string[] = [];
+      if (data.strategy_summary) parts.push(data.strategy_summary);
+      if (Array.isArray(data.focus_areas) && data.focus_areas.length) {
+        parts.push('\n**Focus Areas**');
+        parts.push(data.focus_areas.map((item: any) => `- ${item}`).join('\n'));
+      }
+      if (Array.isArray(data.sector_focus) && data.sector_focus.length) {
+        parts.push('\n**Sector Focus**');
+        parts.push(data.sector_focus.map((item: any) => `- ${item}`).join('\n'));
+      }
+      if (Array.isArray(data.platform_vs_addon_patterns) && data.platform_vs_addon_patterns.length) {
+        parts.push('\n**Platform vs Add-on Patterns**');
+        parts.push(data.platform_vs_addon_patterns.map((item: any) => `- ${item}`).join('\n'));
+      }
+      return parts.filter(Boolean).join('\n\n');
+    }
+    case 'portfolio_snapshot': {
+      const parts: string[] = [];
+      if (data.summary) parts.push(data.summary);
+      if (Array.isArray(data.portfolio_companies) && data.portfolio_companies.length) {
+        parts.push('\n**Portfolio Companies**');
+        parts.push(
+          mdTable(
+            ['Name', 'Sector', 'Type', 'Geography', 'Notes', 'Source'],
+            data.portfolio_companies.map((c: any) => [
+              c.name,
+              c.sector,
+              c.platform_or_addon,
+              c.geography || '',
+              c.notes || '',
+              c.source || ''
+            ])
+          )
+        );
+      }
+      return parts.filter(Boolean).join('\n\n');
+    }
+    case 'deal_activity': {
+      const parts: string[] = [];
+      if (data.summary) parts.push(data.summary);
+      if (Array.isArray(data.deals) && data.deals.length) {
+        parts.push('\n**Deal Activity**');
+        parts.push(
+          mdTable(
+            ['Company', 'Date', 'Type', 'Rationale', 'Source'],
+            data.deals.map((d: any) => [d.company, d.date, d.deal_type, d.rationale, d.source || ''])
+          )
+        );
+      }
+      return parts.filter(Boolean).join('\n\n');
+    }
+    case 'deal_team': {
+      const parts: string[] = [];
+      if (Array.isArray(data.stakeholders) && data.stakeholders.length) {
+        parts.push('\n**Stakeholders**');
+        parts.push(
+          mdTable(
+            ['Name', 'Title', 'Role', 'Focus Area', 'Source'],
+            data.stakeholders.map((s: any) => [s.name, s.title, s.role, s.focus_area || '', s.source || ''])
+          )
+        );
+      }
+      if (data.notes) parts.push(`\n**Notes**\n${data.notes}`);
+      return parts.filter(Boolean).join('\n\n');
+    }
+    case 'portfolio_maturity': {
+      const parts: string[] = [];
+      if (data.summary) parts.push(data.summary);
+      if (Array.isArray(data.holdings) && data.holdings.length) {
+        parts.push('\n**Holdings**');
+        parts.push(
+          mdTable(
+            ['Company', 'Acquired', 'Holding Years', 'Exit Signal', 'Source'],
+            data.holdings.map((h: any) => [
+              h.company,
+              h.acquisition_period || '',
+              h.holding_period_years ?? '',
+              h.exit_signal,
+              h.source || ''
+            ])
+          )
+        );
+      }
+      return parts.filter(Boolean).join('\n\n');
+    }
+    case 'leadership_and_governance': {
+      const parts: string[] = [];
+      if (Array.isArray(data.leadership) && data.leadership.length) {
+        parts.push('\n**Leadership**');
+        parts.push(
+          mdTable(
+            ['Name', 'Title', 'Focus Area', 'Source'],
+            data.leadership.map((l: any) => [l.name, l.title, l.focus_area || '', l.source || ''])
+          )
+        );
+      }
+      if (data.governance_notes) parts.push(`\n**Governance Notes**\n${data.governance_notes}`);
+      return parts.filter(Boolean).join('\n\n');
+    }
+    case 'strategic_priorities': {
+      const parts: string[] = [];
+      if (Array.isArray(data.priorities) && data.priorities.length) {
+        parts.push('\n**Priorities**');
+        parts.push(
+          data.priorities
+            .map((p: any) => `- ${p.priority}${p.source ? ` [${p.source}]` : ''}\n  ${p.description}`)
+            .join('\n')
+        );
+      }
+      if (Array.isArray(data.transformation_themes) && data.transformation_themes.length) {
+        parts.push('\n**Transformation Themes**');
+        parts.push(data.transformation_themes.map((t: any) => `- ${t}`).join('\n'));
+      }
+      return parts.filter(Boolean).join('\n\n');
+    }
+    case 'operating_capabilities': {
+      const parts: string[] = [];
+      if (Array.isArray(data.capabilities) && data.capabilities.length) {
+        parts.push('\n**Capabilities**');
+        parts.push(
+          mdTable(
+            ['Capability', 'Description', 'Maturity', 'Source'],
+            data.capabilities.map((c: any) => [
+              c.capability,
+              c.description,
+              c.maturity || '',
+              c.source || ''
+            ])
+          )
+        );
+      }
+      if (Array.isArray(data.gaps) && data.gaps.length) {
+        parts.push('\n**Gaps**');
+        parts.push(data.gaps.map((g: any) => `- ${g}`).join('\n'));
+      }
+      return parts.filter(Boolean).join('\n\n');
+    }
     case 'segment_analysis': {
       const parts: string[] = [];
       if (data.overview) parts.push(data.overview);
@@ -350,11 +592,14 @@ const formatSectionContent = (sectionId: SectionId, data: any): string => {
                 ['Metric', 'Segment', 'Company Avg', 'Industry Avg', 'Source'],
                 seg.financial_snapshot.table.map((m: any) => {
                   const metricName = m.unit ? `${m.metric} (${m.unit})` : m.metric;
+                  const segmentValue = formatMetricValue(metricName, m.segment, m.unit, m.value_type);
+                  const companyValue = formatMetricValue(metricName, m.company_avg, m.unit, m.value_type);
+                  const industryValue = formatMetricValue(metricName, m.industry_avg, m.unit, m.value_type);
                   return [
                     metricName,
-                    m.segment,
-                    formatValue(m.company_avg),
-                    formatValue(m.industry_avg),
+                    segmentValue,
+                    companyValue,
+                    industryValue,
                     m.source || '',
                   ];
                 })

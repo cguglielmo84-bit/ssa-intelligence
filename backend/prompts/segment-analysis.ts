@@ -294,10 +294,17 @@ interface Section4Output {
 
 ---
 
+## OUTPUT FORMAT RULES
+
+**Valid JSON only:** No markdown, no headings, no prose outside the JSON object.
+
+---
+
 ## REQUIRED SECTIONS PER SEGMENT
 
 ### 4.X.1 Financial Snapshot
 - Table with metrics (use "–" if unavailable)
+- Units belong in metric names; table values must be numeric only (or -)
 - Geography notes (2-3 sentences on ${geography} performance)
 
 ### 4.X.2 Performance Analysis
@@ -350,6 +357,16 @@ interface Section4Output {
 - [ ] Geography focus 75-80% within each segment
 - [ ] Segment-specific competitors (not company peers)
 - [ ] Sources cited throughout
+
+---
+
+## CRITICAL REMINDERS
+
+1. Follow style guide: All formatting rules apply
+2. Valid JSON only: No markdown, no headings, no prose outside JSON
+3. Source everything: No unsourced claims
+4. Geography focus: Emphasize the target geography throughout
+5. Exact schema match: Follow the TypeScript interface exactly
 
 ---
 
@@ -637,77 +654,172 @@ export function validateSegmentOutput(output: any): output is SegmentAnalysis {
 }
 
 export function formatSection4ForDocument(output: Section4Output): string {
-  let markdown = `# 4. Segment Analysis\n\n`;
-  markdown += `**Confidence: ${output.confidence.level}** – ${output.confidence.reason}\n\n`;
-  
+  const formatNumber = (value: number) =>
+    value.toLocaleString('en-US', { maximumFractionDigits: 2 });
+
+  const resolveMetricUnit = (metricName: string) => {
+    const match = metricName.match(/\(([^)]+)\)\s*$/);
+    const token = match?.[1].toLowerCase();
+
+    if (!token) return null;
+    if (token.includes('$b')) return { type: 'currency', suffix: 'B' };
+    if (token.includes('$m')) return { type: 'currency', suffix: 'M' };
+    if (token.includes('$k')) return { type: 'currency', suffix: 'K' };
+    if (token.includes('%')) return { type: 'percent', suffix: '%' };
+    if (token.includes('x')) return { type: 'ratio', suffix: 'x' };
+    if (token.includes('day')) return { type: 'days', suffix: ' days' };
+    if (token.includes('year')) return { type: 'years', suffix: ' years' };
+    if (token.includes('count') || token.includes('score')) return { type: 'number', suffix: '' };
+    return null;
+  };
+
+  const inferValueType = (metricName: string) => {
+    const metric = metricName.toLowerCase();
+    if (metric.includes('margin') || metric.includes('growth') || metric.includes('irr') || metric.includes('roe') ||
+        metric.includes('roa') || metric.includes('rate') || metric.includes('pct') || metric.includes('percent')) {
+      return 'percent';
+    }
+    if (metric.includes('turn') || metric.includes('multiple') || metric.includes('leverage')) return 'ratio';
+    if (metric.includes('day') || metric.includes('dso') || metric.includes('dio') || metric.includes('dpo')) {
+      return 'days';
+    }
+    return 'currency';
+  };
+
+  const formatTableValue = (metricName: string, value: number | string) => {
+    if (typeof value !== 'number') return value;
+    const unit = resolveMetricUnit(metricName);
+    const formatted = formatNumber(value);
+
+    if (unit?.type === 'percent') return `${formatted}%`;
+    if (unit?.type === 'currency') return `$${formatted}${unit.suffix}`;
+    if (unit?.type === 'ratio') return `${formatted}x`;
+    if (unit?.type === 'days') return `${formatted} days`;
+    if (unit?.type === 'years') return `${formatted} years`;
+
+    const fallbackType = inferValueType(metricName);
+    if (fallbackType === 'percent') return `${formatted}%`;
+    if (fallbackType === 'ratio') return `${formatted}x`;
+    if (fallbackType === 'days') return `${formatted} days`;
+    return `$${formatted}M`;
+  };
+
+  let markdown = `# 4. Segment Analysis
+
+`;
+  markdown += `**Confidence: ${output.confidence.level}** ? ${output.confidence.reason}
+
+`;
+
   // 4.1 Segment Overview
-  markdown += `## 4.1 Segment Overview\n\n`;
-  markdown += `${output.overview}\n\n`;
-  
+  markdown += `## 4.1 Segment Overview
+
+`;
+  markdown += `${output.overview}
+
+`;
+
   // 4.X for each segment
   for (let i = 0; i < output.segments.length; i++) {
     const segment = output.segments[i];
     const num = i + 2; // Start at 4.2, 4.3, etc.
-    
-    markdown += `## 4.${num} ${segment.name}\n\n`;
-    
+
+    markdown += `## 4.${num} ${segment.name}
+
+`;
+
     // 4.X.1 Financial Snapshot
-    markdown += `### 4.${num}.1 Financial Snapshot\n\n`;
-    
+    markdown += `### 4.${num}.1 Financial Snapshot
+
+`;
+    markdown += `Note: Monetary values shown in USD millions unless stated.
+
+`;
+
     // Table
-    markdown += `| Metric | Segment | Company Avg | Industry Avg | Source |\n`;
-    markdown += `|--------|---------|-------------|--------------|--------|\n`;
-    
+    markdown += `| Metric | Segment | Company Avg | Industry Avg | Source |
+`;
+    markdown += `|--------|---------|-------------|--------------|--------|
+`;
+
     for (const metric of segment.financial_snapshot.table) {
       const values = [
-        metric.segment,
-        metric.company_avg,
-        metric.industry_avg
-      ].map(v => typeof v === 'number' ? v.toLocaleString() : v);
-      
-      markdown += `| ${metric.metric} | ${values.join(' | ')} | ${metric.source} |\n`;
+        formatTableValue(metric.metric, metric.segment),
+        formatTableValue(metric.metric, metric.company_avg),
+        formatTableValue(metric.metric, metric.industry_avg)
+      ];
+
+      markdown += `| ${metric.metric} | ${values.join(' | ')} | ${metric.source} |
+`;
     }
-    
-    markdown += `\n${segment.financial_snapshot.geography_notes}\n\n`;
-    markdown += `*FX Source: ${segment.financial_snapshot.fx_source}*\n\n`;
-    
+
+    markdown += `
+${segment.financial_snapshot.geography_notes}
+
+`;
+    markdown += `*FX Source: ${segment.financial_snapshot.fx_source}*
+
+`;
+
     // 4.X.2 Performance Analysis
-    markdown += `### 4.${num}.2 Performance Analysis\n\n`;
-    
+    markdown += `### 4.${num}.2 Performance Analysis
+
+`;
+
     for (const paragraph of segment.performance_analysis.paragraphs) {
-      markdown += `${paragraph}\n\n`;
+      markdown += `${paragraph}
+
+`;
     }
-    
+
     if (segment.performance_analysis.key_drivers.length > 0) {
-      markdown += `**Key Drivers:**\n\n`;
+      markdown += `**Key Drivers:**
+
+`;
       for (const driver of segment.performance_analysis.key_drivers) {
-        markdown += `- ${driver}\n`;
+        markdown += `- ${driver}
+`;
       }
-      markdown += `\n`;
+      markdown += `
+`;
     }
-    
+
     if (segment.performance_analysis.analyst_quotes.length > 0) {
-      markdown += `**Analyst Perspectives:**\n\n`;
+      markdown += `**Analyst Perspectives:**
+
+`;
       for (const quote of segment.performance_analysis.analyst_quotes) {
-        markdown += `*"${quote.quote}"* - ${quote.analyst}, ${quote.firm} (${quote.source})\n\n`;
+        markdown += `*"${quote.quote}"* - ${quote.analyst}, ${quote.firm} (${quote.source})
+
+`;
       }
     }
-    
+
     // 4.X.3 Competitive Landscape
-    markdown += `### 4.${num}.3 Competitive Landscape\n\n`;
-    
-    markdown += `**Key Competitors:**\n\n`;
+    markdown += `### 4.${num}.3 Competitive Landscape
+
+`;
+
+    markdown += `**Key Competitors:**
+
+`;
     for (const comp of segment.competitive_landscape.competitors) {
       markdown += `- **${comp.name}**`;
       if (comp.market_share) markdown += ` (${comp.market_share})`;
-      markdown += `: ${comp.geography}\n`;
+      markdown += `: ${comp.geography}
+`;
     }
-    markdown += `\n`;
-    
-    markdown += `**Positioning:** ${segment.competitive_landscape.positioning}\n\n`;
-    markdown += `**Recent Dynamics:** ${segment.competitive_landscape.recent_dynamics}\n\n`;
+    markdown += `
+`;
+
+    markdown += `**Positioning:** ${segment.competitive_landscape.positioning}
+
+`;
+    markdown += `**Recent Dynamics:** ${segment.competitive_landscape.recent_dynamics}
+
+`;
   }
-  
+
   return markdown;
 }
 

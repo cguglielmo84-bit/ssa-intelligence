@@ -34,8 +34,27 @@ export async function cancelResearchJob(req: Request, res: Response) {
       return res.status(400).json({ error: 'Job already completed', status: job.status });
     }
 
-    await prisma.researchJob.delete({
-      where: { id }
+    const deleteResult = await prisma.$transaction(async (tx) => {
+      const subJobs = await tx.researchSubJob.deleteMany({
+        where: { researchId: id }
+      });
+      const jobGroups = await tx.researchJobGroup.deleteMany({
+        where: { jobId: id }
+      });
+      const jobs = await tx.researchJob.deleteMany({
+        where: { id }
+      });
+      return { subJobs, jobGroups, jobs };
+    });
+
+    if (deleteResult.jobs.count === 0) {
+      return res.status(404).json({ error: 'Job not found', jobId: id });
+    }
+
+    console.log('[cancel] deleted job', {
+      jobId: id,
+      subJobs: deleteResult.subJobs.count,
+      jobGroups: deleteResult.jobGroups.count
     });
 
     // Nudge the queue to pick the next job if this one was running/queued

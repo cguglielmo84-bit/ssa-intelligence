@@ -3,7 +3,7 @@
  * Manages research job execution with dependency resolution and parallel processing
  */
 
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient, Prisma } from '@prisma/client';
 import { getClaudeClient } from './claude-client.js';
 import type { FoundationOutput } from '../types/prompts.js';
 import type { ClaudeResponse } from './claude-client.js';
@@ -29,6 +29,7 @@ import { buildStrategicPrioritiesPrompt } from '../../prompts/strategic-prioriti
 import { buildOperatingCapabilitiesPrompt } from '../../prompts/operating-capabilities.js';
 import { generateAppendix } from '../../prompts/appendix.js';
 import { generateThumbnailForJob } from './thumbnail.js';
+import { getReportBlueprint } from './report-blueprints.js';
 
 // Import validation schemas
 import {
@@ -448,61 +449,128 @@ export class ResearchOrchestrator {
 
     try {
       while (true) {
-        let lockHeld = false;
-        try {
-          const lockAcquired = await this.tryAcquireLock();
-          if (!lockAcquired) {
-            await this.delay(750);
-            continue;
-          }
-          lockHeld = true;
-
-          // If a job is already running, back off and retry later
-          const staleCount = await this.cleanupStaleRunningJobs();
-          if (staleCount > 0) {
-            console.log(`[queue] Cleaned ${staleCount} stale running job(s)`);
-          }
-
-          const runningJobs = await this.prisma.researchJob.findMany({
-            where: { status: 'running' },
-            select: { id: true, currentStage: true }
-          });
-          if (runningJobs.length > 0) {
-            console.log('[queue] Detected running job, delaying promotion', runningJobs);
-            await this.releaseLock();
-            lockHeld = false;
-            await this.delay(750);
-            continue;
-          }
-
-          const jobToRun = await this.prisma.researchJob.findFirst({
-            where: { status: 'queued' },
-            orderBy: { queuedAt: 'asc' },
-            select: { id: true }
-          });
-
-          if (!jobToRun) {
-            // Nothing to do; release lock and exit loop
-            await this.releaseLock();
-            lockHeld = false;
-            break;
-          }
-
-          console.log('[queue] Promoting job to running:', jobToRun.id);
-          await this.prisma.researchJob.update({
-            where: { id: jobToRun.id },
-            data: {
-              status: 'running',
-              startedAt: new Date()
+        const queueResult = await this.prisma.$transaction(async (tx) => {
+          let lockHeld = false;
+          try {
+            const lockAcquired = await this.tryAcquireLock(tx);
+            if (!lockAcquired) {
+              return { action: 'retry' as const };
             }
-          });
+            lockHeld = true;
 
-          await this.executeJob(jobToRun.id);
-        } finally {
-          if (lockHeld) {
-            await this.releaseLock();
+            const staleCount = await this.cleanupStaleRunningJobs(tx);
+
+            const runningJobs = await tx.researchJob.findMany({
+              where: { status: 'running' },
+              select: {
+                id: true,
+                currentStage: true,
+                startedAt: true,
+                updatedAt: true,
+                subJobs: {
+                  select: { status: true, updatedAt: true, startedAt: true }
+                }
+              }
+            });
+            if (runningJobs.length > 0) {
+              return { action: 'delay' as const, runningJobs, staleCount };
+            }
+
+            const jobToRun = await tx.researchJob.findFirst({
+              where: { status: 'queued' },
+              orderBy: { queuedAt: 'asc' },
+              select: { id: true }
+            });
+
+            if (!jobToRun) {
+              return { action: 'idle' as const, staleCount };
+            }
+
+            await tx.researchJob.update({
+              where: { id: jobToRun.id },
+              data: {
+                status: 'running',
+                startedAt: new Date()
+              }
+            });
+
+            return { action: 'run' as const, jobId: jobToRun.id, staleCount };
+          } finally {
+            if (lockHeld) {
+              await this.releaseLock(tx);
+            }
           }
+        });
+
+        if (queueResult.action === 'retry') {
+          await this.delay(750);
+          continue;
         }
+
+        if ('staleCount' in queueResult && queueResult.staleCount > 0) {
+          console.log(`[queue] Cleaned ${queueResult.staleCount} stale running job(s)`);
+        }
+
+        if (queueResult.action === 'delay') {
+          const summaries = queueResult.runningJobs.map((job) => {
+            const counts = {
+              pending: 0,
+              running: 0,
+              completed: 0,
+              failed: 0,
+              cancelled: 0
+            };
+            let lastSubJobUpdate = 0;
+            for (const subJob of job.subJobs) {
+              switch (subJob.status) {
+                case 'pending':
+                  counts.pending += 1;
+                  break;
+                case 'running':
+                  counts.running += 1;
+                  break;
+                case 'completed':
+                  counts.completed += 1;
+                  break;
+                case 'failed':
+                  counts.failed += 1;
+                  break;
+                case 'cancelled':
+                  counts.cancelled += 1;
+                  break;
+                default:
+                  break;
+              }
+              const updatedAt = subJob.updatedAt?.getTime?.() ?? 0;
+              const startedAt = subJob.startedAt?.getTime?.() ?? 0;
+              lastSubJobUpdate = Math.max(lastSubJobUpdate, updatedAt, startedAt);
+            }
+            const lastActivity = Math.max(
+              lastSubJobUpdate,
+              job.updatedAt?.getTime?.() ?? 0,
+              job.startedAt?.getTime?.() ?? 0
+            );
+            return {
+              id: job.id,
+              currentStage: job.currentStage,
+              startedAt: job.startedAt?.toISOString() ?? null,
+              updatedAt: job.updatedAt?.toISOString() ?? null,
+              subJobCounts: counts,
+              lastSubJobUpdate: lastSubJobUpdate ? new Date(lastSubJobUpdate).toISOString() : null,
+              lastActivity: lastActivity ? new Date(lastActivity).toISOString() : null
+            };
+          });
+          console.log('[queue] Detected running job, delaying promotion', summaries);
+          await this.delay(750);
+          continue;
+        }
+
+        if (queueResult.action === 'idle') {
+          break;
+        }
+
+        console.log('[queue] Promoting job to running:', queueResult.jobId);
+        await this.executeJob(queueResult.jobId);
 
         // Small gap before next iteration to avoid tight loop
         await this.delay(200);
@@ -668,10 +736,33 @@ export class ResearchOrchestrator {
 
       // Parse and validate
       const validationSchema = getValidationSchema(stageId, reportType);
-      let output = this.claudeClient.validateAndParse(
-        response,
-        validationSchema
-      );
+      let output: any;
+      try {
+        output = this.parseStageOutput(stageId, response, validationSchema);
+      } catch (error) {
+        if (!this.shouldRetryFormatOnly(error)) {
+          throw error;
+        }
+
+        console.warn(`[format-only] ${stageId} attempting JSON reformat`);
+        const formatPrompt = this.buildFormatOnlyPrompt(prompt, response.content);
+        const formatResponse = await this.claudeClient.execute(formatPrompt);
+        response = formatResponse;
+
+        try {
+          output = this.parseStageOutput(stageId, formatResponse, validationSchema);
+        } catch (formatError) {
+          if (stageId !== 'financial_snapshot') {
+            throw formatError;
+          }
+
+          console.warn(`[schema-only] ${stageId} attempting minimal schema regeneration`);
+          const schemaPrompt = await this.buildFinancialSnapshotSchemaOnlyPrompt(jobId, reportType);
+          const schemaResponse = await this.claudeClient.execute(schemaPrompt);
+          response = schemaResponse;
+          output = this.parseStageOutput(stageId, schemaResponse, validationSchema);
+        }
+      }
 
       // Sanitize common issues before content check/save
       if (stageId === 'exec_summary') {
@@ -749,11 +840,111 @@ export class ResearchOrchestrator {
 
     const basePrompt = config.promptBuilder(input);
     const userPrompt = typeof job.userAddedPrompt === 'string' ? job.userAddedPrompt.trim() : '';
-    const prompt = userPrompt
-      ? `${basePrompt}\n\n---\n\n## USER-ADDED CONTEXT\n\n${userPrompt}\n`
-      : basePrompt;
+    const reportInputsText = this.formatReportInputs(job);
+    const promptSections = [basePrompt];
+    if (reportInputsText) {
+      promptSections.push(
+        [
+          '---',
+          '',
+          '## REPORT INPUTS (PRIORITY)',
+          '',
+          'Use these inputs as primary constraints for scope, emphasis, and tone.',
+          'If any input conflicts with other context, follow the report inputs.',
+          '',
+          reportInputsText
+        ].join('\n')
+      );
+    }
+    if (userPrompt) {
+      promptSections.push(`---\n\n## USER-ADDED CONTEXT\n\n${userPrompt}`);
+    }
 
-    return prompt;
+    return promptSections.join('\n\n');
+  }
+
+  private formatReportInputs(job: { reportType: string; metadata: Prisma.JsonValue }): string | null {
+    if (!job.metadata || typeof job.metadata !== 'object' || Array.isArray(job.metadata)) {
+      return null;
+    }
+
+    const metadata = job.metadata as Record<string, unknown>;
+    const rawInputs = metadata.reportInputs;
+    if (!rawInputs || typeof rawInputs !== 'object' || Array.isArray(rawInputs)) {
+      return null;
+    }
+
+    const reportInputs = rawInputs as Record<string, unknown>;
+    const blueprint = getReportBlueprint(job.reportType as ReportTypeId);
+    const orderedEntries: Array<{ key: string; label: string; value: unknown }> = [];
+    const seen = new Set<string>();
+
+    const normalizedLabels: Record<string, string> = {
+      companyName: 'Company name',
+      timeHorizon: 'Time horizon',
+      meetingContext: 'Meeting context',
+      segmentFocus: 'Segment or end market focus',
+      topicOfInterest: 'Topic of interest',
+      fundStrategy: 'Fund or strategy focus',
+      businessFocus: 'Business focus',
+      stakeholders: 'Stakeholders'
+    };
+
+    const addEntry = (key: string, label: string, value: unknown) => {
+      orderedEntries.push({ key, label, value });
+      seen.add(key);
+    };
+
+    for (const [key, label] of Object.entries(normalizedLabels)) {
+      if (Object.prototype.hasOwnProperty.call(reportInputs, key)) {
+        addEntry(key, label, reportInputs[key]);
+      }
+    }
+
+    if (blueprint) {
+      for (const input of blueprint.inputs) {
+        if (Object.prototype.hasOwnProperty.call(reportInputs, input.id) && !seen.has(input.id)) {
+          addEntry(input.id, input.label, reportInputs[input.id]);
+        }
+      }
+    }
+
+    for (const [key, value] of Object.entries(reportInputs)) {
+      if (!seen.has(key)) {
+        addEntry(key, key, value);
+      }
+    }
+
+    const lines = orderedEntries
+      .map(({ label, value }) => {
+        const formatted = this.formatReportInputValue(value);
+        return formatted ? `- ${label}: ${formatted}` : null;
+      })
+      .filter((line): line is string => Boolean(line));
+
+    return lines.length ? lines.join('\n') : null;
+  }
+
+  private formatReportInputValue(value: unknown): string | null {
+    if (value === null || value === undefined) return null;
+    if (typeof value === 'string') {
+      const trimmed = value.trim();
+      return trimmed.length ? trimmed : null;
+    }
+    if (typeof value === 'number' || typeof value === 'boolean') {
+      return String(value);
+    }
+    if (Array.isArray(value)) {
+      const parts = value
+        .map((item) => this.formatReportInputValue(item))
+        .filter((item): item is string => Boolean(item));
+      return parts.length ? parts.join(', ') : null;
+    }
+    if (typeof value === 'object') {
+      const json = JSON.stringify(value);
+      return json && json !== '{}' && json !== '[]' ? json : null;
+    }
+    return String(value);
   }
 
   /**
@@ -1109,6 +1300,318 @@ export class ResearchOrchestrator {
     };
   }
 
+  private shouldRetryFormatOnly(error: unknown): boolean {
+    const message = error instanceof Error ? error.message : String(error ?? '');
+    return (
+      message.includes('Failed to parse JSON response') ||
+      message.includes('Expected object, received array') ||
+      message.includes('Schema validation failed')
+    );
+  }
+
+  private buildFormatOnlyPrompt(originalPrompt: string, rawContent: string): string {
+    return [
+      'FORMAT-ONLY TASK',
+      '',
+      'You produced output that failed JSON parsing.',
+      'Return ONLY valid JSON matching the schema in the original prompt.',
+      'Do NOT add new facts. Preserve the content; only fix formatting.',
+      'Remove headings, commentary, markdown, or code fences.',
+      'If the prior output is an array with a single object, return just that object.',
+      '',
+      'ORIGINAL PROMPT (schema reference):',
+      '```',
+      originalPrompt,
+      '```',
+      '',
+      'PRIOR OUTPUT TO REFORMAT:',
+      '```',
+      rawContent,
+      '```',
+      '',
+      'OUTPUT ONLY JSON.'
+    ].join('\n');
+  }
+
+  private getFinancialSnapshotRequiredKpis(reportType: ReportTypeId): string[] {
+    switch (reportType) {
+      case 'INDUSTRIALS':
+        return [
+          'Revenue (Latest Period) ($M)',
+          'Revenue Growth (YoY) (%)',
+          'Gross Margin (%)',
+          'EBITDA ($M)',
+          'EBITDA Margin (%)',
+          'Operating Income (EBIT) ($M)',
+          'Operating Margin (%)',
+          'Net Income ($M)',
+          'Net Margin (%)',
+          'Free Cash Flow ($M)',
+          'CapEx ($M)',
+          'Cash and Equivalents ($M)',
+          'Total Debt ($M)',
+          'Net Debt ($M)',
+          'Net Leverage (x)',
+          'Days Sales Outstanding (DSO) (days)',
+          'Days Inventory Outstanding (DIO) (days)',
+          'Inventory Turns (x)',
+          'Days Payable Outstanding (DPO) (days)',
+          'Working Capital ($M)'
+        ];
+      case 'PE':
+        return [
+          'Assets Under Management (AUM) ($B)',
+          'Fund Size (Latest Fund) ($B)',
+          'Dry Powder ($B)',
+          'Fee-Related Earnings ($M)',
+          'Fee-Related Earnings Margin (%)',
+          'Management Fee Rate (%)',
+          'Realized Value (DPI) (x)',
+          'Total Value (TVPI) (x)',
+          'Net IRR (%)',
+          'Active Portfolio Companies (Count)',
+          'Typical Hold Period (years)',
+          'Recent Exits (Count, 12-24 months)'
+        ];
+      case 'FS':
+        return [
+          'Total Assets ($B)',
+          'Revenue (or Net Revenue) ($M)',
+          'Net Interest Margin (%)',
+          'Efficiency Ratio (%)',
+          'Return on Equity (ROE) (%)',
+          'Return on Assets (ROA) (%)',
+          'CET1 Ratio (or Primary Capital Ratio) (%)',
+          'Loan/Deposit Ratio (%)',
+          'Non-Performing Loan Ratio (%)',
+          'Cost of Risk / Credit Loss Ratio (%)',
+          'Liquidity Coverage Ratio (%)',
+          'Net New Assets / AUM ($B)'
+        ];
+      default:
+        return [
+          'Revenue ($M)',
+          'Revenue Growth (YoY) (%)',
+          'EBITDA (or Operating Income) ($M)',
+          'EBITDA Margin (or Operating Margin) (%)',
+          'Net Income ($M)',
+          'Net Margin (%)',
+          'Free Cash Flow ($M)',
+          'Cash and Equivalents ($M)',
+          'Total Debt ($M)',
+          'Net Debt ($M)'
+        ];
+    }
+  }
+
+  private async buildFinancialSnapshotSchemaOnlyPrompt(
+    jobId: string,
+    reportType: ReportTypeId
+  ): Promise<string> {
+    const job = await this.prisma.researchJob.findUnique({
+      where: { id: jobId },
+      select: { companyName: true, geography: true, foundation: true }
+    });
+
+    if (!job) {
+      throw new Error('Job not found for schema-only regeneration');
+    }
+
+    const requiredKpis = this.getFinancialSnapshotRequiredKpis(reportType);
+    const requiredKpiList = requiredKpis.map((metric, index) => `${index + 1}. ${metric}`).join('\n');
+    const foundationJson = JSON.stringify(job.foundation ?? {}, null, 2);
+
+    return [
+      'FORMAT-ONLY TASK',
+      '',
+      'Regenerate Section 2 (Financial Snapshot) output as a VALID JSON object matching the schema below.',
+      'Do NOT add new facts. Use only the provided foundation context.',
+      'If a value is missing, use "-" for company/industry_avg and keep sources_used empty if needed.',
+      'If you use placeholders, set confidence.level to LOW and note schema-only regeneration in the reason.',
+      'If a source is unknown, set source to "-".',
+      'No markdown, no headings, no code fences.',
+      '',
+      'Schema:',
+      '{',
+      '  "confidence": { "level": "HIGH|MEDIUM|LOW", "reason": "string" },',
+      '  "summary": "string",',
+      '  "kpi_table": { "metrics": [ { "metric": "string", "company": "number|string", "industry_avg": "number|string", "source": "string" } ] },',
+      '  "fx_source": "A|B|C",',
+      '  "industry_source": "A|B|C",',
+      '  "derived_metrics": [ { "metric": "string", "formula": "string", "calculation": "string", "source": "string" } ],',
+      '  "sources_used": ["S1", "S2"]',
+      '}',
+      '',
+      'Required KPI metrics (use "-" if unavailable):',
+      requiredKpiList,
+      '',
+      `Company: ${job.companyName}`,
+      `Geography: ${job.geography}`,
+      '',
+      'Foundation context (JSON):',
+      'BEGIN_FOUNDATION_JSON',
+      foundationJson,
+      'END_FOUNDATION_JSON',
+      '',
+      'OUTPUT ONLY JSON.'
+    ].join('\n');
+  }
+
+  private parseStageOutput(stageId: StageId, response: ClaudeResponse, validationSchema: any) {
+    if (stageId !== 'financial_snapshot') {
+      return this.claudeClient.validateAndParse(response, validationSchema, { allowRepair: true });
+    }
+
+    const parsed = this.claudeClient.parseJSON<any>(response, { allowRepair: true });
+    const normalized = this.normalizeFinancialSnapshotOutput(parsed);
+    const result = validationSchema.safeParse(normalized);
+
+    if (!result.success) {
+      throw new Error(`Schema validation failed: ${result.error.message}`);
+    }
+
+    return result.data;
+  }
+
+  private normalizeFinancialSnapshotOutput(output: any) {
+    if (!output || typeof output !== 'object') return output;
+    const source = Array.isArray(output)
+      ? (output.length === 1 && output[0] && typeof output[0] === 'object' ? output[0] : output)
+      : output;
+
+    if (!source || typeof source !== 'object' || Array.isArray(source)) {
+      return source;
+    }
+
+    const normalized: Record<string, any> = { ...source };
+    const content = source.content && typeof source.content === 'object' ? source.content : null;
+
+    if (!normalized.summary && content?.summary) {
+      normalized.summary = content.summary;
+    }
+
+    if (!normalized.kpi_table && content?.tables && Array.isArray(content.tables)) {
+      const table = content.tables[0];
+      const headers = Array.isArray(table?.headers)
+        ? table.headers.map((h: string) => h.toLowerCase())
+        : [];
+      const metricIdx = headers.findIndex((h: string) => h.includes('metric'));
+      const companyIdx = headers.findIndex((h: string) => h.includes('company'));
+      const industryIdx = headers.findIndex((h: string) => h.includes('industry'));
+      const sourceIdx = headers.findIndex((h: string) => h.includes('source'));
+
+      const rows = Array.isArray(table?.rows) ? table.rows : [];
+      const metrics = rows
+        .map((row: any) => {
+          if (!Array.isArray(row)) return null;
+          const fallback = {
+            metric: row[0],
+            company: row[1],
+            industry_avg: row[2],
+            source: row[3]
+          };
+          const mapped = {
+            metric: row[metricIdx] ?? fallback.metric,
+            company: row[companyIdx] ?? fallback.company,
+            industry_avg: row[industryIdx] ?? fallback.industry_avg,
+            source: row[sourceIdx] ?? fallback.source
+          };
+          return mapped.metric ? mapped : null;
+        })
+        .filter(Boolean);
+
+      if (metrics.length) {
+        normalized.kpi_table = { metrics };
+      }
+    }
+
+    if (!normalized.kpi_table && Array.isArray(source.kpi_table?.table)) {
+      normalized.kpi_table = { metrics: source.kpi_table.table };
+    }
+
+    if (!normalized.sources_used && Array.isArray(source.sources)) {
+      normalized.sources_used = source.sources;
+    }
+
+    if (!normalized.derived_metrics && Array.isArray(content?.derived_metrics)) {
+      normalized.derived_metrics = content.derived_metrics;
+    }
+
+    if (!normalized.fx_source && source.fx_rate_source) {
+      normalized.fx_source = source.fx_rate_source;
+    }
+
+    if (!normalized.industry_source && source.industry_avg_source) {
+      normalized.industry_source = source.industry_avg_source;
+    }
+
+    if (normalized.kpi_table?.metrics && Array.isArray(normalized.derived_metrics)) {
+      const metrics = Array.isArray(normalized.kpi_table.metrics)
+        ? [...normalized.kpi_table.metrics]
+        : [];
+      const normalizeMetricName = (name: string) =>
+        name
+          .replace(/\s*\([^)]*\)\s*$/, '')
+          .replace(/\*$/, '')
+          .trim()
+          .toLowerCase();
+      const existingNames = new Set<string>();
+      const baseIndex = new Map<string, number>();
+      metrics.forEach((metric, index) => {
+        const name = typeof metric?.metric === 'string' ? metric.metric : '';
+        if (!name) return;
+        existingNames.add(name);
+        const base = normalizeMetricName(name);
+        if (base) baseIndex.set(base, index);
+      });
+
+      for (const derived of normalized.derived_metrics) {
+        const baseName = typeof derived?.metric === 'string' ? derived.metric.trim() : '';
+        if (!baseName) continue;
+        const derivedValue = this.extractDerivedMetricValue(derived?.calculation);
+        const baseKey = normalizeMetricName(baseName);
+        const matchIndex = baseKey ? baseIndex.get(baseKey) : undefined;
+
+        if (matchIndex !== undefined) {
+          const existing = metrics[matchIndex];
+          if (existing && typeof existing.metric === 'string' && !existing.metric.endsWith('*')) {
+            existing.metric = `${existing.metric}*`;
+          }
+          if ((existing?.company === undefined || existing?.company === '-' || existing?.company === null) && derivedValue) {
+            existing.company = derivedValue;
+          }
+          if (!existing?.source && derived?.source) {
+            existing.source = derived.source;
+          }
+          continue;
+        }
+
+        const tableName = baseName.endsWith('*') ? baseName : `${baseName}*`;
+        if (existingNames.has(tableName)) continue;
+
+        metrics.push({
+          metric: tableName,
+          company: derivedValue ?? '-',
+          industry_avg: '-',
+          source: derived?.source || '-'
+        });
+        existingNames.add(tableName);
+      }
+
+      normalized.kpi_table = { metrics };
+    }
+
+    return normalized;
+  }
+
+  private extractDerivedMetricValue(calculation: string | undefined | null): string | null {
+    if (!calculation || typeof calculation !== 'string') return null;
+    const match = calculation.match(/=\s*([^\n]+)$/);
+    const candidate = match ? match[1].trim() : '';
+    if (!candidate) return null;
+    return candidate.replace(/[.;]$/, '').trim();
+  }
+
   /**
    * Ensure a section output has meaningful content; throw if empty to force retry/failure
    */
@@ -1204,15 +1707,15 @@ export class ResearchOrchestrator {
   // Queue helpers
   // ============================================================================
 
-  private async tryAcquireLock(): Promise<boolean> {
-    const result = await this.prisma.$queryRaw<{ locked: boolean }[]>`
+  private async tryAcquireLock(client: Prisma.TransactionClient | PrismaClient = this.prisma): Promise<boolean> {
+    const result = await client.$queryRaw<{ locked: boolean }[]>`
       SELECT pg_try_advisory_lock(${this.queueLockId}) AS locked
     `;
     return Boolean(result?.[0]?.locked);
   }
 
-  private async releaseLock() {
-    await this.prisma.$queryRaw`
+  private async releaseLock(client: Prisma.TransactionClient | PrismaClient = this.prisma) {
+    await client.$queryRaw`
       SELECT pg_advisory_unlock(${this.queueLockId})
     `;
   }
@@ -1226,12 +1729,16 @@ export class ResearchOrchestrator {
       where: { id: jobId },
       select: { status: true }
     });
-    return job?.status === 'cancelled';
+    return !job || job.status === 'cancelled';
   }
 
-  private async tryUpdateJob(jobId: string, data: Record<string, unknown>) {
+  private async tryUpdateJob(
+    jobId: string,
+    data: Record<string, unknown>,
+    client: Prisma.TransactionClient | PrismaClient = this.prisma
+  ) {
     try {
-      await this.prisma.researchJob.update({
+      await client.researchJob.update({
         where: { id: jobId },
         data
       });
@@ -1252,40 +1759,49 @@ export class ResearchOrchestrator {
     );
   }
 
-  private async cleanupStaleRunningJobs(): Promise<number> {
-    const runningJobs = await this.prisma.researchJob.findMany({
+  private async cleanupStaleRunningJobs(
+    client: Prisma.TransactionClient | PrismaClient = this.prisma
+  ): Promise<number> {
+    const runningJobs = await client.researchJob.findMany({
       where: { status: 'running' },
       include: { subJobs: true }
     });
 
     let cleaned = 0;
     const now = Date.now();
-    const staleThresholdMs = 2 * 60 * 1000;
+    const staleThresholdMs = 30 * 60 * 1000;
 
     for (const job of runningJobs) {
       const statuses = job.subJobs.map((subJob) => subJob.status);
       const hasRunning = statuses.includes('running');
       const hasPending = statuses.includes('pending');
-      if (hasRunning || hasPending) {
-        if (hasRunning) {
-          continue;
-        }
+      const lastSubJobUpdate = job.subJobs.reduce((latest, subJob) => {
+        const updated = subJob.updatedAt?.getTime?.() ?? 0;
+        const started = subJob.startedAt?.getTime?.() ?? 0;
+        return Math.max(latest, updated, started);
+      }, 0);
+      const lastJobUpdate = job.updatedAt?.getTime?.() ?? 0;
+      const lastActivity = Math.max(lastSubJobUpdate, lastJobUpdate, job.startedAt?.getTime?.() ?? 0);
+      const isStale = lastActivity > 0 && now - lastActivity > staleThresholdMs;
 
-        const lastSubJobUpdate = job.subJobs.reduce((latest, subJob) => {
-          const updated = subJob.updatedAt?.getTime?.() ?? latest;
-          return Math.max(latest, updated);
-        }, 0);
-        const lastJobUpdate = job.updatedAt?.getTime?.() ?? 0;
-        const lastActivity = Math.max(lastSubJobUpdate, lastJobUpdate, job.startedAt?.getTime?.() ?? 0);
-        const isStale = lastActivity > 0 && now - lastActivity > staleThresholdMs;
+      if (hasRunning) {
+        continue;
+      }
+
+      if (hasPending) {
         if (!isStale) {
           continue;
         }
 
+        await client.researchSubJob.updateMany({
+          where: { researchId: job.id, status: { in: ['running', 'pending'] } },
+          data: { status: 'failed', completedAt: new Date() }
+        });
+
         await this.tryUpdateJob(job.id, {
           status: 'failed',
           currentStage: null
-        });
+        }, client);
         cleaned += 1;
         continue;
       }
@@ -1298,7 +1814,7 @@ export class ResearchOrchestrator {
         status: nextStatus,
         currentStage: null,
         completedAt: nextStatus === 'completed' ? new Date() : job.completedAt
-      });
+      }, client);
       cleaned += 1;
     }
 
@@ -1331,7 +1847,7 @@ export class ResearchOrchestrator {
     if (this.queueWatchdogStarted) return;
     this.queueWatchdogStarted = true;
 
-    setInterval(async () => {
+    const timer = setInterval(async () => {
       try {
         if (this.queueLoopRunning) return;
         const queuedCount = await this.prisma.researchJob.count({
@@ -1344,6 +1860,7 @@ export class ResearchOrchestrator {
         console.error('Queue watchdog error:', err);
       }
     }, 10000); // every 10s
+    timer.unref?.();
   }
 }
 
