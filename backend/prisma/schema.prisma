@@ -220,6 +220,193 @@ model Feedback {
   pagePath   String?
   reportId   String?
   createdAt  DateTime @default(now())
-  
+
   @@index([createdAt])
+}
+
+// ============================================================================
+// NEWS INTELLIGENCE MODELS
+// ============================================================================
+
+enum TagCategory {
+  universal
+  pe
+  industrials
+}
+
+enum ArticlePriority {
+  high
+  medium
+  low
+}
+
+enum ArticleStatus {
+  new_article @map("new")
+  update
+}
+
+enum MatchType {
+  exact
+  contextual
+}
+
+enum FetchLayer {
+  layer1_rss
+  layer1_api
+  layer2_llm
+}
+
+// Revenue Owner - person who tracks companies/people for news
+model RevenueOwner {
+  id        String   @id @default(cuid())
+  name      String
+  email     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  companies CallDietCompany[]
+  people    CallDietPerson[]
+  tags      CallDietTag[]
+  articles  ArticleRevenueOwner[]
+
+  @@map("revenue_owners")
+}
+
+// Companies being tracked for news
+model TrackedCompany {
+  id        String   @id @default(cuid())
+  name      String
+  ticker    String?
+  cik       String?  // SEC Central Index Key for EDGAR filings
+  createdAt DateTime @default(now())
+
+  callDiets CallDietCompany[]
+  articles  NewsArticle[]
+
+  @@map("tracked_companies")
+}
+
+// People being tracked for news
+model TrackedPerson {
+  id                 String   @id @default(cuid())
+  name               String
+  title              String?
+  companyAffiliation String?  @map("company_affiliation")
+  createdAt          DateTime @default(now())
+
+  callDiets CallDietPerson[]
+  articles  NewsArticle[]
+
+  @@map("tracked_people")
+}
+
+// Tags/Topics for categorizing news
+model NewsTag {
+  id        String      @id @default(cuid())
+  name      String      @unique
+  category  TagCategory
+  createdAt DateTime    @default(now())
+
+  callDiets CallDietTag[]
+  articles  NewsArticle[]
+
+  @@map("news_tags")
+}
+
+// Junction: Revenue Owner <-> Company
+model CallDietCompany {
+  revenueOwner   RevenueOwner   @relation(fields: [revenueOwnerId], references: [id], onDelete: Cascade)
+  revenueOwnerId String
+  company        TrackedCompany @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  companyId      String
+
+  @@id([revenueOwnerId, companyId])
+  @@map("call_diet_companies")
+}
+
+// Junction: Revenue Owner <-> Person
+model CallDietPerson {
+  revenueOwner   RevenueOwner  @relation(fields: [revenueOwnerId], references: [id], onDelete: Cascade)
+  revenueOwnerId String
+  person         TrackedPerson @relation(fields: [personId], references: [id], onDelete: Cascade)
+  personId       String
+
+  @@id([revenueOwnerId, personId])
+  @@map("call_diet_people")
+}
+
+// Junction: Revenue Owner <-> Tag
+model CallDietTag {
+  revenueOwner   RevenueOwner @relation(fields: [revenueOwnerId], references: [id], onDelete: Cascade)
+  revenueOwnerId String
+  tag            NewsTag      @relation(fields: [tagId], references: [id], onDelete: Cascade)
+  tagId          String
+
+  @@id([revenueOwnerId, tagId])
+  @@map("call_diet_tags")
+}
+
+// News Articles fetched via hybrid Layer 1/Layer 2 approach
+model NewsArticle {
+  id           String           @id @default(cuid())
+  headline     String
+  summary      String?
+  whyItMatters String?          @map("why_it_matters")
+  sourceUrl    String           @unique @map("source_url")
+  sourceName   String?          @map("source_name")
+  publishedAt  DateTime?        @map("published_at")
+  fetchedAt    DateTime         @default(now()) @map("fetched_at")
+  priority     ArticlePriority?
+  status       ArticleStatus?
+  matchType    MatchType?       @map("match_type")
+  fetchLayer   FetchLayer?      @map("fetch_layer")
+  rawContent   String?          @map("raw_content")
+
+  // Scraped full content (high-priority articles only)
+  fullContent    String?   @map("full_content")
+  contentScraped Boolean   @default(false) @map("content_scraped")
+  scrapedAt      DateTime? @map("scraped_at")
+
+  company      TrackedCompany?  @relation(fields: [companyId], references: [id])
+  companyId    String?          @map("company_id")
+  person       TrackedPerson?   @relation(fields: [personId], references: [id])
+  personId     String?          @map("person_id")
+  tag          NewsTag?         @relation(fields: [tagId], references: [id])
+  tagId        String?          @map("tag_id")
+
+  revenueOwners ArticleRevenueOwner[]
+
+  @@index([publishedAt(sort: Desc)])
+  @@index([priority])
+  @@index([companyId])
+  @@index([tagId])
+  @@map("news_articles")
+}
+
+// Junction: Article <-> Revenue Owner (many-to-many)
+model ArticleRevenueOwner {
+  article        NewsArticle  @relation(fields: [articleId], references: [id], onDelete: Cascade)
+  articleId      String       @map("article_id")
+  revenueOwner   RevenueOwner @relation(fields: [revenueOwnerId], references: [id], onDelete: Cascade)
+  revenueOwnerId String       @map("revenue_owner_id")
+
+  @@id([articleId, revenueOwnerId])
+  @@map("article_revenue_owners")
+}
+
+// URL deduplication tracking
+model SeenUrl {
+  urlHash   String   @id @map("url_hash")
+  url       String
+  firstSeen DateTime @default(now()) @map("first_seen")
+
+  @@map("seen_urls")
+}
+
+// System configuration key-value store
+model NewsConfig {
+  key   String @id
+  value String
+
+  @@map("news_config")
 }
