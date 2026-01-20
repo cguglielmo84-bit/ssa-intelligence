@@ -29,6 +29,7 @@ artifacts/
 Thumbs.db
 .idea/
 .vscode/
+.worktrees/
 ~$Mel's_Workflow_Inventory Copy.xlsx
 Mel's_Workflow_Inventory Copy.xlsx
 docs/PLAN-RESEARCH-BRIEF-GENERATION.md
