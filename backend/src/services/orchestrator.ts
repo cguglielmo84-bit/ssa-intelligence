@@ -30,6 +30,7 @@ import { buildOperatingCapabilitiesPrompt } from '../../prompts/operating-capabi
 import { generateAppendix } from '../../prompts/appendix.js';
 import { generateThumbnailForJob } from './thumbnail.js';
 import { getReportBlueprint } from './report-blueprints.js';
+import { collectBlockedStages } from './dependency-utils.js';
 import { computeFinalStatus, computeTerminalProgress } from './orchestrator-utils.js';
 
 // Import validation schemas
@@ -1090,6 +1091,25 @@ export class ResearchOrchestrator {
           output: (rawContent ? { rawContent, error: errorMessage } : subJob.output) as any
         }
       });
+
+      const subJobs = await this.prisma.researchSubJob.findMany({
+        where: { researchId: jobId },
+        select: { stage: true, status: true }
+      });
+      const blockedStages = collectBlockedStages([stageId], subJobs, STAGE_DEPENDENCIES);
+      if (blockedStages.length > 0) {
+        await this.prisma.researchSubJob.updateMany({
+          where: {
+            researchId: jobId,
+            stage: { in: blockedStages },
+            status: { in: ['pending', 'running'] }
+          },
+          data: {
+            status: 'failed',
+            lastError: `Blocked by failed dependency: ${stageId}`
+          }
+        });
+      }
     }
   }
 
