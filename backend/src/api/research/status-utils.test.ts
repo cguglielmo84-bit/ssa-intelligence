@@ -15,6 +15,16 @@ assert.equal(
   'completed_with_errors'
 );
 
+// Completed with errors passthrough when a failed subjob exists.
+assert.equal(
+  deriveJobStatus({
+    ...base,
+    status: 'completed',
+    subJobs: [{ status: 'failed' }]
+  }),
+  'completed_with_errors'
+);
+
 // Completed when all terminal and none failed.
 assert.equal(
   deriveJobStatus({
