@@ -30,6 +30,7 @@ import { buildOperatingCapabilitiesPrompt } from '../../prompts/operating-capabi
 import { generateAppendix } from '../../prompts/appendix.js';
 import { generateThumbnailForJob } from './thumbnail.js';
 import { getReportBlueprint } from './report-blueprints.js';
+import { computeFinalStatus, computeTerminalProgress } from './orchestrator-utils.js';
 
 // Import validation schemas
 import {
@@ -603,11 +604,8 @@ export class ResearchOrchestrator {
       // Finalize status based on sub-job results
       const subJobs = await this.prisma.researchSubJob.findMany({
         where: { researchId: jobId },
-        select: { status: true }
+        select: { status: true, stage: true }
       });
-      const anyFailed = subJobs.some(s => s.status === 'failed');
-      const anyCancelled = subJobs.some(s => s.status === 'cancelled');
-      const allTerminal = subJobs.every(s => ['completed', 'failed', 'cancelled'].includes(s.status));
 
       const current = await this.prisma.researchJob.findUnique({
         where: { id: jobId },
@@ -615,12 +613,12 @@ export class ResearchOrchestrator {
       });
       if (!current) return;
 
-      if (current.status === 'cancelled' || anyCancelled) {
-        await this.updateJobStatus(jobId, 'cancelled');
-      } else if (anyFailed) {
-        await this.updateJobStatus(jobId, 'failed');
-      } else if (allTerminal) {
-        await this.updateJobStatus(jobId, 'completed');
+      const finalStatus = computeFinalStatus(current.status, subJobs);
+      if (finalStatus !== current.status) {
+        await this.updateJobStatus(jobId, finalStatus);
+      }
+
+      if (finalStatus === 'completed' || finalStatus === 'completed_with_errors') {
         await this.triggerThumbnail(jobId);
       }
     } catch (error) {
@@ -798,15 +796,18 @@ export class ResearchOrchestrator {
       const rawContent = response?.content;
       await this.handleStageFailure(jobId, stageId, error, rawContent);
 
-       // If this stage is now marked failed (exceeded retries), fail the whole job
-       const sub = await this.prisma.researchSubJob.findFirst({
-         where: { researchId: jobId, stage: stageId },
-         select: { status: true }
-       });
-       if (sub?.status === 'failed') {
-         await this.updateJobStatus(jobId, 'failed');
-         throw error;
-       }
+      // If this stage is now marked failed (exceeded retries), fail foundation immediately.
+      const sub = await this.prisma.researchSubJob.findFirst({
+        where: { researchId: jobId, stage: stageId },
+        select: { status: true }
+      });
+      if (sub?.status === 'failed') {
+        if (stageId === 'foundation') {
+          await this.updateJobStatus(jobId, 'failed');
+          throw error;
+        }
+        await this.updateProgress(jobId);
+      }
     }
   }
 
@@ -1149,9 +1150,7 @@ export class ResearchOrchestrator {
 
     if (!job) return;
 
-    const total = job.subJobs.length || 1;
-    const completed = job.subJobs.filter(j => j.status === 'completed').length;
-    const progress = completed / total;
+    const progress = computeTerminalProgress(job.subJobs);
 
     await this.tryUpdateJob(jobId, { progress });
   }
@@ -1171,22 +1170,15 @@ export class ResearchOrchestrator {
       return;
     }
 
-    const allComplete = job.subJobs.every(j => 
-      j.status === 'completed' || j.status === 'failed' || j.status === 'cancelled'
-    );
+    const finalStatus = computeFinalStatus(job.status, job.subJobs);
+    if (finalStatus === job.status) {
+      return;
+    }
 
-    if (allComplete) {
-      const anyFailed = job.subJobs.some(j => j.status === 'failed');
-      const anyCancelled = job.subJobs.some(j => j.status === 'cancelled');
+    await this.updateJobStatus(jobId, finalStatus);
 
-      if (anyFailed) {
-        await this.updateJobStatus(jobId, 'failed');
-      } else if (anyCancelled) {
-        await this.updateJobStatus(jobId, 'cancelled');
-      } else {
-        await this.updateJobStatus(jobId, 'completed');
-        await this.triggerThumbnail(jobId);
-      }
+    if (finalStatus === 'completed' || finalStatus === 'completed_with_errors') {
+      await this.triggerThumbnail(jobId);
     }
   }
 
@@ -1799,22 +1791,35 @@ export class ResearchOrchestrator {
           data: { status: 'failed', completedAt: new Date() }
         });
 
+        const terminalized = job.subJobs.map((subJob) => {
+          if (subJob.status === 'running' || subJob.status === 'pending') {
+            return { ...subJob, status: 'failed' };
+          }
+          return subJob;
+        });
+        const nextStatus = computeFinalStatus(job.status, terminalized);
+
         await this.tryUpdateJob(job.id, {
-          status: 'failed',
-          currentStage: null
+          status: nextStatus,
+          currentStage: null,
+          completedAt:
+            nextStatus === 'completed' || nextStatus === 'completed_with_errors'
+              ? new Date()
+              : job.completedAt
         }, client);
         cleaned += 1;
         continue;
       }
 
-      const anyCancelled = statuses.includes('cancelled');
-      const anyFailed = statuses.includes('failed');
-      const nextStatus = anyCancelled ? 'cancelled' : anyFailed ? 'failed' : 'completed';
+      const nextStatus = computeFinalStatus(job.status, job.subJobs);
 
       await this.tryUpdateJob(job.id, {
         status: nextStatus,
         currentStage: null,
-        completedAt: nextStatus === 'completed' ? new Date() : job.completedAt
+        completedAt:
+          nextStatus === 'completed' || nextStatus === 'completed_with_errors'
+            ? new Date()
+            : job.completedAt
       }, client);
       cleaned += 1;
     }
