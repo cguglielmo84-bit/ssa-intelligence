@@ -1,12 +1,17 @@
 # Report Blueprints
 
-These docs define report-type blueprints: required inputs, optional inputs, default section sets, and per-section intent. They are the source of truth for how each report type should feel different while still using the shared section schemas.
+Human-readable summaries of report type blueprints used by the API.
+
+Source of truth:
+- `backend/src/services/report-blueprints.ts`
+- `GET /api/report-blueprints`
 
 References:
+- `docs/prompting/report-types.md`
 - `docs/brief-specs/generic-brief.md`
 - `docs/brief-specs/pe-brief.md`
 - `docs/brief-specs/fs-brief.md`
-- `docs/REPORT-TYPE-ADDENDUM-NOTES.md`
+- `docs/prompting/addendums.md`
 
 Rules of thumb:
 - Industrials is the baseline. It keeps the original section set and titles.
@@ -14,6 +19,6 @@ Rules of thumb:
 - Inputs should follow the workflow spreadsheet and only add fields when they change the analysis.
 - Wizard flow should stay short: Report type -> Company name + other info -> Additional context -> Review.
 
-Current report-specific sections (draft):
+Current report-specific sections:
 - Private Equity: investment_strategy, portfolio_snapshot, deal_activity, deal_team, portfolio_maturity
 - Financial Services: leadership_and_governance, strategic_priorities, operating_capabilities

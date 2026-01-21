@@ -1,0 +1,27 @@
+name: Changelog
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, edited]
+
+jobs:
+  enforce:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Require CHANGELOG update
+        run: |
+          base="${{ github.event.pull_request.base.sha }}"
+          head="${{ github.event.pull_request.head.sha }}"
+          files=$(git diff --name-only "$base" "$head")
+
+          if echo "$files" | grep -qv '^CHANGELOG.md$'; then
+            if ! echo "$files" | grep -q '^CHANGELOG.md$'; then
+              echo "CHANGELOG.md must be updated for this change."
+              exit 1
+            fi
+          fi
