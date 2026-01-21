@@ -6,13 +6,14 @@ import { ResearchDetail } from './pages/ResearchDetail';
 import { AdminUsers } from './pages/AdminUsers';
 import { NewsDashboard } from './pages/NewsDashboard';
 import { NewsSetup } from './pages/NewsSetup';
-import { useResearchManager, useUserContext } from './services/researchManager';
+import { useReportBlueprints, useResearchManager, useUserContext } from './services/researchManager';
 
 export default function App() {
   const [currentPath, setCurrentPath] = useState(window.location.hash.slice(1) || '/');
   const [navResetKey, setNavResetKey] = useState(0);
-  const { jobs, createJob, runJob, cancelJob, deleteJob } = useResearchManager();
+  const { jobs, createJob, runJob, rerunJob, cancelJob, deleteJob } = useResearchManager();
   const userContext = useUserContext();
+  const reportBlueprints = useReportBlueprints();
 
   // Simple Hash Router Implementation
   useEffect(() => {
@@ -35,7 +36,15 @@ export default function App() {
 
   const renderContent = () => {
     if (currentPath === '/') {
-      return <Home jobs={jobs} onNavigate={navigate} onCancel={cancelJob} onDelete={deleteJob} />;
+      return (
+        <Home
+          jobs={jobs}
+          reportBlueprints={reportBlueprints.blueprints}
+          onNavigate={navigate}
+          onCancel={cancelJob}
+          onDelete={deleteJob}
+        />
+      );
     }
     if (currentPath === '/new') {
       return (
@@ -45,6 +54,8 @@ export default function App() {
           runJob={runJob}
           jobs={jobs}
           userContext={userContext}
+          reportBlueprints={reportBlueprints.blueprints}
+          reportBlueprintVersion={reportBlueprints.version}
           onNavigate={navigate}
         />
       );
@@ -59,9 +70,16 @@ export default function App() {
       return <NewsSetup onNavigate={navigate} />;
     }
     if (currentPath.startsWith('/research/')) {
-      return <ResearchDetail jobs={jobs} onNavigate={navigate} />;
+      return (
+        <ResearchDetail
+          jobs={jobs}
+          reportBlueprints={reportBlueprints.blueprints}
+          onNavigate={navigate}
+          onRerun={rerunJob}
+        />
+      );
     }
-    return <Home jobs={jobs} onNavigate={navigate} onDelete={deleteJob} />;
+    return <Home jobs={jobs} reportBlueprints={reportBlueprints.blueprints} onNavigate={navigate} onDelete={deleteJob} />;
   };
 
   return (

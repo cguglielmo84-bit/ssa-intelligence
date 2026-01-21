@@ -1,19 +1,24 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { ResearchJob, SECTIONS_CONFIG } from '../types';
+import { ReportBlueprint, ResearchJob, SECTIONS_CONFIG } from '../types';
 import { StatusPill } from '../components/StatusPill';
 import { ArrowRight, Search, TrendingUp, Building2, MapPin, MoreHorizontal, Loader2 } from 'lucide-react';
 import { ShaderGradientCanvas, ShaderGradient } from '@shadergradient/react';
 
 interface HomeProps {
   jobs: ResearchJob[];
+  reportBlueprints?: ReportBlueprint[];
   onNavigate: (path: string) => void;
   onCancel?: (id: string) => Promise<void>;
   onDelete?: (id: string) => Promise<void>;
 }
 
-export const Home: React.FC<HomeProps> = ({ jobs, onNavigate, onCancel, onDelete }) => {
-  const completedJobs = [...jobs.filter(j => j.status === 'completed' || j.status === 'cancelled')].sort(
+export const Home: React.FC<HomeProps> = ({ jobs, reportBlueprints = [], onNavigate, onCancel, onDelete }) => {
+  const completedJobs = [...jobs.filter(j =>
+    j.status === 'completed' ||
+    j.status === 'completed_with_errors' ||
+    j.status === 'cancelled'
+  )].sort(
     (a, b) => (b.createdAt || 0) - (a.createdAt || 0)
   );
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
@@ -113,6 +118,18 @@ export const Home: React.FC<HomeProps> = ({ jobs, onNavigate, onCancel, onDelete
     return 'Generic';
   };
 
+  const getBlueprint = (reportType?: string | null) => {
+    if (!reportType) return null;
+    return reportBlueprints.find((blueprint) => blueprint.reportType === reportType) || null;
+  };
+
+  const getSectionTitle = (sectionId: string, reportType?: string | null) => {
+    const blueprint = getBlueprint(reportType);
+    const blueprintTitle = blueprint?.sections.find((section) => section.id === sectionId)?.title;
+    if (blueprintTitle) return blueprintTitle;
+    return SECTIONS_CONFIG.find((section) => section.id === sectionId)?.title || sectionId;
+  };
+
   const visibilityLabel = (scope?: string | null, groups?: Array<{ name: string }>) => {
     if (scope === 'GENERAL') return 'General';
     if (scope === 'GROUP') {
@@ -161,10 +178,10 @@ export const Home: React.FC<HomeProps> = ({ jobs, onNavigate, onCancel, onDelete
     setOpenMenuId(jobId);
   };
 
-  const formatSectionList = (sections?: string[]) => {
+  const formatSectionList = (sections?: string[], reportType?: string | null) => {
     if (!sections || sections.length === 0) return 'All sections';
     return sections
-      .map((section) => SECTIONS_CONFIG.find((s) => s.id === section)?.title || section)
+      .map((section) => getSectionTitle(section, reportType))
       .join(', ');
   };
 
@@ -429,7 +446,7 @@ export const Home: React.FC<HomeProps> = ({ jobs, onNavigate, onCancel, onDelete
                     </thead>
                     <tbody className="bg-white divide-y divide-slate-100">
                       {group.jobs.map((job) => {
-                        const sectionList = formatSectionList(job.selectedSections);
+                        const sectionList = formatSectionList(job.selectedSections, job.reportType);
                         return (
                           <tr key={job.id} className="hover:bg-slate-50 transition-colors">
                             <td className="px-6 py-5 align-top">

@@ -467,6 +467,16 @@ interface Section5Output {
 
 ---
 
+## CRITICAL REMINDERS
+
+1. Follow style guide: All formatting rules apply
+2. Valid JSON only: No markdown, no headings, no prose outside JSON
+3. Source everything: No unsourced claims
+4. Geography focus: Emphasize the target geography throughout
+5. Exact schema match: Follow the TypeScript interface exactly
+
+---
+
 ## BEGIN RESEARCH
 
 **Company:** ${companyName}  

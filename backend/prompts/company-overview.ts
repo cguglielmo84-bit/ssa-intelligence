@@ -481,13 +481,13 @@ interface Section3Output {
 
 ## CRITICAL REMINDERS
 
-1. **Follow style guide** for all formatting
-2. **75-80% geography focus** in every subsection
-3. **Source every claim** with S# references
-4. **Use "–" or null** for unavailable data
-5. **Geography relevance** ratings required for segments, priorities, leadership
-6. **Valid JSON only** - no markdown backticks
-7. **Exact schema match** - follow TypeScript interface
+1. **Follow style guide:** All formatting rules apply
+2. **Valid JSON only:** No markdown, no headings, no prose outside JSON
+3. **Source everything:** No unsourced claims
+4. **Geography focus:** Emphasize the target geography throughout
+5. **Exact schema match:** Follow the TypeScript interface exactly
+6. **Use "?" or null** for unavailable data
+7. **Geography relevance** ratings required for segments, priorities, leadership
 8. **Facilities array** must include all ${geography} locations
 
 ---

@@ -5,6 +5,14 @@ export type SectionId =
   | 'exec_summary'
   | 'financial_snapshot'
   | 'company_overview'
+  | 'investment_strategy'
+  | 'portfolio_snapshot'
+  | 'deal_activity'
+  | 'deal_team'
+  | 'portfolio_maturity'
+  | 'leadership_and_governance'
+  | 'strategic_priorities'
+  | 'operating_capabilities'
   | 'segment_analysis'
   | 'trends'
   | 'peer_benchmarking'
@@ -82,6 +90,86 @@ export const REPORT_TYPE_ADDENDUMS: AddendumMap = {
 - Keep overview concise and context-specific; prioritize key products/services and segments.
 - Limit segments to the most relevant and high-signal items.
 - Avoid deep dives; keep descriptions short and decision-oriented.`
+  },
+  investment_strategy: {
+    INDUSTRIALS: `## REPORT TYPE ADDENDUM: INDUSTRIALS
+- Emphasize sector focus, operational value-creation themes, and capacity expansion patterns.`,
+    FS: `## REPORT TYPE ADDENDUM: FINANCIAL SERVICES
+- Emphasize regulated growth themes, product mix focus, and inorganic growth signals.`,
+    PE: `## REPORT TYPE ADDENDUM: PRIVATE EQUITY
+- Emphasize platform vs add-on patterns, sector theses, and value-creation levers.`,
+    GENERIC: `## REPORT TYPE ADDENDUM: GENERIC
+- Keep strategy summary concise and evidence-based; avoid generic PE language.`
+  },
+  portfolio_snapshot: {
+    INDUSTRIALS: `## REPORT TYPE ADDENDUM: INDUSTRIALS
+- Highlight industrial sector clustering and operational adjacency across portfolio.`,
+    FS: `## REPORT TYPE ADDENDUM: FINANCIAL SERVICES
+- Highlight financial services platform groupings and subsector exposure.`,
+    PE: `## REPORT TYPE ADDENDUM: PRIVATE EQUITY
+- Emphasize platform vs add-on status and sector clustering.`,
+    GENERIC: `## REPORT TYPE ADDENDUM: GENERIC
+- Keep portfolio list concise; prioritize most relevant holdings.`
+  },
+  deal_activity: {
+    INDUSTRIALS: `## REPORT TYPE ADDENDUM: INDUSTRIALS
+- Emphasize industrial add-ons, capacity/technology acquisitions, and carve-outs.`,
+    FS: `## REPORT TYPE ADDENDUM: FINANCIAL SERVICES
+- Emphasize acquisitions tied to product/market expansion or regulatory positioning.`,
+    PE: `## REPORT TYPE ADDENDUM: PRIVATE EQUITY
+- Emphasize platform/add-on/exit classification and deal cadence.`,
+    GENERIC: `## REPORT TYPE ADDENDUM: GENERIC
+- Keep deal summary tight and evidence-based.`
+  },
+  deal_team: {
+    INDUSTRIALS: `## REPORT TYPE ADDENDUM: INDUSTRIALS
+- Prioritize operating partners and leaders tied to industrial operations.`,
+    FS: `## REPORT TYPE ADDENDUM: FINANCIAL SERVICES
+- Prioritize partners/leaders focused on financial services and regulatory expertise.`,
+    PE: `## REPORT TYPE ADDENDUM: PRIVATE EQUITY
+- Emphasize partners, operating partners, and sector leads tied to the target.`,
+    GENERIC: `## REPORT TYPE ADDENDUM: GENERIC
+- Limit to verified stakeholders only; avoid speculation.`
+  },
+  portfolio_maturity: {
+    INDUSTRIALS: `## REPORT TYPE ADDENDUM: INDUSTRIALS
+- Emphasize long-held industrial assets and operational exit signals.`,
+    FS: `## REPORT TYPE ADDENDUM: FINANCIAL SERVICES
+- Emphasize regulatory approvals, divestitures, or recap signals.`,
+    PE: `## REPORT TYPE ADDENDUM: PRIVATE EQUITY
+- Emphasize holding period signals, exit watchlist cues, and sponsor intent.`,
+    GENERIC: `## REPORT TYPE ADDENDUM: GENERIC
+- Keep exit signals grounded in public activity only.`
+  },
+  leadership_and_governance: {
+    INDUSTRIALS: `## REPORT TYPE ADDENDUM: INDUSTRIALS
+- Emphasize operating leadership and governance signals tied to operations.`,
+    FS: `## REPORT TYPE ADDENDUM: FINANCIAL SERVICES
+- Emphasize compliance, risk, and governance oversight signals.`,
+    PE: `## REPORT TYPE ADDENDUM: PRIVATE EQUITY
+- Emphasize operating partners and governance moves tied to portfolio oversight.`,
+    GENERIC: `## REPORT TYPE ADDENDUM: GENERIC
+- Keep leadership list concise and evidence-based.`
+  },
+  strategic_priorities: {
+    INDUSTRIALS: `## REPORT TYPE ADDENDUM: INDUSTRIALS
+- Emphasize capex, automation, throughput, and supply chain priorities.`,
+    FS: `## REPORT TYPE ADDENDUM: FINANCIAL SERVICES
+- Emphasize digital, risk/compliance, and revenue-mix priorities.`,
+    PE: `## REPORT TYPE ADDENDUM: PRIVATE EQUITY
+- Emphasize value-creation priorities and operating model shifts.`,
+    GENERIC: `## REPORT TYPE ADDENDUM: GENERIC
+- Keep priorities focused on the most material themes only.`
+  },
+  operating_capabilities: {
+    INDUSTRIALS: `## REPORT TYPE ADDENDUM: INDUSTRIALS
+- Emphasize manufacturing, supply chain, and operational excellence capabilities.`,
+    FS: `## REPORT TYPE ADDENDUM: FINANCIAL SERVICES
+- Emphasize risk, compliance, digital, and operating efficiency capabilities.`,
+    PE: `## REPORT TYPE ADDENDUM: PRIVATE EQUITY
+- Emphasize shared services, operating partner support, and transformation capabilities.`,
+    GENERIC: `## REPORT TYPE ADDENDUM: GENERIC
+- Keep capability list concise and evidence-based.`
   },
   segment_analysis: {
     INDUSTRIALS: `## REPORT TYPE ADDENDUM: INDUSTRIALS
@@ -179,13 +267,14 @@ export function appendReportTypeAddendum(
   reportType: ReportTypeId | undefined,
   basePrompt: string
 ): string {
-  if (!reportType) return basePrompt;
+  const prompt = typeof basePrompt === 'string' ? basePrompt : String(basePrompt ?? '');
+  if (!reportType) return prompt;
   const addendum = REPORT_TYPE_ADDENDUMS[sectionId]?.[reportType];
-  if (!addendum) return basePrompt;
+  if (!addendum) return prompt;
   const marker = '## CRITICAL INSTRUCTIONS';
   const insertion = `${marker}\n\n### CRITICAL REPORT TYPE ADDENDUM\n\n${addendum}\n\n`;
-  if (basePrompt.includes(marker)) {
-    return basePrompt.replace(marker, insertion);
+  if (prompt.includes(marker)) {
+    return prompt.replace(marker, insertion);
   }
-  return `${basePrompt}\n\n---\n\n${addendum}\n`;
+  return `${prompt}\n\n---\n\n${addendum}\n`;
 }

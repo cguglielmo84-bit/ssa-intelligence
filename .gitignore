@@ -29,7 +29,7 @@ artifacts/
 Thumbs.db
 .idea/
 .vscode/
-
+.worktrees/
 # Nested Obsidian vault
 ssa-intelligence/
 ~$Mel's_Workflow_Inventory Copy.xlsx
@@ -39,3 +39,5 @@ docs/PLAN-RESEARCH-UI-FIXES.md
 docs/PLAN-RENDER-DEPLOYMENT.md
 docs/PLAN-REPORT-TYPE-ADDENDUMS.md
 docs/REPORT-TYPE-ADDENDUM-NOTES.md
+docs/report-blueprints/IMPLEMENTATION-PLAN.md
+docs/PLAN-QUEUE-FIX.md
