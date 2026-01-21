@@ -8,6 +8,9 @@ import { prisma } from '../../lib/prisma.js';
 import { createSourceCatalog } from '../../services/source-resolver.js';
 import type { FoundationOutput } from '../../types/prompts.js';
 import { buildVisibilityWhere } from '../../middleware/auth.js';
+import { getReportBlueprint } from '../../services/report-blueprints.js';
+import { buildCompletedStages } from '../../services/stage-tracking-utils.js';
+import { deriveJobStatus } from './status-utils.js';
 
 // Map database fields to section keys
 const SECTION_FIELD_MAP = {
@@ -22,6 +25,8 @@ const SECTION_FIELD_MAP = {
   conversation_starters: 'conversationStarters',
   appendix: 'appendix'
 } as const;
+
+const FALLBACK_SECTION_IDS = Object.keys(SECTION_FIELD_MAP);
 
 export async function getResearchDetail(req: Request, res: Response) {
   try {
@@ -65,6 +70,8 @@ export async function getResearchDetail(req: Request, res: Response) {
       });
     }
 
+    const effectiveStatus = deriveJobStatus({ status: job.status, subJobs: job.subJobs });
+
     // Build source catalog from foundation
     let sourceCatalog: import("../../services/source-resolver.js").SourceCatalogManager | null = null;
     if (job.foundation) {
@@ -75,25 +82,33 @@ export async function getResearchDetail(req: Request, res: Response) {
       }
     }
 
+    const blueprint = getReportBlueprint(job.reportType || 'GENERIC');
+    const sectionIds = blueprint?.sections.map((section) => section.id) || FALLBACK_SECTION_IDS;
+
     // Build sections object with resolved sources (always include sections, even if missing content)
     const sections: any = {};
     
-    for (const [sectionId, fieldName] of Object.entries(SECTION_FIELD_MAP)) {
-      const sectionDataRaw = job[fieldName as keyof typeof job];
+    for (const sectionId of sectionIds) {
+      const fieldName = (SECTION_FIELD_MAP as Record<string, string>)[sectionId];
+      const sectionDataRaw = fieldName ? job[fieldName as keyof typeof job] : undefined;
       const sectionData =
         sectionDataRaw && typeof sectionDataRaw === 'object'
           ? (sectionDataRaw as Record<string, any>)
           : null;
       const subJob = job.subJobs.find(j => j.stage === sectionId);
+      const fallbackOutput =
+        !sectionData && subJob?.output && typeof subJob.output === 'object'
+          ? (subJob.output as Record<string, any>)
+          : null;
       
       sections[sectionId] = {
-        ...(sectionData || {}),
+        ...(sectionData || fallbackOutput || {}),
         status: subJob?.status || 'pending',
         lastError: subJob?.lastError,
         completedAt: subJob?.completedAt,
         rawOutput: subJob?.output,
         // Resolve source IDs to full source details
-        sources: sourceCatalog?.resolveSources(sectionData?.sources_used || []) || []
+        sources: sourceCatalog?.resolveSources((sectionData || fallbackOutput)?.sources_used || []) || []
       };
     }
 
@@ -118,9 +133,11 @@ export async function getResearchDetail(req: Request, res: Response) {
       })
       .filter(n => n > 0);
 
+    const completedStages = buildCompletedStages(job.subJobs, job.selectedSections);
+
     return res.json({
       id: job.id,
-      status: job.status,
+      status: effectiveStatus,
       metadata: {
         companyName: job.companyName,
         geography: job.geography,
@@ -144,6 +161,7 @@ export async function getResearchDetail(req: Request, res: Response) {
       foundation: job.foundation,
       sections,
       sectionsCompleted: completedSections,
+      completedStages,
       sectionStatuses: job.subJobs.map(subJob => ({
         stage: subJob.stage,
         status: subJob.status,

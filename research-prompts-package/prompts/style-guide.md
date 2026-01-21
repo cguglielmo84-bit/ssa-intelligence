@@ -451,12 +451,16 @@ Later mention: Analyst Jane Doe also noted strong operational discipline and mar
 
 ### Number Formatting in Tables
 
+For JSON outputs, put units in the metric name (e.g., `Revenue ($M)`) and keep table values numeric only (or `-`). The renderer applies $/%/unit formatting.
+
 **Currency:**
 - Format: `$123.4M` or `€1.2B`
 - Always specify currency symbol
 - Use M for millions, B for billions
 - One decimal place: `$1,234.5M` not `$1,235M` or `$1,234.56M`
 - Right-aligned in cells
+- Include a unit note immediately above any table with monetary values:
+  - "Note: Monetary values shown in USD millions unless stated."
 
 **Percentages:**
 - Format: `12.5%`

@@ -4,6 +4,7 @@
  */
 
 import Anthropic from '@anthropic-ai/sdk';
+import { jsonrepair } from 'jsonrepair';
 import type { MessageStreamEvent } from '@anthropic-ai/sdk/resources/messages';
 
 // ============================================================================
@@ -137,7 +138,8 @@ export class ClaudeClient {
   /**
    * Parse JSON response from Claude
    */
-  parseJSON<T>(response: ClaudeResponse): T {
+  parseJSON<T>(response: ClaudeResponse, options: { allowRepair?: boolean } = {}): T {
+    const { allowRepair = false } = options;
     try {
       // Remove markdown code blocks if present
       let content = response.content.trim();
@@ -145,7 +147,26 @@ export class ClaudeClient {
       content = content.replace(/\s*```$/i, '');
       content = content.trim();
 
-      return JSON.parse(content) as T;
+      const extracted =
+        this.extractJsonFromCodeFence(content) ??
+        this.extractJsonSegment(content) ??
+        this.extractLooseJsonSegment(content) ??
+        content;
+      const cleaned = this.stripJsonNoise(extracted);
+      const candidate =
+        this.extractJsonSegment(cleaned) ??
+        this.extractLooseJsonSegment(cleaned) ??
+        cleaned;
+      try {
+        return JSON.parse(candidate) as T;
+      } catch {
+        if (!allowRepair) {
+          throw new Error('Invalid JSON response');
+        }
+        const repaired = jsonrepair(candidate);
+        const repairedClean = this.stripJsonNoise(repaired);
+        return JSON.parse(repairedClean) as T;
+      }
     } catch (error) {
       throw new Error(`Failed to parse JSON response: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
@@ -154,8 +175,12 @@ export class ClaudeClient {
   /**
    * Validate JSON schema using Zod
    */
-  validateAndParse<T>(response: ClaudeResponse, schema: any): T {
-    const parsed = this.parseJSON(response);
+  validateAndParse<T>(
+    response: ClaudeResponse,
+    schema: any,
+    options: { allowRepair?: boolean } = {}
+  ): T {
+    const parsed = this.parseJSON(response, options);
     const result = schema.safeParse(parsed);
 
     if (!result.success) {
@@ -220,6 +245,53 @@ export class ClaudeClient {
     }
 
     return new Error('Unknown error occurred while calling Claude API');
+  }
+
+  private extractJsonSegment(content: string): string | null {
+    const firstBrace = content.indexOf('{');
+    const firstBracket = content.indexOf('[');
+    const candidates = [firstBrace, firstBracket].filter((value) => value >= 0);
+    if (!candidates.length) return null;
+    const start = Math.min(...candidates);
+
+    const lastBrace = content.lastIndexOf('}');
+    const lastBracket = content.lastIndexOf(']');
+    const endCandidates = [lastBrace, lastBracket].filter((value) => value >= 0);
+    if (!endCandidates.length) return null;
+    const end = Math.max(...endCandidates);
+
+    if (end <= start) return null;
+    return content.slice(start, end + 1);
+  }
+
+  private extractJsonFromCodeFence(content: string): string | null {
+    const match = content.match(/```(?:json)?\s*([\s\S]*?)```/i);
+    if (!match) return null;
+    return match[1].trim();
+  }
+
+  private extractLooseJsonSegment(content: string): string | null {
+    const firstBrace = content.indexOf('{');
+    const firstBracket = content.indexOf('[');
+    const candidates = [firstBrace, firstBracket].filter((value) => value >= 0);
+    if (!candidates.length) return null;
+    const start = Math.min(...candidates);
+
+    const lastBrace = content.lastIndexOf('}');
+    const lastBracket = content.lastIndexOf(']');
+    const endCandidates = [lastBrace, lastBracket].filter((value) => value >= 0);
+    if (!endCandidates.length) {
+      return content.slice(start);
+    }
+    const end = Math.max(...endCandidates);
+    if (end < start) return content.slice(start);
+    return content.slice(start, end + 1);
+  }
+
+  private stripJsonNoise(content: string): string {
+    const lines = content.split(/\r?\n/);
+    const filtered = lines.filter((line) => !/^\s*(#|\/\/)/.test(line));
+    return filtered.join('\n').trim();
   }
 
   /**

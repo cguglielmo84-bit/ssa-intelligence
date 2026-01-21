@@ -7,6 +7,7 @@ import { Request, Response } from 'express';
 import { prisma } from '../../lib/prisma.js';
 import { getResearchOrchestrator } from '../../services/orchestrator.js';
 import { buildVisibilityWhere } from '../../middleware/auth.js';
+import { buildCancelResponse } from './cancel-utils.js';
 
 export async function cancelResearchJob(req: Request, res: Response) {
   try {
@@ -34,28 +35,34 @@ export async function cancelResearchJob(req: Request, res: Response) {
       return res.status(400).json({ error: 'Job already completed', status: job.status });
     }
 
-    await prisma.$transaction([
-      prisma.researchJob.update({
-        where: { id },
-        data: {
-          status: 'cancelled',
-          currentStage: null
-        }
-      }),
-      prisma.researchSubJob.updateMany({
-        where: { researchId: id, status: { in: ['pending', 'running'] } },
-        data: {
-          status: 'cancelled',
-          completedAt: new Date()
-        }
-      })
-    ]);
+    const deleteResult = await prisma.$transaction(async (tx) => {
+      const subJobs = await tx.researchSubJob.deleteMany({
+        where: { researchId: id }
+      });
+      const jobGroups = await tx.researchJobGroup.deleteMany({
+        where: { jobId: id }
+      });
+      const jobs = await tx.researchJob.deleteMany({
+        where: { id }
+      });
+      return { subJobs, jobGroups, jobs };
+    });
+
+    if (deleteResult.jobs.count === 0) {
+      return res.status(404).json({ error: 'Job not found', jobId: id });
+    }
+
+    console.log('[cancel] deleted job', {
+      jobId: id,
+      subJobs: deleteResult.subJobs.count,
+      jobGroups: deleteResult.jobGroups.count
+    });
 
     // Nudge the queue to pick the next job if this one was running/queued
     const orchestrator = getResearchOrchestrator(prisma);
     orchestrator.processQueue(true).catch(console.error);
 
-    return res.json({ success: true, jobId: id, status: 'cancelled' });
+    return res.json(buildCancelResponse(id));
   } catch (error) {
     console.error('Error cancelling research job:', error);
     return res.status(500).json({

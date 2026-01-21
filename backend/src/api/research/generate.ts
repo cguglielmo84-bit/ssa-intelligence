@@ -8,6 +8,7 @@ import { ReportType, VisibilityScope } from '@prisma/client';
 import { prisma } from '../../lib/prisma.js';
 import { getResearchOrchestrator } from '../../services/orchestrator.js';
 import { ensureDomainForJob } from '../../services/domain-infer.js';
+import { getReportBlueprint } from '../../services/report-blueprints.js';
 
 interface GenerateRequestBody {
   companyName: string;
@@ -18,6 +19,8 @@ interface GenerateRequestBody {
   force?: boolean;
   domain?: string;
   reportType?: string;
+  blueprintVersion?: string;
+  reportInputs?: Record<string, unknown>;
   selectedSections?: string[];
   userAddedPrompt?: string;
   visibilityScope?: string;
@@ -51,6 +54,10 @@ const normalizeDomain = (value: string | undefined | null) => {
     .replace(/^https?:\/\//i, '')
     .replace(/\/.*$/, '')
     .toLowerCase();
+};
+
+const isRecord = (value: unknown): value is Record<string, unknown> => {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
 };
 
 export async function generateResearch(req: Request, res: Response) {
@@ -90,18 +97,15 @@ export async function generateResearch(req: Request, res: Response) {
       return res.status(400).json({ error: 'Invalid reportType' });
     }
 
-    const allowedSections = new Set([
-      'exec_summary',
-      'financial_snapshot',
-      'company_overview',
-      'segment_analysis',
-      'trends',
-      'peer_benchmarking',
-      'sku_opportunities',
-      'recent_news',
-      'conversation_starters',
-      'appendix'
-    ]);
+    const blueprintVersion = typeof body.blueprintVersion === 'string' ? body.blueprintVersion.trim() : undefined;
+    const reportInputs = isRecord(body.reportInputs) ? body.reportInputs : undefined;
+
+    const blueprint = getReportBlueprint(reportType);
+    if (!blueprint) {
+      return res.status(400).json({ error: 'Missing report blueprint for reportType' });
+    }
+
+    const allowedSections = new Set(blueprint.sections.map((section) => section.id));
     const rawSelected = Array.isArray(body.selectedSections) ? body.selectedSections : [];
     const selectedSections = Array.from(
       new Set(
@@ -113,6 +117,20 @@ export async function generateResearch(req: Request, res: Response) {
     const invalidSections = selectedSections.filter((section) => !allowedSections.has(section));
     if (invalidSections.length) {
       return res.status(400).json({ error: `Invalid selectedSections: ${invalidSections.join(', ')}` });
+    }
+
+    const dependencyMap = new Map(
+      blueprint.sections.map((section) => [section.id, section.dependencies || []])
+    );
+    const missingDependencies = selectedSections.flatMap((sectionId) => {
+      const deps = dependencyMap.get(sectionId) || [];
+      return deps.filter((dep) => !selectedSections.includes(dep));
+    });
+    if (missingDependencies.length) {
+      const uniqueMissing = Array.from(new Set(missingDependencies));
+      return res.status(400).json({
+        error: `Missing required dependencies: ${uniqueMissing.join(', ')}`
+      });
     }
 
     const visibilityScope = (body.visibilityScope || 'PRIVATE').toUpperCase() as VisibilityScope;
@@ -221,6 +239,8 @@ export async function generateResearch(req: Request, res: Response) {
       domain,
       normalizedDomain: normalizedDomainKey || null,
       reportType,
+      blueprintVersion,
+      reportInputs,
       selectedSections,
       userAddedPrompt: typeof body.userAddedPrompt === 'string' ? body.userAddedPrompt.trim() : undefined,
       visibilityScope,

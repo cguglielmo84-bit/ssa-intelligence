@@ -91,14 +91,114 @@ export interface Section2Output {
 }
 
 // ============================================================================
+// KPI REQUIREMENTS
+// ============================================================================
+
+const REQUIRED_KPIS_BY_REPORT_TYPE: Record<ReportTypeId, string[]> = {
+  INDUSTRIALS: [
+    'Revenue (Latest Period) ($M)',
+    'Revenue Growth (YoY) (%)',
+    'Gross Margin (%)',
+    'EBITDA ($M)',
+    'EBITDA Margin (%)',
+    'Operating Income (EBIT) ($M)',
+    'Operating Margin (%)',
+    'Net Income ($M)',
+    'Net Margin (%)',
+    'Free Cash Flow ($M)',
+    'CapEx ($M)',
+    'Cash and Equivalents ($M)',
+    'Total Debt ($M)',
+    'Net Debt ($M)',
+    'Net Leverage (x)',
+    'Days Sales Outstanding (DSO) (days)',
+    'Days Inventory Outstanding (DIO) (days)',
+    'Inventory Turns (x)',
+    'Days Payable Outstanding (DPO) (days)',
+    'Working Capital ($M)'
+  ],
+  PE: [
+    'Assets Under Management (AUM) ($B)',
+    'Fund Size (Latest Fund) ($B)',
+    'Dry Powder ($B)',
+    'Fee-Related Earnings ($M)',
+    'Fee-Related Earnings Margin (%)',
+    'Management Fee Rate (%)',
+    'Realized Value (DPI) (x)',
+    'Total Value (TVPI) (x)',
+    'Net IRR (%)',
+    'Active Portfolio Companies (Count)',
+    'Typical Hold Period (years)',
+    'Recent Exits (Count, 12-24 months)'
+  ],
+  FS: [
+    'Total Assets ($B)',
+    'Revenue (or Net Revenue) ($M)',
+    'Net Interest Margin (%)',
+    'Efficiency Ratio (%)',
+    'Return on Equity (ROE) (%)',
+    'Return on Assets (ROA) (%)',
+    'CET1 Ratio (or Primary Capital Ratio) (%)',
+    'Loan/Deposit Ratio (%)',
+    'Non-Performing Loan Ratio (%)',
+    'Cost of Risk / Credit Loss Ratio (%)',
+    'Liquidity Coverage Ratio (%)',
+    'Net New Assets / AUM ($B)'
+  ],
+  GENERIC: [
+    'Revenue ($M)',
+    'Revenue Growth (YoY) (%)',
+    'EBITDA (or Operating Income) ($M)',
+    'EBITDA Margin (or Operating Margin) (%)',
+    'Net Income ($M)',
+    'Net Margin (%)',
+    'Free Cash Flow ($M)',
+    'Cash and Equivalents ($M)',
+    'Total Debt ($M)',
+    'Net Debt ($M)'
+  ]
+};
+
+const getRequiredKpis = (reportType?: ReportTypeId) =>
+  REQUIRED_KPIS_BY_REPORT_TYPE[reportType ?? 'GENERIC'] || REQUIRED_KPIS_BY_REPORT_TYPE.GENERIC;
+
+// ============================================================================
 // PROMPT BUILDER
 // ============================================================================
 
 export function buildFinancialSnapshotPrompt(input: Section2Input): string {
   const { foundation, companyName, geography } = input;
+  const requiredKpis = getRequiredKpis(input.reportType);
   
   // Serialize foundation context for injection
   const foundationJson = JSON.stringify(foundation, null, 2);
+  const requiredKpiList = requiredKpis
+    .map((metric, index) => `${index + 1}. ${metric}`)
+    .join('\n');
+  const reportTypeFocus = (() => {
+    switch (input.reportType) {
+      case 'PE':
+        return [
+          '**Private Equity focus:** Emphasize firm-level performance (AUM, fees, fund performance, exits).',
+          'Do NOT include operating KPIs like DSO/DIO unless explicitly reported for the firm.'
+        ].join('\n');
+      case 'FS':
+        return [
+          '**Financial Services focus:** Emphasize balance sheet, profitability, capital, and efficiency KPIs.',
+          'Do NOT include working capital KPIs (DSO/DIO) unless explicitly reported.'
+        ].join('\n');
+      case 'INDUSTRIALS':
+        return [
+          '**Industrials focus:** Emphasize operational efficiency, working capital, and margin KPIs.',
+          'Include working capital metrics such as DSO/DIO/Inventory Turns when available.'
+        ].join('\n');
+      default:
+        return [
+          '**Generic focus:** Use broad financial KPIs and add 2-4 industry-specific metrics if relevant.',
+          'Avoid irrelevant operating KPIs unless the company context supports them.'
+        ].join('\n');
+    }
+  })();
   
   const basePrompt = `# Section 2: Financial Snapshot - Research Prompt
 
@@ -206,7 +306,7 @@ interface Section2Output {
   kpi_table: {
     metrics: Array<{
       metric: string;           // Exact name from style guide Section 8
-      company: number | string; // Number value or "â€“" if unavailable
+      company: number | string; // Number value or "-" if unavailable
       industry_avg: number | string;
       source: string;           // "S1, S3" format
     }>;
@@ -228,31 +328,34 @@ interface Section2Output {
 
 ---
 
+## OUTPUT FORMAT RULES
+
+**Valid JSON only:** No markdown, no headings, no prose outside the JSON object.
+**Output must start with \`{\` and end with \`}\`.**
+
+---
+
+## NUMBER FORMATTING (STRICT)
+
+- **Units belong in the metric name** (e.g., \`Revenue ($M)\`, \`EBITDA Margin (%)\`, \`Net Leverage (x)\`).
+- **Table values must be numeric only** (or \`-\`), with no \`$\`, \`%\`, \`M/B\`, or \`x\` suffixes.
+- **Renderer will apply formatting** based on units in the metric name.
+- **Output must start with \`{\` and end with \`}\`.** No leading headings or commentary.
+
 ## REQUIRED METRICS FOR KPI TABLE
 
-**The table MUST include these metrics (use "â€“" if unavailable):**
+**The table MUST include these metrics (use "-" if unavailable):**
 
-1. Revenue (Latest Period)
-2. Revenue Growth (YoY)
-3. EBITDA Margin
-4. Operating Margin
-5. Gross Margin
-6. Net Margin
-7. Operating Cash Flow
-8. Free Cash Flow Margin
-9. Days Sales Outstanding (DSO)
-10. Days Inventory Outstanding (DIO)
-11. Inventory Turns
-12. Cash Conversion Cycle
-13. ROIC (Return on Invested Capital)
-14. CapEx as % Revenue
-15. Debt/EBITDA (if applicable)
+${requiredKpiList}
 
-**Table format MUST match style guide Section 8:**
-\`\`\`
-| Metric | Company | Industry Avg | Source |
-\`\`\`
+**Use the exact metric names from the style guide.**
+**Do NOT output a markdown table**; populate \`kpi_table.metrics\` with one object per metric.
 
+---
+
+## REPORT-TYPE KPI FOCUS
+
+${reportTypeFocus}
 
 ---
 
@@ -290,13 +393,13 @@ Industry average source: {A/B/C}
 
 **Every metric discussion must emphasize ${geography}:**
 
-âœ… **CORRECT patterns:**
+CORRECT patterns:
 - "**${geography}** revenue grew 15% vs 12% globally..."
 - "${geography} EBITDA margin of 19.2% exceeds company average of 18.3%..."
 - "Regional DSO of 65 days compares favorably to 68-day company average..."
 - "${geography} facilities generated $120M free cash flow, 60% of company total..."
 
-âŒ **WRONG patterns:**
+WRONG patterns:
 - "Company revenue grew 12% YoY..." [No geography mention]
 - "Global margins expanded 80bps..." [Not geography-specific]
 - "ROIC improved to 12.5%..." [No regional context]
@@ -325,15 +428,17 @@ Industry average source: {A/B/C}
 ## DATA QUALITY RULES (Style Guide Section 10)
 
 ### Unavailable Data
-**Use "â€“" (en dash) for missing metrics:**
+**Use "-" for missing metrics:**
 \`\`\`json
 {
   "metric": "Gross Margin",
-  "company": "â€“",
+  "company": "-",
   "industry_avg": 42.5,
   "source": "S7"
 }
 \`\`\`
+
+**Never return a missing-input or data-availability error.** Always return the full schema with "-" placeholders.
 
 ### Derived Metrics
 **Flag with asterisk and document:**
@@ -356,10 +461,12 @@ Industry average source: {A/B/C}
 }
 \`\`\`
 
+**Rule:** Every derived metric must appear in the KPI table with a \`*\` in the metric name.
+
 ### Never Speculate
-- If data cannot be verified â†’ Use "â€“"
-- If you must estimate â†’ Show methodology explicitly
-- Example: "Regional revenue estimated at $1.3B* (Europe total of $2.8B Ã— Germany's ~45% share based on facility count; S1, S3)"
+- If data cannot be verified -> Use "-"
+- If you must estimate -> Show methodology explicitly
+- Example: "Regional revenue estimated at $1.3B* (Europe total of $2.8B x Germany's ~45% share based on facility count; S1, S3)"
 
 ---
 
@@ -368,7 +475,7 @@ Industry average source: {A/B/C}
 **ALL financial metrics MUST be in USD:**
 
 1. **First mention:** Show both currencies
-   - "â‚¬1.2B (â‰ˆ$1.3B using 1.08 EUR/USD)"
+   - "EUR 1.2B (~$1.3B using 1.08 EUR/USD)"
 
 2. **Subsequent mentions:** USD only
    - "$1.3B revenue"
@@ -452,28 +559,17 @@ Industry average source: {A/B/C}
 - [ ] Summary is 4-6 sentences
 - [ ] Summary emphasizes ${geography} (75-80%)
 - [ ] Summary ends with FX and industry source notes
-- [ ] All 15 required metrics in table (use "â€“" if unavailable)
+- [ ] All ${requiredKpis.length} required metrics in table (use "-" if unavailable)
 - [ ] Table uses exact metric names from style guide
 - [ ] ALL metrics cite sources (S# format)
 - [ ] Derived metrics flagged with * in table
 - [ ] Derived metrics documented in array
 - [ ] All currencies in USD
 - [ ] Geography focus maintained throughout
-- [ ] No speculation (use "â€“" for unavailable)
+- [ ] No speculation (use "-" for unavailable)
 - [ ] Sources_used array populated
 
 ---
-
-## CRITICAL REMINDERS
-
-1. **Follow style guide:** ALL formatting rules apply
-2. **75-80% geography focus:** Every metric must show regional context
-3. **Source everything:** No unsourced claims
-4. **Use "â€“" for unavailable:** Never speculate or leave blank
-5. **Flag derived metrics:** Asterisk + documentation
-6. **Currency in USD:** Convert all amounts
-7. **Valid JSON only:** No markdown, no prose outside JSON
-8. **Exact schema match:** Follow TypeScript interface
 
 ---
 
@@ -482,6 +578,8 @@ Industry average source: {A/B/C}
 **Company:** ${companyName}  
 **Geography:** ${geography}  
 **Foundation Context:** [Provided above]
+
+Return a JSON object with keys: confidence, summary, kpi_table, fx_source, industry_source, derived_metrics, sources_used. Do not return an array.
 
 **OUTPUT ONLY VALID JSON MATCHING THE SCHEMA. START RESEARCH NOW.**
 `;
@@ -529,6 +627,13 @@ export function validateSection2Output(output: any): output is Section2Output {
   
   // Check derived_metrics
   if (!Array.isArray(output.derived_metrics)) return false;
+
+  // Ensure derived metrics are present in table with asterisk flag
+  const tableMetricNames = output.kpi_table.metrics.map(metric => metric.metric);
+  for (const derived of output.derived_metrics) {
+    const requiredName = `${derived.metric}*`;
+    if (!tableMetricNames.includes(requiredName)) return false;
+  }
   
   // Check sources_used
   if (!Array.isArray(output.sources_used)) return false;
@@ -540,24 +645,92 @@ export function validateSection2Output(output: any): output is Section2Output {
  * Formats Section 2 output for document generation
  */
 export function formatSection2ForDocument(output: Section2Output): string {
-  let markdown = `# 2. Financial Snapshot\n\n`;
-  markdown += `**Confidence: ${output.confidence.level}** â€“ ${output.confidence.reason}\n\n`;
-  markdown += `## 2.1 Financial Snapshot Summary\n\n`;
-  markdown += `${output.summary}\n\n`;
-  markdown += `## 2.2 Current Year / LTM KPIs\n\n`;
-  
+  const formatNumber = (value: number) =>
+    value.toLocaleString('en-US', { maximumFractionDigits: 2 });
+
+  const resolveMetricUnit = (metricName: string) => {
+    const match = metricName.match(/\(([^)]+)\)\s*$/);
+    const token = match?.[1].toLowerCase();
+
+    if (!token) return null;
+    if (token.includes('$b')) return { type: 'currency', suffix: 'B' };
+    if (token.includes('$m')) return { type: 'currency', suffix: 'M' };
+    if (token.includes('$k')) return { type: 'currency', suffix: 'K' };
+    if (token.includes('%')) return { type: 'percent', suffix: '%' };
+    if (token.includes('x')) return { type: 'ratio', suffix: 'x' };
+    if (token.includes('day')) return { type: 'days', suffix: ' days' };
+    if (token.includes('year')) return { type: 'years', suffix: ' years' };
+    if (token.includes('count') || token.includes('score')) return { type: 'number', suffix: '' };
+    return null;
+  };
+
+  const inferValueType = (metricName: string) => {
+    const metric = metricName.toLowerCase();
+    if (metric.includes('margin') || metric.includes('growth') || metric.includes('irr') || metric.includes('roe') ||
+        metric.includes('roa') || metric.includes('rate') || metric.includes('pct') || metric.includes('percent')) {
+      return 'percent';
+    }
+    if (metric.includes('turn') || metric.includes('multiple') || metric.includes('leverage')) return 'ratio';
+    if (metric.includes('day') || metric.includes('dso') || metric.includes('dio') || metric.includes('dpo')) {
+      return 'days';
+    }
+    return 'currency';
+  };
+
+  const formatTableValue = (
+    metricName: string,
+    value: number | string
+  ) => {
+    if (typeof value !== 'number') return value;
+
+    const unit = resolveMetricUnit(metricName);
+    const formatted = formatNumber(value);
+
+    if (unit?.type === 'percent') return `${formatted}%`;
+    if (unit?.type === 'currency') return `$${formatted}${unit.suffix}`;
+    if (unit?.type === 'ratio') return `${formatted}x`;
+    if (unit?.type === 'days') return `${formatted} days`;
+    if (unit?.type === 'years') return `${formatted} years`;
+
+    const fallbackType = inferValueType(metricName);
+    if (fallbackType === 'percent') return `${formatted}%`;
+    if (fallbackType === 'ratio') return `${formatted}x`;
+    if (fallbackType === 'days') return `${formatted} days`;
+    return `$${formatted}M`;
+  };
+
+  let markdown = `# 2. Financial Snapshot
+
+`;
+  markdown += `**Confidence: ${output.confidence.level}** ? ${output.confidence.reason}
+
+`;
+  markdown += `## 2.1 Financial Snapshot Summary
+
+`;
+  markdown += `${output.summary}
+
+`;
+  markdown += `## 2.2 Current Year / LTM KPIs
+
+`;
+  markdown += `Note: Monetary values shown in USD millions unless stated.
+
+`;
+
   // Build table
-  markdown += `| Metric | Company | Industry Avg | Source |\n`;
-  markdown += `|--------|---------|--------------|--------|\n`;
-  
+  markdown += `| Metric | Company | Industry Avg | Source |
+`;
+  markdown += `|--------|---------|--------------|--------|
+`;
+
   for (const metric of output.kpi_table.metrics) {
-    const company = typeof metric.company === 'number' ? 
-      metric.company.toLocaleString() : metric.company;
-    const industry = typeof metric.industry_avg === 'number' ?
-      metric.industry_avg.toLocaleString() : metric.industry_avg;
-    markdown += `| ${metric.metric} | ${company} | ${industry} | ${metric.source} |\n`;
+    const company = formatTableValue(metric.metric, metric.company);
+    const industry = formatTableValue(metric.metric, metric.industry_avg);
+    markdown += `| ${metric.metric} | ${company} | ${industry} | ${metric.source} |
+`;
   }
-  
+
   return markdown;
 }
 
