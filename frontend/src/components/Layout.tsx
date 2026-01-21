@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Search, Home, FileText, Plus, Bell, PanelLeftClose, PanelLeftOpen, Newspaper, Settings } from 'lucide-react';
+import { Search, Home, FileText, Plus, PanelLeftClose, PanelLeftOpen, Newspaper, Settings } from 'lucide-react';
 import { FeedbackModal } from './FeedbackModal';
 
 interface LayoutProps {
@@ -73,19 +73,19 @@ export const Layout: React.FC<LayoutProps> = ({ children, onNavigate, activePath
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900 flex flex-col md:flex-row">
       {/* Sidebar Navigation */}
-      <aside className={`${isCollapsed ? 'w-20' : 'w-full md:w-64'} bg-white border-r border-slate-200 flex-shrink-0 md:h-screen sticky top-0 z-20 transition-all duration-300 ease-in-out flex flex-col`}>
+      <aside className={`${isCollapsed ? 'w-20' : 'w-full md:w-80'} bg-white border-r border-slate-200 flex-shrink-0 md:h-screen sticky top-0 z-20 transition-all duration-300 ease-in-out flex flex-col`}>
         <div className={`p-6 border-b border-slate-100 flex items-center ${isCollapsed ? 'justify-center' : 'justify-between'} transition-all`}>
           {!isCollapsed && (
             <div className="flex items-center gap-3 cursor-pointer overflow-hidden" onClick={() => onNavigate('/')}>
               <div className="w-8 h-8 bg-white border border-slate-200 rounded-lg flex-shrink-0 flex items-center justify-center">
-                <img src="/SSA%20Logo%20Square.svg" alt="SSA Intelligence" className="w-7 h-7 object-contain" />
+                <img src="/SSA%20Logo%20Square.svg" alt="SSA & Co Marketing Hub" className="w-7 h-7 object-contain" />
               </div>
-              <span className="font-bold text-lg tracking-tight text-slate-800 whitespace-nowrap">SSA Intelligence</span>
+              <span className="font-bold text-lg tracking-tight text-slate-800 whitespace-nowrap">SSA & Co Marketing Hub</span>
             </div>
           )}
           {isCollapsed && (
              <div className="w-8 h-8 bg-white border border-slate-200 rounded-lg flex-shrink-0 flex items-center justify-center cursor-pointer" onClick={() => onNavigate('/')}>
-               <img src="/SSA%20Logo%20Square.svg" alt="SSA Intelligence" className="w-7 h-7 object-contain" />
+               <img src="/SSA%20Logo%20Square.svg" alt="SSA & Co Marketing Hub" className="w-7 h-7 object-contain" />
              </div>
           )}
         </div>
@@ -102,13 +102,18 @@ export const Layout: React.FC<LayoutProps> = ({ children, onNavigate, activePath
          </div>
 
         <nav className="p-4 space-y-1 flex-1">
+          {!isCollapsed && (
+            <div className="pb-2">
+              <span className="px-4 text-xs font-semibold text-slate-400 uppercase tracking-wider">Research Reports</span>
+            </div>
+          )}
           <button 
             onClick={() => onNavigate('/')}
             className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-colors ${activePath === '/' ? 'bg-brand-50 text-brand-700' : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'} ${isCollapsed ? 'justify-center px-2' : ''}`}
-            title={isCollapsed ? "Dashboard" : undefined}
+            title={isCollapsed ? "Research Dashboard" : undefined}
           >
             <Home size={18} className="flex-shrink-0" />
-            {!isCollapsed && <span className="whitespace-nowrap">Dashboard</span>}
+            {!isCollapsed && <span className="whitespace-nowrap">Research Dashboard</span>}
           </button>
           
           <button
@@ -193,15 +198,6 @@ export const Layout: React.FC<LayoutProps> = ({ children, onNavigate, activePath
               {activePath === '/news' && 'News Intelligence'}
               {activePath === '/news/setup' && 'News Setup'}
             </h1>
-            <div className="flex items-center gap-4">
-               <button className="text-slate-400 hover:text-slate-600 relative">
-                  <Bell size={20} />
-                  <span className="absolute top-0 right-0 w-2 h-2 bg-rose-500 rounded-full"></span>
-               </button>
-               <div className="w-8 h-8 rounded-full bg-slate-200 border-2 border-white shadow-sm overflow-hidden">
-                  <img src="https://picsum.photos/100/100" alt="User" />
-               </div>
-            </div>
          </header>
          <div className="p-6 max-w-7xl mx-auto">
             {children}
