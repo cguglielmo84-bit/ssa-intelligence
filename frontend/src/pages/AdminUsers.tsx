@@ -118,12 +118,18 @@ export const AdminUsers: React.FC<{ isAdmin?: boolean; currentUserId?: string }>
     const hasGroup = user.groups.some((g) => g.id === groupId);
     const group = groupMap.get(groupId);
 
+    // Guard against missing group (race condition protection)
+    if (!group) {
+      setError('Group not found. Please refresh the page.');
+      return;
+    }
+
     // Optimistic update - immediate UI response
     setUsers((prev) => prev.map((u) => {
       if (u.id !== user.id) return u;
       return hasGroup
         ? { ...u, groups: u.groups.filter((g) => g.id !== groupId) }
-        : { ...u, groups: [...u.groups, group!] };
+        : { ...u, groups: [...u.groups, group] };
     }));
 
     setGroups((prev) => prev.map((g) => {
@@ -145,7 +151,7 @@ export const AdminUsers: React.FC<{ isAdmin?: boolean; currentUserId?: string }>
       setUsers((prev) => prev.map((u) => {
         if (u.id !== user.id) return u;
         return hasGroup
-          ? { ...u, groups: [...u.groups, group!] }
+          ? { ...u, groups: [...u.groups, group] }
           : { ...u, groups: u.groups.filter((g) => g.id !== groupId) };
       }));
       setGroups((prev) => prev.map((g) => {

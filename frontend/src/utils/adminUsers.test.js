@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { applyUserDeletionToGroups } from './adminUsers.js';
+import { applyUserDeletionToGroups } from './adminUsers.ts';
 
 const runTest = (name, fn) => {
   try {

@@ -143,8 +143,8 @@ export async function updateUser(req: Request, res: Response) {
   }
 
   // Build update data
-  const updateData: { name?: string; role?: UserRole } = {};
-  if (name !== undefined) updateData.name = name || null as any;
+  const updateData: { name?: string | null; role?: UserRole } = {};
+  if (name !== undefined) updateData.name = name || null;
   if (role !== undefined) updateData.role = role as UserRole;
 
   if (Object.keys(updateData).length === 0) {

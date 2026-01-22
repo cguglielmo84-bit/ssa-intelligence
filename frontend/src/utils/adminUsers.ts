@@ -1,9 +1,18 @@
-/**
- * @param {Array<{ id: string; memberCount?: number }>} groups
- * @param {{ groups?: Array<{ id: string }> } | null | undefined} deletedUser
- * @returns {Array<{ id: string; memberCount?: number }>}
- */
-export const applyUserDeletionToGroups = (groups, deletedUser) => {
+type AdminGroup = {
+  id: string;
+  name: string;
+  slug: string;
+  memberCount?: number;
+};
+
+type DeletedUser = {
+  groups?: Array<{ id: string }>;
+};
+
+export const applyUserDeletionToGroups = (
+  groups: AdminGroup[],
+  deletedUser: DeletedUser | null | undefined
+): AdminGroup[] => {
   if (!deletedUser?.groups?.length) {
     return groups;
   }
