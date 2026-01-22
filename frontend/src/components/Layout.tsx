@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { Search, Home, FileText, Plus, PanelLeftClose, PanelLeftOpen, Newspaper, Settings } from 'lucide-react';
-import { FeedbackModal } from './FeedbackModal';
+import { Home, FileText, Plus, PanelLeftClose, PanelLeftOpen, Newspaper, Settings } from 'lucide-react';
+import { BugTrackerModal } from './BugTrackerModal';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -48,15 +48,68 @@ export const Layout: React.FC<LayoutProps> = ({ children, onNavigate, activePath
     };
   }, [healthUrl]);
 
-  const submitFeedback = async (payload: { name?: string; email?: string; message: string; pagePath?: string; reportId?: string }) => {
+  // Bug tracker API functions
+  const submitFeedback = async (payload: {
+    type: 'bug' | 'issue' | 'feature' | 'other';
+    title: string;
+    message: string;
+    pagePath?: string;
+    reportId?: string;
+  }) => {
     const res = await fetch(feedbackUrl, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload)
     });
     if (!res.ok) {
-      const text = await res.text();
-      throw new Error(text || 'Failed to submit feedback');
+      const data = await res.json().catch(() => ({}));
+      throw new Error(data.error || 'Failed to submit feedback');
+    }
+  };
+
+  const listFeedback = async (filters?: {
+    status?: 'new_feedback' | 'reviewed' | 'in_progress' | 'resolved' | 'wont_fix';
+    type?: 'bug' | 'issue' | 'feature' | 'other';
+  }) => {
+    const params = new URLSearchParams();
+    if (filters?.status) params.set('status', filters.status);
+    if (filters?.type) params.set('type', filters.type);
+    const url = `${feedbackUrl}${params.toString() ? '?' + params.toString() : ''}`;
+    const res = await fetch(url, {
+      headers: { 'Content-Type': 'application/json' }
+    });
+    if (!res.ok) {
+      throw new Error('Failed to fetch feedback');
+    }
+    return res.json();
+  };
+
+  const updateFeedback = async (
+    id: string,
+    data: {
+      status?: 'new_feedback' | 'reviewed' | 'in_progress' | 'resolved' | 'wont_fix';
+      resolutionNotes?: string;
+    }
+  ) => {
+    const res = await fetch(`${feedbackUrl}/${id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data)
+    });
+    if (!res.ok) {
+      const json = await res.json().catch(() => ({}));
+      throw new Error(json.error || 'Failed to update feedback');
+    }
+  };
+
+  const deleteFeedback = async (id: string) => {
+    const res = await fetch(`${feedbackUrl}/${id}`, {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' }
+    });
+    if (!res.ok) {
+      const json = await res.json().catch(() => ({}));
+      throw new Error(json.error || 'Failed to delete feedback');
     }
   };
 
@@ -164,9 +217,9 @@ export const Layout: React.FC<LayoutProps> = ({ children, onNavigate, activePath
           <button
             onClick={() => setFeedbackOpen(true)}
             className={`text-sm font-semibold text-blue-600 hover:text-blue-700 transition-colors ${isCollapsed ? 'w-full text-center' : ''}`}
-            title="Share feedback"
+            title="Report Issue"
           >
-            Share feedback
+            {isCollapsed ? '!' : 'Report Issue'}
           </button>
         </div>
 
@@ -204,10 +257,13 @@ export const Layout: React.FC<LayoutProps> = ({ children, onNavigate, activePath
          </div>
       </main>
 
-      <FeedbackModal
+      <BugTrackerModal
         isOpen={feedbackOpen}
         onClose={() => setFeedbackOpen(false)}
         onSubmit={submitFeedback}
+        onList={listFeedback}
+        onUpdate={updateFeedback}
+        onDelete={deleteFeedback}
         context={{ pagePath, reportId }}
       />
     </div>

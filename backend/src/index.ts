@@ -24,7 +24,7 @@ import { listResearch } from './api/research/list.js';
 import { cancelResearchJob } from './api/research/cancel.js';
 import { deleteResearchJob } from './api/research/delete.js';
 import { rerunResearchSections } from './api/research/rerun.js';
-import { submitFeedback } from './api/feedback.js';
+import { submitFeedback, listFeedback, updateFeedback, deleteFeedback } from './api/feedback.js';
 import { exportResearchPdf } from './api/research/export-pdf.js';
 import { getResearchOrchestrator } from './services/orchestrator.js';
 import { authMiddleware, requireAdmin } from './middleware/auth.js';
@@ -172,7 +172,11 @@ app.post('/api/research/:id/cancel', ...applyLimiter(writeLimiter), authMiddlewa
 app.delete('/api/research/:id', ...applyLimiter(writeLimiter), authMiddleware, deleteResearchJob);
 app.get('/api/research/:id/export/pdf', ...applyLimiter(exportLimiter), authMiddleware, exportResearchPdf);
 app.post('/api/research/:id/rerun', ...applyLimiter(writeLimiter), authMiddleware, rerunResearchSections);
+// Bug Tracker / Feedback routes
 app.post('/api/feedback', ...applyLimiter(writeLimiter), submitFeedback);
+app.get('/api/feedback', ...applyLimiter(getLimiter), authMiddleware, listFeedback);
+app.patch('/api/feedback/:id', ...applyLimiter(writeLimiter), authMiddleware, updateFeedback);
+app.delete('/api/feedback/:id', ...applyLimiter(writeLimiter), authMiddleware, deleteFeedback);
 app.get('/api/me', authMiddleware, getMe);
 app.get('/api/groups', authMiddleware, listGroups);
 app.get('/api/admin/users', authMiddleware, requireAdmin, listUsers);
