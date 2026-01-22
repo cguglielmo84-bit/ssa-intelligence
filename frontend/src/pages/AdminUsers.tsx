@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { UserEditModal } from '../components/UserEditModal';
+import { applyUserDeletionToGroups } from '../utils/adminUsers';
 
 type AdminUser = {
   id: string;
@@ -164,8 +165,16 @@ export const AdminUsers: React.FC<{ isAdmin?: boolean; currentUserId?: string }>
   };
 
   const handleDeleteUser = async (userId: string) => {
-    await fetchJson(`/admin/users/${userId}`, { method: 'DELETE' });
-    setUsers((prev) => prev.filter((u) => u.id !== userId));
+    const deletedUser = users.find((user) => user.id === userId);
+    try {
+      await fetchJson(`/admin/users/${userId}`, { method: 'DELETE' });
+      setUsers((prev) => prev.filter((u) => u.id !== userId));
+      if (deletedUser) {
+        setGroups((prev) => applyUserDeletionToGroups(prev, deletedUser));
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to delete user.');
+    }
   };
 
   if (!isAdmin) {
