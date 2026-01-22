@@ -357,7 +357,7 @@ interface FoundationOutput {
   source_catalog: Array<{
     id: string; // "S1", "S2", "S3", etc.
     citation: string;
-    url?: string;
+    url: string; // REQUIRED: Full URL to the source (e.g., SEC filing URL, news article URL). Use actual URLs found during research.
     type: 'filing' | 'transcript' | 'analyst_report' | 'news' | 'user_provided' | 'government' | 'investor_presentation' | 'industry_report';
     date: string;
   }>;
@@ -399,6 +399,7 @@ Before returning JSON, verify:
 - [ ] FX source noted (A/B/C)
 - [ ] Industry average source noted (A/B/C)
 - [ ] Sources numbered S1, S2, S3... sequentially
+- [ ] **EVERY source in source_catalog MUST have a valid URL** (SEC EDGAR links, news article URLs, etc.)
 - [ ] 75-80% of research emphasized ${geography}
 - [ ] No speculation or unsupported claims
 - [ ] JSON is valid and parseable

@@ -1,7 +1,7 @@
 import React, { useMemo, useState, useEffect } from 'react';
 import { ReportBlueprint, ResearchJob, SECTIONS_CONFIG, SectionId, SectionStatus } from '../types';
 import { StatusPill } from '../components/StatusPill';
-import { ChevronRight, BarChart3, Globe, ExternalLink, AlertTriangle, Loader2, CheckCircle2, Circle } from 'lucide-react';
+import { ChevronRight, BarChart3, Globe, ExternalLink, AlertTriangle, Loader2, CheckCircle2, Circle, Search } from 'lucide-react';
 
 // Improved Markdown Renderer
 const parseFormattedText = (text: string) => {
@@ -573,10 +573,19 @@ export const ResearchDetail: React.FC<ResearchDetailProps> = ({
                         href={source.url}
                         target="_blank"
                         rel="noreferrer"
-                        className="flex items-center gap-2 text-xs font-medium text-slate-600 hover:text-brand-700 bg-white px-3 py-2 rounded-lg border border-slate-200 hover:border-brand-300 hover:shadow-sm transition-all max-w-[200px]"
+                        title={source.isGeneratedUrl ? 'Search for this source (direct link unavailable)' : source.title}
+                        className={`flex items-center gap-2 text-xs font-medium bg-white px-3 py-2 rounded-lg border transition-all max-w-[200px] ${
+                          source.isGeneratedUrl
+                            ? 'text-amber-600 hover:text-amber-700 border-amber-200 hover:border-amber-300'
+                            : 'text-slate-600 hover:text-brand-700 border-slate-200 hover:border-brand-300 hover:shadow-sm'
+                        }`}
                       >
-                         <ExternalLink size={10} className="flex-shrink-0" />
-                         <span className="truncate">{source.title}</span>
+                         {source.isGeneratedUrl ? (
+                           <Search size={10} className="flex-shrink-0" />
+                         ) : (
+                           <ExternalLink size={10} className="flex-shrink-0" />
+                         )}
+                         <span className="truncate">{source.id ? `${source.id}: ${source.title}` : source.title}</span>
                       </a>
                     ))}
                  </div>

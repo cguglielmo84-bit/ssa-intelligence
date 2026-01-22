@@ -16,6 +16,54 @@ export interface ResolvedSource {
   citation: string;     // Full citation
   type: string;         // Source type
   date: string;         // Date string
+  isGeneratedUrl?: boolean; // True if URL was generated as fallback
+}
+
+// ============================================================================
+// URL GENERATION HELPERS
+// ============================================================================
+
+/**
+ * Generate a fallback search URL when no direct URL is available
+ */
+function generateFallbackUrl(source: SourceReference): string {
+  const { citation, type, date } = source;
+
+  // Build search query based on source type
+  let searchQuery = citation;
+
+  // For filings, try to construct SEC EDGAR search
+  if (type === 'filing') {
+    // Extract company name and filing type from citation
+    const match = citation.match(/^([^,]+)/);
+    const companyName = match ? match[1].trim() : citation;
+    return `https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&company=${encodeURIComponent(companyName)}&type=10-K&dateb=&owner=include&count=40`;
+  }
+
+  // For transcripts, search Seeking Alpha or Google
+  if (type === 'transcript') {
+    const match = citation.match(/^([^,]+)/);
+    const companyName = match ? match[1].trim() : citation;
+    return `https://www.google.com/search?q=${encodeURIComponent(companyName + ' earnings call transcript ' + date)}`;
+  }
+
+  // For news, search Google News
+  if (type === 'news') {
+    return `https://www.google.com/search?q=${encodeURIComponent(citation)}&tbm=nws`;
+  }
+
+  // For analyst reports, search Google
+  if (type === 'analyst_report') {
+    return `https://www.google.com/search?q=${encodeURIComponent(citation + ' analyst report')}`;
+  }
+
+  // For government sources, search .gov sites
+  if (type === 'government') {
+    return `https://www.google.com/search?q=${encodeURIComponent(citation)}+site:.gov`;
+  }
+
+  // Default: Google search with citation
+  return `https://www.google.com/search?q=${encodeURIComponent(searchQuery)}`;
 }
 
 export interface SourceCatalog {
@@ -58,13 +106,18 @@ export class SourceCatalogManager implements SourceCatalog {
     const source = this.sources.get(id);
     if (!source) return undefined;
 
+    // Use actual URL if available, otherwise generate a fallback search URL
+    const hasDirectUrl = !!(source.url && source.url !== '#' && source.url.trim() !== '');
+    const url = hasDirectUrl ? source.url! : generateFallbackUrl(source);
+
     return {
       id: source.id,
       title: this.extractTitle(source.citation),
-      url: source.url || '#',
+      url,
       citation: source.citation,
       type: source.type,
-      date: source.date
+      date: source.date,
+      isGeneratedUrl: !hasDirectUrl
     };
   }
 
@@ -81,14 +134,18 @@ export class SourceCatalogManager implements SourceCatalog {
    * Get all sources as resolved format
    */
   getAllSources(): ResolvedSource[] {
-    return Array.from(this.sources.values()).map(source => ({
-      id: source.id,
-      title: this.extractTitle(source.citation),
-      url: source.url || '#',
-      citation: source.citation,
-      type: source.type,
-      date: source.date
-    }));
+    return Array.from(this.sources.values()).map(source => {
+      const hasDirectUrl = !!(source.url && source.url !== '#' && source.url.trim() !== '');
+      return {
+        id: source.id,
+        title: this.extractTitle(source.citation),
+        url: hasDirectUrl ? source.url! : generateFallbackUrl(source),
+        citation: source.citation,
+        type: source.type,
+        date: source.date,
+        isGeneratedUrl: !hasDirectUrl
+      };
+    });
   }
 
   /**

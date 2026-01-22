@@ -751,28 +751,41 @@ const formatSectionContent = (sectionId: SectionId, data: any): string => {
 };
 
 const extractSources = (sectionData: unknown, statusSources?: string[]): ResearchSource[] => {
-  const sources: ResearchSource[] = [];
-  const appendId = (id: string) => sources.push({ title: id, url: '#' });
-
-  if (statusSources && statusSources.length) {
-    statusSources.forEach((s) => appendId(s));
-  }
-
+  // First, check if the section data has resolved sources from the API (with proper URLs)
   if (sectionData && typeof sectionData === 'object') {
     const data = sectionData as Record<string, unknown>;
-    const used = (data.sources_used as string[]) || [];
-    used.forEach((s) => appendId(s));
 
+    // Use resolved sources from API if available (these have proper URLs)
+    const resolvedSources = data.sources as Array<{
+      id?: string;
+      title?: string;
+      url?: string;
+      isGeneratedUrl?: boolean;
+    }>;
+    if (Array.isArray(resolvedSources) && resolvedSources.length > 0) {
+      return resolvedSources.map((s) => ({
+        id: s.id,
+        title: s.title || s.id || 'Source',
+        url: s.url || '#',
+        isGeneratedUrl: s.isGeneratedUrl,
+      }));
+    }
+
+    // Fallback: try source_catalog (for foundation data)
     const catalog = data.source_catalog as Array<{ id?: string; citation?: string; url?: string }>;
-    if (Array.isArray(catalog)) {
-      catalog.forEach((item) => {
-        if (item?.id) {
-          sources.push({ title: item.id, url: item.url || '#' });
-        }
-      });
+    if (Array.isArray(catalog) && catalog.length > 0) {
+      return catalog.map((item) => ({
+        title: item.citation || item.id || 'Source',
+        url: item.url || '#',
+      }));
     }
   }
 
+  // Last resort fallback: create placeholder sources from IDs
+  const sources: ResearchSource[] = [];
+  if (statusSources && statusSources.length) {
+    statusSources.forEach((s) => sources.push({ title: s, url: '#' }));
+  }
   return sources;
 };
 

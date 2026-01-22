@@ -32,9 +32,11 @@ export enum SectionStatus {
 }
 
 export interface ResearchSource {
+  id?: string;               // "S1", "S2", etc.
   title: string;
   url: string;
   snippet?: string;
+  isGeneratedUrl?: boolean;  // True if URL was generated as a search fallback
 }
 
 export interface ResearchSection {
