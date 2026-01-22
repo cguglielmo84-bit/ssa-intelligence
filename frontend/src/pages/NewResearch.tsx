@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Loader2, Sparkles, CheckCircle2, Circle, ArrowRight, BrainCircuit } from 'lucide-react';
 import { BlueprintInput, BlueprintSection, ReportBlueprint, ReportType, SectionId, SECTIONS_CONFIG, VisibilityScope } from '../types';
+import { enforceLockedSections, isSectionLocked } from '../utils/sections';
 
 interface NewResearchProps {
   createJob: (
@@ -116,7 +117,7 @@ const ensureDependencies = (sections: SectionId[], dependencies: Record<SectionI
       });
     }
   }
-  return Array.from(set);
+  return enforceLockedSections(Array.from(set));
 };
 
 export const NewResearch: React.FC<NewResearchProps> = ({
@@ -319,6 +320,7 @@ export const NewResearch: React.FC<NewResearchProps> = ({
   };
 
   const toggleSection = (sectionId: SectionId) => {
+    if (isSectionLocked(sectionId)) return;
     const blockers = dependencyBlocks.get(sectionId);
     if (blockers && blockers.length) return;
     const next = new Set(selectedSections);
@@ -561,10 +563,13 @@ export const NewResearch: React.FC<NewResearchProps> = ({
                   {availableSections.map((section) => {
                     const checked = selectedSections.includes(section.id);
                     const blockers = dependencyBlocks.get(section.id) || [];
-                    const disabled = blockers.length > 0;
-                    const tooltip = disabled
-                      ? `Required because ${blockers.map(getSectionTitle).join(', ')} depends on it.`
-                      : undefined;
+                    const locked = isSectionLocked(section.id);
+                    const disabled = locked || blockers.length > 0;
+                    const tooltip = locked
+                      ? 'Required for every report.'
+                      : blockers.length > 0
+                        ? `Required because ${blockers.map(getSectionTitle).join(', ')} depends on it.`
+                        : undefined;
                     return (
                       <label key={section.id} className="flex items-center gap-2 text-sm text-slate-600" title={tooltip}>
                         <input
@@ -574,7 +579,11 @@ export const NewResearch: React.FC<NewResearchProps> = ({
                           onChange={() => toggleSection(section.id)}
                         />
                         {section.title}
-                        {disabled ? <span className="text-xs text-slate-400">(required)</span> : null}
+                        {disabled ? (
+                          <span className="text-xs text-slate-400">
+                            {locked ? '(always included)' : '(required)'}
+                          </span>
+                        ) : null}
                       </label>
                     );
                   })}
