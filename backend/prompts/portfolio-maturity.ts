@@ -50,7 +50,7 @@ export interface PortfolioMaturityOutput {
   holdings: Array<{
     company: string;
     acquisition_period?: string;
-    holding_period_years?: number;
+    holding_period_years?: number | null;
     exit_signal: string;
     source: string;
   }>;
@@ -89,7 +89,7 @@ interface PortfolioMaturityOutput {
   holdings: Array<{
     company: string;
     acquisition_period?: string;
-    holding_period_years?: number;
+    holding_period_years?: number | null;
     exit_signal: string;
     source: string;
   }>;

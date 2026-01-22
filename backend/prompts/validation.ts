@@ -505,7 +505,7 @@ export const portfolioMaturityOutputSchema = z.object({
   holdings: z.array(z.object({
     company: z.string(),
     acquisition_period: z.string().optional(),
-    holding_period_years: z.number().optional(),
+    holding_period_years: z.number().nullable().optional(),
     exit_signal: z.string().min(30),
     source: z.string().regex(/^S\d+$/)
   })).min(2),
