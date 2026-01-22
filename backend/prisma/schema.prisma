@@ -198,6 +198,22 @@ enum ReportType {
   FS
 }
 
+// Bug tracker enums
+enum FeedbackType {
+  bug
+  issue
+  feature
+  other
+}
+
+enum FeedbackStatus {
+  new_feedback @map("new")
+  reviewed
+  in_progress
+  resolved
+  wont_fix
+}
+
 // Optional: API Key management for users
 model ApiKey {
   id        String   @id @default(cuid())
@@ -211,17 +227,25 @@ model ApiKey {
   @@index([key])
 }
 
-// User feedback submissions
+// User feedback / bug tracker submissions
 model Feedback {
-  id         String   @id @default(cuid())
-  name       String?
-  email      String?
-  message    String
-  pagePath   String?
-  reportId   String?
-  createdAt  DateTime @default(now())
+  id              String          @id @default(cuid())
+  type            FeedbackType    @default(other)
+  title           String?
+  message         String          // Description/body of the feedback
+  name            String?
+  email           String?
+  pagePath        String?         @map("page_path")
+  reportId        String?         @map("report_id")
+  status          FeedbackStatus  @default(new_feedback)
+  resolutionNotes String?         @map("resolution_notes")
+  resolvedAt      DateTime?       @map("resolved_at")
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
 
   @@index([createdAt])
+  @@index([type])
+  @@index([status])
 }
 
 // ============================================================================
