@@ -84,7 +84,7 @@ export async function submitFeedback(req: Request, res: Response) {
       }
     });
 
-    console.log(`[feedback] submitted ${feedback.type}: "${feedback.title || '(no title)'}" from ${feedback.email || 'anonymous'}`);
+    console.log(`[feedback] submitted ${feedback.type}: "${feedback.title || '(no title)'}" (id: ${feedback.id})`);
 
     return res.status(201).json({
       success: true,
@@ -181,10 +181,10 @@ export async function updateFeedback(req: Request, res: Response) {
 
     // Validate and set status
     if (status !== undefined) {
-      if (!VALID_STATUSES.includes(status)) {
+      if (typeof status !== 'string' || !VALID_STATUSES.includes(status as FeedbackStatus)) {
         return res.status(400).json({ error: `Invalid status. Must be one of: ${VALID_STATUSES.join(', ')}` });
       }
-      updateData.status = status;
+      updateData.status = status as FeedbackStatus;
 
       // Auto-set resolvedAt when status changes to resolved or wont_fix
       if (status === 'resolved' || status === 'wont_fix') {
@@ -252,7 +252,7 @@ export async function deleteFeedback(req: Request, res: Response) {
 
     await prisma.feedback.delete({ where: { id } });
 
-    console.log(`[feedback] deleted ${id}: "${existing.title || existing.message.substring(0, 30)}..."`);
+    console.log(`[feedback] deleted ${id}: "${existing.title || (existing.message?.substring(0, 30) ?? '(no message)')}..."`);
 
     return res.json({ success: true });
   } catch (error) {

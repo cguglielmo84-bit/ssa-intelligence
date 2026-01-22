@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   X,
   Bug,
@@ -113,20 +113,40 @@ export const BugTrackerModal: React.FC<BugTrackerModalProps> = ({
   // View tab state
   const [feedbackList, setFeedbackList] = useState<FeedbackItem[]>([]);
   const [loading, setLoading] = useState(false);
+  const [fetchError, setFetchError] = useState<string | null>(null);
   const [statusFilter, setStatusFilter] = useState<FeedbackStatus | 'all'>('all');
   const [typeFilter, setTypeFilter] = useState<FeedbackType | 'all'>('all');
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [updatingId, setUpdatingId] = useState<string | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
   const [editingNotes, setEditingNotes] = useState<{ id: string; notes: string } | null>(null);
   const [savingNotes, setSavingNotes] = useState(false);
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
+
+  // Define fetchFeedback before it's used in useEffect
+  const fetchFeedback = useCallback(async () => {
+    setLoading(true);
+    setFetchError(null);
+    try {
+      const filters: { status?: FeedbackStatus; type?: FeedbackType } = {};
+      if (statusFilter !== 'all') filters.status = statusFilter;
+      if (typeFilter !== 'all') filters.type = typeFilter;
+      const result = await onList(filters);
+      setFeedbackList(result.data);
+    } catch (err) {
+      console.error('Failed to fetch feedback:', err);
+      setFetchError(err instanceof Error ? err.message : 'Failed to load feedback. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  }, [statusFilter, typeFilter, onList]);
 
   // Fetch feedback when view tab is activated
   useEffect(() => {
     if (isOpen && activeTab === 'view') {
       fetchFeedback();
     }
-  }, [isOpen, activeTab, statusFilter, typeFilter]);
+  }, [isOpen, activeTab, fetchFeedback]);
 
   // Reset state when modal closes
   useEffect(() => {
@@ -137,26 +157,24 @@ export const BugTrackerModal: React.FC<BugTrackerModalProps> = ({
       setDescription('');
       setSubmitSuccess(false);
       setSubmitError(null);
+      setFetchError(null);
       setExpandedId(null);
       setEditingNotes(null);
       setDeleteConfirmId(null);
+      setDeletingId(null);
     }
   }, [isOpen]);
 
-  const fetchFeedback = async () => {
-    setLoading(true);
-    try {
-      const filters: { status?: FeedbackStatus; type?: FeedbackType } = {};
-      if (statusFilter !== 'all') filters.status = statusFilter;
-      if (typeFilter !== 'all') filters.type = typeFilter;
-      const result = await onList(filters);
-      setFeedbackList(result.data);
-    } catch (err) {
-      console.error('Failed to fetch feedback:', err);
-    } finally {
-      setLoading(false);
-    }
-  };
+  // Handle escape key to close modal
+  useEffect(() => {
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && isOpen && !submitting) {
+        onClose();
+      }
+    };
+    document.addEventListener('keydown', handleEscape);
+    return () => document.removeEventListener('keydown', handleEscape);
+  }, [isOpen, submitting, onClose]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -233,6 +251,7 @@ export const BugTrackerModal: React.FC<BugTrackerModalProps> = ({
   };
 
   const handleDelete = async (id: string) => {
+    setDeletingId(id);
     try {
       await onDelete(id);
       setFeedbackList((prev) => prev.filter((item) => item.id !== id));
@@ -240,6 +259,8 @@ export const BugTrackerModal: React.FC<BugTrackerModalProps> = ({
       if (expandedId === id) setExpandedId(null);
     } catch (err) {
       console.error('Failed to delete:', err);
+    } finally {
+      setDeletingId(null);
     }
   };
 
@@ -270,12 +291,17 @@ export const BugTrackerModal: React.FC<BugTrackerModalProps> = ({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+    <div
+      className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center z-50 p-4"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="bug-tracker-title"
+    >
       <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] flex flex-col border border-slate-200">
         {/* Header with tabs */}
         <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between flex-shrink-0">
           <div className="flex items-center gap-4">
-            <h3 className="text-lg font-bold text-slate-800">Report Issue</h3>
+            <h3 id="bug-tracker-title" className="text-lg font-bold text-slate-800">Report Issue</h3>
             <div className="flex bg-slate-100 rounded-lg p-1">
               <button
                 onClick={() => setActiveTab('submit')}
@@ -303,6 +329,7 @@ export const BugTrackerModal: React.FC<BugTrackerModalProps> = ({
             onClick={onClose}
             className="text-slate-400 hover:text-slate-600 p-1 rounded-md hover:bg-slate-100 transition-colors"
             disabled={submitting}
+            aria-label="Close dialog"
           >
             <X size={20} />
           </button>
@@ -461,12 +488,19 @@ export const BugTrackerModal: React.FC<BugTrackerModalProps> = ({
                 </span>
               </div>
 
+              {/* Error message */}
+              {fetchError && (
+                <div className="text-sm text-rose-600 bg-rose-50 border border-rose-100 rounded-md px-3 py-2 mb-4">
+                  {fetchError}
+                </div>
+              )}
+
               {/* Feedback List */}
               {loading ? (
                 <div className="flex items-center justify-center py-12">
                   <Loader2 size={24} className="animate-spin text-slate-400" />
                 </div>
-              ) : feedbackList.length === 0 ? (
+              ) : fetchError ? null : feedbackList.length === 0 ? (
                 <div className="text-center py-12 text-slate-500">
                   <p className="text-sm">No feedback found.</p>
                 </div>
@@ -487,6 +521,8 @@ export const BugTrackerModal: React.FC<BugTrackerModalProps> = ({
                         <button
                           onClick={() => setExpandedId(isExpanded ? null : item.id)}
                           className="w-full flex items-center gap-3 px-4 py-3 hover:bg-slate-50 transition-colors text-left"
+                          aria-expanded={isExpanded}
+                          aria-controls={`feedback-details-${item.id}`}
                         >
                           {isExpanded ? (
                             <ChevronDown size={16} className="text-slate-400 flex-shrink-0" />
@@ -514,7 +550,10 @@ export const BugTrackerModal: React.FC<BugTrackerModalProps> = ({
 
                         {/* Expanded content */}
                         {isExpanded && (
-                          <div className="px-4 pb-4 pt-2 border-t border-slate-100 bg-slate-50/50">
+                          <div
+                            id={`feedback-details-${item.id}`}
+                            className="px-4 pb-4 pt-2 border-t border-slate-100 bg-slate-50/50"
+                          >
                             {/* Description */}
                             <div className="mb-4">
                               <p className="text-sm text-slate-700 whitespace-pre-wrap">{item.message}</p>
@@ -535,7 +574,9 @@ export const BugTrackerModal: React.FC<BugTrackerModalProps> = ({
                                     rel="noopener noreferrer"
                                     className="text-blue-600 hover:underline inline-flex items-center gap-1"
                                   >
-                                    {item.pagePath.substring(0, 50)}...
+                                    {item.pagePath.length > 50
+                                      ? `${item.pagePath.substring(0, 50)}...`
+                                      : item.pagePath}
                                     <ExternalLink size={10} />
                                   </a>
                                 </p>
@@ -628,13 +669,22 @@ export const BugTrackerModal: React.FC<BugTrackerModalProps> = ({
                                   <span className="text-xs text-slate-500">Delete?</span>
                                   <button
                                     onClick={() => handleDelete(item.id)}
-                                    className="text-xs text-white bg-rose-500 hover:bg-rose-600 px-2 py-1 rounded-md"
+                                    disabled={deletingId === item.id}
+                                    className="text-xs text-white bg-rose-500 hover:bg-rose-600 px-2 py-1 rounded-md disabled:opacity-50 flex items-center gap-1"
                                   >
-                                    Yes
+                                    {deletingId === item.id ? (
+                                      <>
+                                        <Loader2 size={10} className="animate-spin" />
+                                        Deleting...
+                                      </>
+                                    ) : (
+                                      'Yes'
+                                    )}
                                   </button>
                                   <button
                                     onClick={() => setDeleteConfirmId(null)}
-                                    className="text-xs text-slate-500 hover:text-slate-700"
+                                    disabled={deletingId === item.id}
+                                    className="text-xs text-slate-500 hover:text-slate-700 disabled:opacity-50"
                                   >
                                     No
                                   </button>
@@ -644,6 +694,7 @@ export const BugTrackerModal: React.FC<BugTrackerModalProps> = ({
                                   onClick={() => setDeleteConfirmId(item.id)}
                                   className="text-rose-500 hover:text-rose-600 hover:bg-rose-50 p-1.5 rounded-md transition-colors"
                                   title="Delete"
+                                  aria-label="Delete feedback"
                                 >
                                   <Trash2 size={14} />
                                 </button>
