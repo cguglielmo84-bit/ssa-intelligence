@@ -4,6 +4,21 @@ import { prisma } from '../../lib/prisma.js';
 const VALID_ROLES = ['ADMIN', 'MEMBER'] as const;
 type UserRole = typeof VALID_ROLES[number];
 
+const parseAllowedDomains = () => {
+  const raw = process.env.AUTH_EMAIL_DOMAIN || process.env.OAUTH2_PROXY_EMAIL_DOMAINS || 'ssaandco.com';
+  return raw
+    .split(',')
+    .map((entry) => entry.trim().toLowerCase())
+    .filter(Boolean);
+};
+
+const isAllowedDomain = (email: string, allowedDomains: string[]) => {
+  if (!email.includes('@')) return false;
+  if (allowedDomains.includes('*')) return true;
+  const domain = email.split('@').pop() || '';
+  return allowedDomains.includes(domain.toLowerCase());
+};
+
 export async function listUsers(req: Request, res: Response) {
   if (!req.auth || !req.auth.isAdmin) {
     return res.status(403).json({ error: 'Admin access required' });
@@ -217,6 +232,128 @@ export async function deleteUser(req: Request, res: Response) {
     return res.json({ success: true, id, email: existingUser.email });
   } catch (error) {
     console.error('Failed to delete user:', error);
+    return res.status(500).json({ error: 'Internal server error' });
+  }
+}
+
+
+export async function createUser(req: Request, res: Response) {
+  if (!req.auth || !req.auth.isAdmin) {
+    return res.status(403).json({ error: 'Admin access required' });
+  }
+
+  const email = typeof req.body?.email === 'string' ? req.body.email.trim().toLowerCase() : '';
+  const name = typeof req.body?.name === 'string' ? req.body.name.trim() : undefined;
+  const role = typeof req.body?.role === 'string' ? req.body.role.toUpperCase() : 'MEMBER';
+  const groupIds = Array.isArray(req.body?.groupIds) ? req.body.groupIds : [];
+
+  // Validate email
+  if (!email) {
+    return res.status(400).json({ error: 'Email is required' });
+  }
+  if (email.length > 255) {
+    return res.status(400).json({ error: 'Email must be 255 characters or less' });
+  }
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (!emailRegex.test(email)) {
+    return res.status(400).json({ error: 'Invalid email format' });
+  }
+
+  // Validate email domain matches allowed domains
+  const allowedDomains = parseAllowedDomains();
+  if (!isAllowedDomain(email, allowedDomains)) {
+    const domainList = allowedDomains.join(', ');
+    return res.status(400).json({ error: `Email domain not allowed. Allowed domains: ${domainList}` });
+  }
+
+  // Validate name if provided
+  if (name !== undefined && name.length > 100) {
+    return res.status(400).json({ error: 'Name must be 100 characters or less' });
+  }
+
+  // Validate role
+  if (!VALID_ROLES.includes(role as UserRole)) {
+    return res.status(400).json({ error: 'Invalid role. Must be ADMIN or MEMBER' });
+  }
+
+  // Validate groupIds are strings
+  if (!groupIds.every((id: unknown) => typeof id === 'string')) {
+    return res.status(400).json({ error: 'Invalid groupIds format' });
+  }
+
+  try {
+    // Check if email already exists
+    const existingUser = await prisma.user.findUnique({
+      where: { email },
+      select: { id: true }
+    });
+
+    if (existingUser) {
+      return res.status(409).json({ error: 'A user with this email already exists' });
+    }
+
+    // Create user with memberships in a transaction
+    const user = await prisma.$transaction(async (tx) => {
+      const newUser = await tx.user.create({
+        data: {
+          email,
+          name: name || null,
+          role: role as UserRole
+        }
+      });
+
+      // Create memberships if groupIds provided
+      if (groupIds.length > 0) {
+        // Verify all groups exist
+        const existingGroups = await tx.group.findMany({
+          where: { id: { in: groupIds } },
+          select: { id: true }
+        });
+        const existingGroupIds = new Set(existingGroups.map((g) => g.id));
+        const validGroupIds = groupIds.filter((id: string) => existingGroupIds.has(id));
+
+        if (validGroupIds.length > 0) {
+          await tx.groupMembership.createMany({
+            data: validGroupIds.map((groupId: string) => ({
+              userId: newUser.id,
+              groupId
+            }))
+          });
+        }
+      }
+
+      // Fetch the complete user with memberships
+      return tx.user.findUnique({
+        where: { id: newUser.id },
+        select: {
+          id: true,
+          email: true,
+          name: true,
+          role: true,
+          memberships: {
+            select: {
+              group: {
+                select: { id: true, name: true, slug: true }
+              }
+            }
+          }
+        }
+      });
+    });
+
+    if (!user) {
+      return res.status(500).json({ error: 'Failed to create user' });
+    }
+
+    return res.status(201).json({
+      id: user.id,
+      email: user.email,
+      name: user.name,
+      role: user.role,
+      groups: user.memberships.map((m) => m.group)
+    });
+  } catch (error) {
+    console.error('Failed to create user:', error);
     return res.status(500).json({ error: 'Internal server error' });
   }
 }

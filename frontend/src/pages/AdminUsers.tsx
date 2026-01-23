@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { UserEditModal } from '../components/UserEditModal';
+import { UserAddModal } from '../components/UserAddModal';
 import { applyUserDeletionToGroups } from '../utils/adminUsers';
 
 type AdminUser = {
@@ -42,6 +43,7 @@ export const AdminUsers: React.FC<{ isAdmin?: boolean; currentUserId?: string }>
   const [searchQuery, setSearchQuery] = useState('');
   const [roleFilter, setRoleFilter] = useState<'all' | 'ADMIN' | 'MEMBER'>('all');
   const [editingUser, setEditingUser] = useState<AdminUser | null>(null);
+  const [showAddUser, setShowAddUser] = useState(false);
   const [deletingGroupId, setDeletingGroupId] = useState<string | null>(null);
 
   const groupMap = useMemo(() => new Map(groups.map((g) => [g.id, g])), [groups]);
@@ -185,6 +187,30 @@ export const AdminUsers: React.FC<{ isAdmin?: boolean; currentUserId?: string }>
     }
   };
 
+  const handleAddUser = async (data: {
+    email: string;
+    name?: string;
+    role: 'ADMIN' | 'MEMBER';
+    groupIds: string[];
+  }) => {
+    const response = await fetchJson('/admin/users', {
+      method: 'POST',
+      body: JSON.stringify(data)
+    });
+    setUsers((prev) => [...prev, response]);
+    // Update group member counts for groups confirmed by the server
+    const responseGroups = Array.isArray(response?.groups) ? response.groups : [];
+    const responseGroupIds = new Set(responseGroups.map((group: AdminGroup) => group.id));
+    if (responseGroupIds.size > 0) {
+      setGroups((prev) => prev.map((g) => {
+        if (responseGroupIds.has(g.id)) {
+          return { ...g, memberCount: (g.memberCount ?? 0) + 1 };
+        }
+        return g;
+      }));
+    }
+  };
+
   if (!isAdmin) {
     return (
       <div className="bg-white border border-slate-200 rounded-xl p-6 text-slate-500">
@@ -253,7 +279,18 @@ export const AdminUsers: React.FC<{ isAdmin?: boolean; currentUserId?: string }>
 
       <div className="bg-white border border-slate-200 rounded-xl p-6">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-4">
-          <h2 className="text-lg font-semibold text-slate-800">Users</h2>
+          <div className="flex items-center gap-3">
+            <h2 className="text-lg font-semibold text-slate-800">Users</h2>
+            <button
+              onClick={() => setShowAddUser(true)}
+              className="px-3 py-1.5 text-sm bg-brand-600 text-white font-semibold rounded-lg hover:bg-brand-700 flex items-center gap-1.5"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+              </svg>
+              Add User
+            </button>
+          </div>
           <div className="flex flex-col sm:flex-row gap-3">
             <input
               type="text"
@@ -343,6 +380,14 @@ export const AdminUsers: React.FC<{ isAdmin?: boolean; currentUserId?: string }>
           onClose={() => setEditingUser(null)}
           onSave={handleSaveUser}
           onDelete={handleDeleteUser}
+        />
+      )}
+
+      {showAddUser && (
+        <UserAddModal
+          groups={groups}
+          onClose={() => setShowAddUser(false)}
+          onSave={handleAddUser}
         />
       )}
     </div>

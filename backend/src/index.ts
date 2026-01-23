@@ -30,7 +30,7 @@ import { getResearchOrchestrator } from './services/orchestrator.js';
 import { authMiddleware, requireAdmin } from './middleware/auth.js';
 import { getMe } from './api/me.js';
 import { listGroups } from './api/groups/list.js';
-import { listUsers, getUser, updateUser, deleteUser } from './api/admin/users.js';
+import { listUsers, getUser, updateUser, deleteUser, createUser } from './api/admin/users.js';
 import { addGroupMember, createGroup, listAdminGroups, removeGroupMember, deleteGroup } from './api/admin/groups.js';
 import { getReportBlueprints } from './api/report-blueprints.js';
 
@@ -180,6 +180,7 @@ app.delete('/api/feedback/:id', ...applyLimiter(writeLimiter), authMiddleware, d
 app.get('/api/me', authMiddleware, getMe);
 app.get('/api/groups', authMiddleware, listGroups);
 app.get('/api/admin/users', authMiddleware, requireAdmin, listUsers);
+app.post('/api/admin/users', ...applyLimiter(writeLimiter), authMiddleware, requireAdmin, createUser);
 app.get('/api/admin/users/:id', authMiddleware, requireAdmin, getUser);
 app.patch('/api/admin/users/:id', ...applyLimiter(writeLimiter), authMiddleware, requireAdmin, updateUser);
 app.delete('/api/admin/users/:id', ...applyLimiter(writeLimiter), authMiddleware, requireAdmin, deleteUser);
