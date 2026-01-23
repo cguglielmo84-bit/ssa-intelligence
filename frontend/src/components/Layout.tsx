@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Home, FileText, Plus, PanelLeftClose, PanelLeftOpen, Newspaper, Settings } from 'lucide-react';
+import { Home, FileText, PanelLeftClose, PanelLeftOpen, Newspaper, Settings } from 'lucide-react';
 import { BugTrackerModal } from './BugTrackerModal';
 
 interface LayoutProps {
@@ -169,15 +169,6 @@ export const Layout: React.FC<LayoutProps> = ({ children, onNavigate, activePath
             {!isCollapsed && <span className="whitespace-nowrap">Research Dashboard</span>}
           </button>
           
-          <button
-            onClick={() => onNavigate('/new')}
-            className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-colors ${activePath === '/new' ? 'bg-brand-50 text-brand-700' : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'} ${isCollapsed ? 'justify-center px-2' : ''}`}
-            title={isCollapsed ? "New Research" : undefined}
-          >
-            <Plus size={18} className="flex-shrink-0" />
-            {!isCollapsed && <span className="whitespace-nowrap">New Research</span>}
-          </button>
-
           {/* News Intelligence Section */}
           {!isCollapsed && (
             <div className="pt-4 pb-2">
