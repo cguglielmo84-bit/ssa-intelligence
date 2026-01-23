@@ -53,6 +53,10 @@ export const resolveCompany: RequestHandler = async (req, res) => {
     if (trimmedInput.length < 2) {
       return res.status(400).json({ error: 'Input must be at least 2 characters' });
     }
+    const MAX_INPUT_LEN = 160;
+    if (trimmedInput.length > MAX_INPUT_LEN) {
+      return res.status(400).json({ error: `Input must be at most ${MAX_INPUT_LEN} characters` });
+    }
 
     // Build the Claude prompt
     const prompt = buildResolvePrompt(trimmedInput, context);
