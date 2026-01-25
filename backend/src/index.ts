@@ -32,6 +32,8 @@ import { getMe } from './api/me.js';
 import { listGroups } from './api/groups/list.js';
 import { listUsers, getUser, updateUser, deleteUser, createUser } from './api/admin/users.js';
 import { addGroupMember, createGroup, listAdminGroups, removeGroupMember, deleteGroup } from './api/admin/groups.js';
+import { getMetrics } from './api/admin/metrics.js';
+import { listPricingRates, createPricingRate, updatePricingRate, deletePricingRate } from './api/admin/pricing.js';
 import { getReportBlueprints } from './api/report-blueprints.js';
 import { resolveCompany } from './api/company/resolve.js';
 
@@ -190,6 +192,11 @@ app.post('/api/admin/groups', authMiddleware, requireAdmin, createGroup);
 app.delete('/api/admin/groups/:groupId', ...applyLimiter(writeLimiter), authMiddleware, requireAdmin, deleteGroup);
 app.post('/api/admin/groups/:groupId/members', authMiddleware, requireAdmin, addGroupMember);
 app.delete('/api/admin/groups/:groupId/members/:userId', authMiddleware, requireAdmin, removeGroupMember);
+app.get('/api/admin/metrics', ...applyLimiter(getLimiter), authMiddleware, requireAdmin, getMetrics);
+app.get('/api/admin/pricing', ...applyLimiter(getLimiter), authMiddleware, requireAdmin, listPricingRates);
+app.post('/api/admin/pricing', ...applyLimiter(writeLimiter), authMiddleware, requireAdmin, createPricingRate);
+app.patch('/api/admin/pricing/:id', ...applyLimiter(writeLimiter), authMiddleware, requireAdmin, updatePricingRate);
+app.delete('/api/admin/pricing/:id', ...applyLimiter(writeLimiter), authMiddleware, requireAdmin, deletePricingRate);
 app.get('/api/report-blueprints', ...applyLimiter(getLimiter), authMiddleware, getReportBlueprints);
 app.post('/api/company/resolve', ...applyLimiter(writeLimiter), authMiddleware, resolveCompany);
 
