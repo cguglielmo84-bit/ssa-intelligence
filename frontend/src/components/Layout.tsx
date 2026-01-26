@@ -223,6 +223,14 @@ export const Layout: React.FC<LayoutProps> = ({ children, onNavigate, activePath
                 <DollarSign size={18} className="flex-shrink-0" />
                 {!isCollapsed && <span className="whitespace-nowrap">Pricing</span>}
               </button>
+              <button
+                onClick={() => onNavigate('/admin/prompts')}
+                className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-colors ${activePath === '/admin/prompts' ? 'bg-brand-50 text-brand-700' : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'} ${isCollapsed ? 'justify-center px-2' : ''}`}
+                title={isCollapsed ? "Prompt Library" : undefined}
+              >
+                <FileText size={18} className="flex-shrink-0" />
+                {!isCollapsed && <span className="whitespace-nowrap">Prompt Library</span>}
+              </button>
             </>
           )}
         </nav>
@@ -264,6 +272,7 @@ export const Layout: React.FC<LayoutProps> = ({ children, onNavigate, activePath
               {activePath === '/admin' && 'User & Group Management'}
               {activePath === '/admin/metrics' && 'Metrics Dashboard'}
               {activePath === '/admin/pricing' && 'Pricing Management'}
+              {activePath === '/admin/prompts' && 'Prompt Library'}
               {activePath === '/news' && 'News Intelligence'}
               {activePath === '/news/setup' && 'News Setup'}
             </h1>

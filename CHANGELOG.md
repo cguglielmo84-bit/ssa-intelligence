@@ -5,6 +5,10 @@ All notable changes to this repository will be documented in this file.
 The format is based on Keep a Changelog and this project adheres to Semantic Versioning.
 
 ## [Unreleased]
+- UI: disable prompt Test button (work in progress).
+- Fix: prevent draft saves from archiving published prompts (caused fallback to code defaults).
+- Fix: prevent revert from archiving published prompts (caused fallback to code defaults).
+- Fix: resolvePrompt now falls back to base overrides for report-type runs.
 - Feat: add company name resolution with typo correction and disambiguation modal.
 - Feat: add bug tracker modal with status management (submit, list, update, delete feedback).
 - Docs: add prompting system guide and align existing documentation with current code.

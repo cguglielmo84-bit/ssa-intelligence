@@ -6,6 +6,7 @@ import { ResearchDetail } from './pages/ResearchDetail';
 import { AdminUsers } from './pages/AdminUsers';
 import { AdminMetrics } from './pages/AdminMetrics';
 import { AdminPricing } from './pages/AdminPricing';
+import { AdminPrompts } from './pages/AdminPrompts';
 import { NewsDashboard } from './pages/NewsDashboard';
 import { NewsSetup } from './pages/NewsSetup';
 import { useReportBlueprints, useResearchManager, useUserContext } from './services/researchManager';
@@ -70,6 +71,9 @@ export default function App() {
     }
     if (currentPath === '/admin/pricing') {
       return <AdminPricing isAdmin={userContext.user?.isAdmin} />;
+    }
+    if (currentPath === '/admin/prompts') {
+      return <AdminPrompts isAdmin={userContext.user?.isAdmin} />;
     }
     if (currentPath === '/news') {
       return <NewsDashboard onNavigate={navigate} />;

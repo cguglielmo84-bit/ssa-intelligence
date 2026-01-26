@@ -466,6 +466,81 @@ model NewsConfig {
 }
 
 // ============================================================================
+// PROMPT LIBRARY MODELS
+// ============================================================================
+
+// Admin-editable prompt overrides
+model Prompt {
+  id            String       @id @default(cuid())
+  sectionId     String       // 'foundation', 'exec_summary', etc.
+  reportType    ReportType?  // null = base prompt, or specific type for addendum
+
+  name          String       // Human-readable name
+  description   String?      // Admin notes
+  content       String       @db.Text
+
+  status        PromptStatus @default(draft)
+  version       Int          @default(1)
+
+  createdBy     String?
+  updatedBy     String?
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+  publishedAt   DateTime?
+
+  @@unique([sectionId, reportType, version])
+  @@index([sectionId, reportType, status])
+  @@map("prompts")
+}
+
+// Version history for prompts
+model PromptVersion {
+  id            String   @id @default(cuid())
+  sectionId     String
+  reportType    ReportType?
+  version       Int
+  content       String   @db.Text
+  createdBy     String?
+  createdAt     DateTime @default(now())
+
+  @@index([sectionId, reportType])
+  @@map("prompt_versions")
+}
+
+// Prompt test execution tracking
+model PromptTestRun {
+  id            String    @id @default(cuid())
+  sectionId     String
+  reportType    ReportType?
+  promptContent String    @db.Text
+
+  companyName   String
+  geography     String
+
+  status        String    // 'running' | 'completed' | 'failed'
+  output        Json?
+  error         String?
+
+  inputTokens   Int       @default(0)
+  outputTokens  Int       @default(0)
+  costUsd       Float     @default(0)
+  durationMs    Int?
+
+  createdBy     String
+  createdAt     DateTime  @default(now())
+  completedAt   DateTime?
+
+  @@index([sectionId])
+  @@map("prompt_test_runs")
+}
+
+enum PromptStatus {
+  draft
+  published
+  archived
+}
+
+// ============================================================================
 // COST TRACKING & METRICS MODELS
 // ============================================================================
 
