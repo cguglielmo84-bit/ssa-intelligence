@@ -65,8 +65,9 @@ export const resolveCompany: RequestHandler = async (req, res) => {
     const prompt = buildResolvePrompt(trimmedInput, context);
 
     // Call Claude with a timeout using Promise.race
+    // 15s is sufficient for most Claude API calls while protecting against hung requests
     const claude = getClaudeClient();
-    const TIMEOUT_MS = 5000;
+    const TIMEOUT_MS = 15000;
 
     const timeoutPromise = new Promise<never>((_, reject) => {
       setTimeout(() => reject(new Error('Company resolution timed out')), TIMEOUT_MS);
