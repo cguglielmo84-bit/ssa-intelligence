@@ -31,6 +31,7 @@ Thumbs.db
 .vscode/
 .worktrees/
 .claude/settings.local.json
+.claude/rules/
 
 # Nested Obsidian vault
 ssa-intelligence/

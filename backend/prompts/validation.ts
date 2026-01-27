@@ -216,9 +216,9 @@ export const executiveLeaderSchema = z.object({
   name: z.string(),
   title: z.string(),
   background: z.string(),
-  tenure: z.string().optional(),
-  geography_relevance: z.string().optional(),
-  geography_relevance_rating: z.enum(['High', 'Medium', 'Low']).optional()
+  tenure: z.string().nullish(),
+  geography_relevance: z.string().nullish(),
+  geography_relevance_rating: z.enum(['High', 'Medium', 'Low']).nullish()
 });
 
 export const companyOverviewOutputSchema = z.object({
