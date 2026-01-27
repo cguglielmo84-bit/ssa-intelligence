@@ -194,6 +194,7 @@ async function runNewsRefresh(): Promise<void> {
 
     // Update the refresh_status record (same key used by manual refresh)
     // This ensures the frontend shows the correct "last refreshed" timestamp
+    // Include completed steps so the UI shows proper completion state
     const refreshStatus = {
       isRefreshing: false,
       lastRefreshedAt: new Date().toISOString(),
@@ -203,7 +204,14 @@ async function runNewsRefresh(): Promise<void> {
       progress: 100,
       progressMessage: 'Complete (scheduled)',
       currentStep: 'done',
-      steps: [],
+      steps: [
+        { step: 'Loading revenue owners', status: 'completed' as const, detail: `${revenueOwners.length} owner(s)` },
+        { step: 'Layer 1: RSS feeds & APIs', status: 'completed' as const },
+        { step: 'Layer 2: AI web search', status: 'completed' as const },
+        { step: 'Combining & deduplicating', status: 'completed' as const },
+        { step: 'AI processing & categorization', status: 'completed' as const },
+        { step: 'Saving to database', status: 'completed' as const, detail: `${savedCount} articles saved` },
+      ],
       stats: null,
     };
     await prisma.newsConfig.upsert({

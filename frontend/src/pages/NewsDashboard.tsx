@@ -99,21 +99,22 @@ export const NewsDashboard: React.FC<NewsDashboardProps> = ({ onNavigate }) => {
   const { status, refreshing, refresh, fetchStatus } = useNewsRefresh();
   const { results: searchResults, searching, search, clearResults } = useNewsSearch();
 
-  // Show progress popup when refresh starts
+  // Show progress popup when refresh starts (local or detected from backend)
   useEffect(() => {
-    if (refreshing) {
+    if (refreshing || status.isRefreshing) {
       setShowProgressPopup(true);
     }
-  }, [refreshing]);
+  }, [refreshing, status.isRefreshing]);
 
-  // Poll status while refreshing
+  // Poll status while refreshing - use BOTH local state AND backend state
+  // This handles cases where the initial POST request times out but backend keeps running
   useEffect(() => {
-    if (!refreshing) return;
+    if (!refreshing && !status.isRefreshing) return;
     const interval = setInterval(() => {
       fetchStatus();
     }, 1000);
     return () => clearInterval(interval);
-  }, [refreshing, fetchStatus]);
+  }, [refreshing, status.isRefreshing, fetchStatus]);
 
   const handleRefresh = async () => {
     try {

@@ -14,6 +14,7 @@ const router = Router();
 // Refresh status interface
 interface RefreshState {
   isRefreshing: boolean;
+  startedAt?: string | null;  // Track when refresh started for stale detection
   lastRefreshedAt: string | null;
   lastError: string | null;
   articlesFound: number;
@@ -86,19 +87,37 @@ router.post('/', async (req: Request, res: Response) => {
   // Check current state from database
   let refreshState = await getRefreshState();
 
-  // Prevent concurrent refreshes
+  // Prevent concurrent refreshes, but auto-recover from stuck refreshes
   if (refreshState.isRefreshing) {
-    res.status(409).json({
-      error: 'Refresh already in progress',
-      status: refreshState,
-    });
-    return;
+    // Check if refresh has been stuck for more than 10 minutes (likely crashed/killed on Render)
+    const STALE_THRESHOLD_MS = 10 * 60 * 1000; // 10 minutes
+    const startedAt = refreshState.startedAt ? new Date(refreshState.startedAt).getTime() : 0;
+    const refreshAge = startedAt ? Date.now() - startedAt : Infinity;
+
+    if (refreshAge > STALE_THRESHOLD_MS) {
+      console.log('[refresh] Detected stale refresh (started', Math.round(refreshAge / 60000), 'min ago), auto-recovering...');
+      // Mark as failed and allow new refresh
+      refreshState.isRefreshing = false;
+      refreshState.lastError = 'Previous refresh timed out';
+      refreshState.steps = refreshState.steps.map(step => ({
+        ...step,
+        status: step.status === 'in_progress' ? 'error' : step.status,
+      }));
+      await setRefreshState(refreshState);
+    } else {
+      res.status(409).json({
+        error: 'Refresh already in progress',
+        status: refreshState,
+      });
+      return;
+    }
   }
 
   // Initialize refresh state
   refreshState = {
     ...DEFAULT_STATE,
     isRefreshing: true,
+    startedAt: new Date().toISOString(),  // Track start time for stale detection
     progress: 0,
     progressMessage: 'Starting...',
     currentStep: 'init',
@@ -344,6 +363,11 @@ router.post('/', async (req: Request, res: Response) => {
     refreshState.lastError = error instanceof Error ? error.message : 'Unknown error';
     refreshState.progress = 0;
     refreshState.progressMessage = 'Failed';
+    // Mark any in_progress steps as error so spinners don't get stuck
+    refreshState.steps = refreshState.steps.map(step => ({
+      ...step,
+      status: step.status === 'in_progress' ? 'error' : step.status,
+    }));
     await setRefreshState(refreshState);
 
     res.status(500).json({

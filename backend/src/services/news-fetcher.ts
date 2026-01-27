@@ -411,6 +411,9 @@ ${callDiets.map((cd) => `- ${cd.revenueOwnerName}: tracks ${cd.companies.map((c)
    - Speculation without substantive basis
    - **IMPORTANT: Analyst ratings, upgrades, or downgrades where the tracked company is the ANALYST (not the subject)** - e.g., if tracking "Morgan Stanley" and they downgrade another company's stock, EXCLUDE this because Morgan Stanley is just the analyst, not the subject of the news
    - Articles where the tracked company is providing analysis, ratings, or commentary about OTHER companies
+   - Marketing campaign announcements, advertising initiatives, or brand promotion activities
+   - Price target changes, analyst price target updates, or stock rating changes for the company's shares
+   - Share purchases, stock buybacks, or insider trading activity UNLESS it represents a controlling share acquisition, takeover attempt, or significant ownership change (>10% stake)
 
    **KEEP only articles that are definitively ABOUT a tracked company/person as the main subject and cover:**
    - Mergers, acquisitions, divestitures, strategic partnerships
@@ -941,6 +944,9 @@ ${person ? `Person: ${person}` : ''}
 - Speculation without substantive basis
 ${company ? `- **CRITICAL: Analyst ratings, upgrades, or downgrades where ${company} is the ANALYST (not the subject)** - e.g., if ${company} downgrades another company's stock, EXCLUDE this because ${company} is just the analyst providing the rating, not the subject of the news
 - Articles where ${company} is providing analysis, ratings, commentary, or research about OTHER companies` : ''}
+- Marketing campaign announcements, advertising initiatives, or brand promotion activities
+- Price target changes, analyst price target updates, or stock rating changes for the ${entityType}'s shares
+- Share purchases, stock buybacks, or insider trading activity UNLESS it represents a controlling share acquisition, takeover attempt, or significant ownership change (>10% stake)
 
 ## KEEP only articles that are definitively ABOUT ${entityName} as the main subject and cover:
 - Mergers, acquisitions, divestitures, strategic partnerships
