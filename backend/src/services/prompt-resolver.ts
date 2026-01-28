@@ -26,6 +26,7 @@ import { buildPortfolioMaturityPrompt } from '../../prompts/portfolio-maturity.j
 import { buildLeadershipAndGovernancePrompt } from '../../prompts/leadership-and-governance.js';
 import { buildStrategicPrioritiesPrompt } from '../../prompts/strategic-priorities.js';
 import { buildOperatingCapabilitiesPrompt } from '../../prompts/operating-capabilities.js';
+import { buildDistributionAnalysisPrompt } from '../../prompts/distribution-analysis.js';
 import { REPORT_TYPE_ADDENDUMS, type SectionId, type ReportTypeId } from '../../prompts/report-type-addendums.js';
 
 // Re-export types for consumers
@@ -131,6 +132,11 @@ export const SECTION_METADATA: Record<SectionId, { name: string; description: st
     description: 'Operational strengths and capabilities',
     category: 'core'
   },
+  distribution_analysis: {
+    name: 'Distribution Analysis',
+    description: 'Distribution channels and partnerships (Insurance)',
+    category: 'core'
+  },
   segment_analysis: {
     name: 'Segment Analysis',
     description: 'Deep-dive into business segments with competitive landscape',
@@ -182,6 +188,7 @@ const PROMPT_BUILDERS: Record<SectionId, (input: any) => string> = {
   leadership_and_governance: buildLeadershipAndGovernancePrompt,
   strategic_priorities: buildStrategicPrioritiesPrompt,
   operating_capabilities: buildOperatingCapabilitiesPrompt,
+  distribution_analysis: buildDistributionAnalysisPrompt,
   segment_analysis: buildSegmentAnalysisPrompt,
   trends: buildTrendsPrompt,
   peer_benchmarking: buildPeerBenchmarkingPrompt,
@@ -357,7 +364,7 @@ export async function resolvePrompt(
  */
 export async function listAllPrompts(client: PrismaClient = prisma): Promise<PromptWithStatus[]> {
   const sections = listAllSections();
-  const reportTypes: (ReportTypeId | null)[] = [null, 'GENERIC', 'INDUSTRIALS', 'PE', 'FS'];
+  const reportTypes: (ReportTypeId | null)[] = [null, 'GENERIC', 'INDUSTRIALS', 'PE', 'FS', 'INSURANCE'];
 
   const results: PromptWithStatus[] = [];
 

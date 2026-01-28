@@ -80,6 +80,19 @@ const DEFAULT_SECTIONS_BY_REPORT: Record<ReportType, SectionId[]> = {
     'sku_opportunities',
     'conversation_starters',
     'appendix'
+  ],
+  INSURANCE: [
+    'exec_summary',
+    'financial_snapshot',
+    'company_overview',
+    'leadership_and_governance',
+    'strategic_priorities',
+    'distribution_analysis',
+    'trends',
+    'sku_opportunities',
+    'recent_news',
+    'conversation_starters',
+    'appendix'
   ]
 };
 
@@ -95,6 +108,7 @@ const SECTION_DEPENDENCIES: Record<SectionId, SectionId[]> = {
   leadership_and_governance: [],
   strategic_priorities: [],
   operating_capabilities: [],
+  distribution_analysis: ['company_overview'],
   segment_analysis: [],
   trends: [],
   peer_benchmarking: ['financial_snapshot'],
@@ -201,7 +215,12 @@ export const NewResearch: React.FC<NewResearchProps> = ({
     {
       id: 'FS' as ReportType,
       title: 'Financial Services',
-      description: 'Business mix, operating pressure, and leadership focus.'
+      description: 'Banking, wealth, and payments focus with operating pressure themes.'
+    },
+    {
+      id: 'INSURANCE' as ReportType,
+      title: 'Insurance',
+      description: 'Underwriting performance, investment results, and distribution strategy.'
     },
     {
       id: 'GENERIC' as ReportType,
@@ -219,6 +238,7 @@ export const NewResearch: React.FC<NewResearchProps> = ({
     if (type === 'INDUSTRIALS') return 'Industrials';
     if (type === 'PE') return 'Private Equity';
     if (type === 'FS') return 'Financial Services';
+    if (type === 'INSURANCE') return 'Insurance';
     return 'Company Brief (Generic)';
   };
 

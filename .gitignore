@@ -33,6 +33,9 @@ Thumbs.db
 .claude/settings.local.json
 .claude/rules/
 
+# Scratch/debug notes
+SCRATCH.md
+
 # Nested Obsidian vault
 ssa-intelligence/
 ~$Mel's_Workflow_Inventory Copy.xlsx

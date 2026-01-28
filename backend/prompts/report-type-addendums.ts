@@ -1,4 +1,4 @@
-export type ReportTypeId = 'GENERIC' | 'INDUSTRIALS' | 'PE' | 'FS';
+export type ReportTypeId = 'GENERIC' | 'INDUSTRIALS' | 'PE' | 'FS' | 'INSURANCE';
 
 export type SectionId =
   | 'foundation'
@@ -13,6 +13,7 @@ export type SectionId =
   | 'leadership_and_governance'
   | 'strategic_priorities'
   | 'operating_capabilities'
+  | 'distribution_analysis'
   | 'segment_analysis'
   | 'trends'
   | 'peer_benchmarking'
@@ -21,7 +22,7 @@ export type SectionId =
   | 'conversation_starters'
   | 'appendix';
 
-type AddendumMap = Record<SectionId, Record<ReportTypeId, string>>;
+type AddendumMap = Record<SectionId, Partial<Record<ReportTypeId, string>>>;
 
 export const REPORT_TYPE_ADDENDUMS: AddendumMap = {
   foundation: {
@@ -30,7 +31,7 @@ export const REPORT_TYPE_ADDENDUMS: AddendumMap = {
 - Emphasize industrial OEM and B2B customer exposure, end-market cyclicality, and capex intensity.
 - Capture plant-level or facilities data where available and tie to regional production indicators.`,
     FS: `## REPORT TYPE ADDENDUM: FINANCIAL SERVICES
-- Prioritize business line mix (banking, insurance, wealth, payments), regulatory context, and capital constraints.
+- Prioritize business line mix (banking, wealth, payments), regulatory context, and capital constraints.
 - Emphasize operating efficiency, digital transformation, and leadership priorities from earnings materials.
 - Capture business unit metrics and market positioning by segment where disclosed.`,
     PE: `## REPORT TYPE ADDENDUM: PRIVATE EQUITY
@@ -40,7 +41,11 @@ export const REPORT_TYPE_ADDENDUMS: AddendumMap = {
     GENERIC: `## REPORT TYPE ADDENDUM: GENERIC
 - Focus only on the most relevant context for the meeting or stated topic of interest.
 - Prefer high-signal sources and avoid exhaustive data collection when it does not change the narrative.
-- Keep foundation insights concise and directly tied to near-term priorities.`
+- Keep foundation insights concise and directly tied to near-term priorities.`,
+    INSURANCE: `## REPORT TYPE ADDENDUM: INSURANCE
+- Prioritize lines of business (Life, P&C, Health, Reinsurance), underwriting discipline, and reserve adequacy.
+- Emphasize combined ratio components, investment portfolio composition, and regulatory solvency context.
+- Capture distribution channel mix (agents, brokers, direct) and catastrophe exposure where disclosed.`
   },
   exec_summary: {
     INDUSTRIALS: `## REPORT TYPE ADDENDUM: INDUSTRIALS
@@ -58,7 +63,11 @@ export const REPORT_TYPE_ADDENDUMS: AddendumMap = {
     GENERIC: `## REPORT TYPE ADDENDUM: GENERIC
 - Produce 4-6 high-signal bullets only; prioritize immediacy and relevance to the context.
 - Avoid exhaustive coverage; focus on key risks, priorities, and recent changes.
-- Keep language concise and decision-oriented.`
+- Keep language concise and decision-oriented.`,
+    INSURANCE: `## REPORT TYPE ADDENDUM: INSURANCE
+- Emphasize underwriting results, investment income performance, and capital position.
+- Frame insights around combined ratio drivers, reserve adequacy, and rate environment.
+- Keep questions hypothesis-driven and grounded in insurance-specific operating metrics.`
   },
   financial_snapshot: {
     INDUSTRIALS: `## REPORT TYPE ADDENDUM: INDUSTRIALS
@@ -74,7 +83,11 @@ export const REPORT_TYPE_ADDENDUMS: AddendumMap = {
     GENERIC: `## REPORT TYPE ADDENDUM: GENERIC
 - Include only material metrics tied to the topic of interest.
 - Prefer concise tables and short interpretation over exhaustive coverage.
-- Keep the summary focused on 2-3 material drivers within the 4-6 sentence limit.`
+- Keep the summary focused on 2-3 material drivers within the 4-6 sentence limit.`,
+    INSURANCE: `## REPORT TYPE ADDENDUM: INSURANCE
+- Emphasize combined ratio, loss ratio, expense ratio, investment yield, and solvency ratios.
+- Use insurance-specific metrics: gross/net written premiums, reserve development, policy retention.
+- Do NOT include banking metrics (NIM, CET1) unless the company has banking operations.`
   },
   company_overview: {
     INDUSTRIALS: `## REPORT TYPE ADDENDUM: INDUSTRIALS
@@ -89,101 +102,70 @@ export const REPORT_TYPE_ADDENDUMS: AddendumMap = {
     GENERIC: `## REPORT TYPE ADDENDUM: GENERIC
 - Keep overview concise and context-specific; prioritize key products/services and segments.
 - Limit segments to the most relevant and high-signal items.
-- Avoid deep dives; keep descriptions short and decision-oriented.`
+- Avoid deep dives; keep descriptions short and decision-oriented.`,
+    INSURANCE: `## REPORT TYPE ADDENDUM: INSURANCE
+- Frame as insurer overview with lines of business (Life, P&C, Health, Specialty, Reinsurance).
+- Emphasize distribution channels (captive agents, independent brokers, bancassurance, direct).
+- Highlight geographic exposure, catastrophe-prone regions, and regulatory jurisdictions.`
   },
   investment_strategy: {
-    INDUSTRIALS: `## REPORT TYPE ADDENDUM: INDUSTRIALS
-- Emphasize sector focus, operational value-creation themes, and capacity expansion patterns.`,
-    FS: `## REPORT TYPE ADDENDUM: FINANCIAL SERVICES
-- Emphasize regulated growth themes, product mix focus, and inorganic growth signals.`,
     PE: `## REPORT TYPE ADDENDUM: PRIVATE EQUITY
-- Emphasize platform vs add-on patterns, sector theses, and value-creation levers.`,
-    GENERIC: `## REPORT TYPE ADDENDUM: GENERIC
-- Keep strategy summary concise and evidence-based; avoid generic PE language.`
+- Emphasize platform vs add-on patterns, sector theses, and value-creation levers.`
   },
   portfolio_snapshot: {
-    INDUSTRIALS: `## REPORT TYPE ADDENDUM: INDUSTRIALS
-- Highlight industrial sector clustering and operational adjacency across portfolio.`,
-    FS: `## REPORT TYPE ADDENDUM: FINANCIAL SERVICES
-- Highlight financial services platform groupings and subsector exposure.`,
     PE: `## REPORT TYPE ADDENDUM: PRIVATE EQUITY
-- Emphasize platform vs add-on status and sector clustering.`,
-    GENERIC: `## REPORT TYPE ADDENDUM: GENERIC
-- Keep portfolio list concise; prioritize most relevant holdings.`
+- Emphasize platform vs add-on status and sector clustering.`
   },
   deal_activity: {
-    INDUSTRIALS: `## REPORT TYPE ADDENDUM: INDUSTRIALS
-- Emphasize industrial add-ons, capacity/technology acquisitions, and carve-outs.`,
-    FS: `## REPORT TYPE ADDENDUM: FINANCIAL SERVICES
-- Emphasize acquisitions tied to product/market expansion or regulatory positioning.`,
     PE: `## REPORT TYPE ADDENDUM: PRIVATE EQUITY
-- Emphasize platform/add-on/exit classification and deal cadence.`,
-    GENERIC: `## REPORT TYPE ADDENDUM: GENERIC
-- Keep deal summary tight and evidence-based.`
+- Emphasize platform/add-on/exit classification and deal cadence.`
   },
   deal_team: {
-    INDUSTRIALS: `## REPORT TYPE ADDENDUM: INDUSTRIALS
-- Prioritize operating partners and leaders tied to industrial operations.`,
-    FS: `## REPORT TYPE ADDENDUM: FINANCIAL SERVICES
-- Prioritize partners/leaders focused on financial services and regulatory expertise.`,
     PE: `## REPORT TYPE ADDENDUM: PRIVATE EQUITY
-- Emphasize partners, operating partners, and sector leads tied to the target.`,
-    GENERIC: `## REPORT TYPE ADDENDUM: GENERIC
-- Limit to verified stakeholders only; avoid speculation.`
+- Emphasize partners, operating partners, and sector leads tied to the target.`
   },
   portfolio_maturity: {
-    INDUSTRIALS: `## REPORT TYPE ADDENDUM: INDUSTRIALS
-- Emphasize long-held industrial assets and operational exit signals.`,
-    FS: `## REPORT TYPE ADDENDUM: FINANCIAL SERVICES
-- Emphasize regulatory approvals, divestitures, or recap signals.`,
     PE: `## REPORT TYPE ADDENDUM: PRIVATE EQUITY
-- Emphasize holding period signals, exit watchlist cues, and sponsor intent.`,
-    GENERIC: `## REPORT TYPE ADDENDUM: GENERIC
-- Keep exit signals grounded in public activity only.`
+- Emphasize holding period signals, exit watchlist cues, and sponsor intent.`
   },
   leadership_and_governance: {
-    INDUSTRIALS: `## REPORT TYPE ADDENDUM: INDUSTRIALS
-- Emphasize operating leadership and governance signals tied to operations.`,
     FS: `## REPORT TYPE ADDENDUM: FINANCIAL SERVICES
 - Emphasize compliance, risk, and governance oversight signals.`,
-    PE: `## REPORT TYPE ADDENDUM: PRIVATE EQUITY
-- Emphasize operating partners and governance moves tied to portfolio oversight.`,
-    GENERIC: `## REPORT TYPE ADDENDUM: GENERIC
-- Keep leadership list concise and evidence-based.`
+    INSURANCE: `## REPORT TYPE ADDENDUM: INSURANCE
+- Emphasize Chief Underwriting Officer, Chief Actuary, and Chief Claims Officer roles.
+- Highlight regulatory relationships, board risk committee composition, and compliance leadership.`
   },
   strategic_priorities: {
-    INDUSTRIALS: `## REPORT TYPE ADDENDUM: INDUSTRIALS
-- Emphasize capex, automation, throughput, and supply chain priorities.`,
     FS: `## REPORT TYPE ADDENDUM: FINANCIAL SERVICES
 - Emphasize digital, risk/compliance, and revenue-mix priorities.`,
-    PE: `## REPORT TYPE ADDENDUM: PRIVATE EQUITY
-- Emphasize value-creation priorities and operating model shifts.`,
-    GENERIC: `## REPORT TYPE ADDENDUM: GENERIC
-- Keep priorities focused on the most material themes only.`
+    INSURANCE: `## REPORT TYPE ADDENDUM: INSURANCE
+- Emphasize digital distribution, claims automation, and product simplification priorities.
+- Include InsurTech partnerships, embedded insurance strategies, and customer experience initiatives.`
   },
   operating_capabilities: {
-    INDUSTRIALS: `## REPORT TYPE ADDENDUM: INDUSTRIALS
-- Emphasize manufacturing, supply chain, and operational excellence capabilities.`,
     FS: `## REPORT TYPE ADDENDUM: FINANCIAL SERVICES
 - Emphasize risk, compliance, digital, and operating efficiency capabilities.`,
-    PE: `## REPORT TYPE ADDENDUM: PRIVATE EQUITY
-- Emphasize shared services, operating partner support, and transformation capabilities.`,
-    GENERIC: `## REPORT TYPE ADDENDUM: GENERIC
-- Keep capability list concise and evidence-based.`
+    INSURANCE: `## REPORT TYPE ADDENDUM: INSURANCE
+- Emphasize underwriting platforms, claims handling systems, and actuarial capabilities.
+- Include distribution technology, customer self-service, and fraud detection capabilities.`
   },
   segment_analysis: {
     INDUSTRIALS: `## REPORT TYPE ADDENDUM: INDUSTRIALS
 - Maintain segment-level operational performance focus and competitor framing.
 - Emphasize capacity, efficiency, and industrial end-market dynamics.`,
     FS: `## REPORT TYPE ADDENDUM: FINANCIAL SERVICES
-- Use segments aligned to business lines (banking, insurance, wealth, payments).
+- Use segments aligned to business lines (banking, wealth, payments).
 - Focus on performance drivers, operating pressure, and regulatory exposure per segment.`,
     PE: `## REPORT TYPE ADDENDUM: PRIVATE EQUITY
 - Use portfolio clusters or sector buckets instead of traditional product segments.
 - Emphasize operating complexity and value-creation themes within clusters.`,
     GENERIC: `## REPORT TYPE ADDENDUM: GENERIC
 - Limit to key segments only; focus on the most material drivers and context.
-- Keep segment narratives brief and avoid excess detail.`
+- Keep segment narratives brief and avoid excess detail.`,
+    INSURANCE: `## REPORT TYPE ADDENDUM: INSURANCE
+- Use segments aligned to lines of business (Personal Lines, Commercial Lines, Life & Annuities, etc.).
+- Focus on loss ratios, pricing adequacy, and reserve development per line.
+- Highlight catastrophe exposure and reinsurance arrangements per segment.`
   },
   trends: {
     INDUSTRIALS: `## REPORT TYPE ADDENDUM: INDUSTRIALS
@@ -197,7 +179,11 @@ export const REPORT_TYPE_ADDENDUMS: AddendumMap = {
 - Tie trends to portfolio exposure and strategy.`,
     GENERIC: `## REPORT TYPE ADDENDUM: GENERIC
 - Include only 2-4 high-impact trends; explain why they matter now.
-- Keep trend rationale concise.`
+- Keep trend rationale concise.`,
+    INSURANCE: `## REPORT TYPE ADDENDUM: INSURANCE
+- Emphasize rate hardening/softening cycles, claims inflation, and regulatory changes.
+- Include climate and catastrophe trends affecting loss experience.
+- Tie trends to underwriting discipline and investment portfolio repositioning.`
   },
   peer_benchmarking: {
     INDUSTRIALS: `## REPORT TYPE ADDENDUM: INDUSTRIALS
@@ -211,7 +197,11 @@ export const REPORT_TYPE_ADDENDUMS: AddendumMap = {
 - Avoid forcing detailed financial comparisons if not available.`,
     GENERIC: `## REPORT TYPE ADDENDUM: GENERIC
 - Keep peer set small and focus on 2-3 differentiators.
-- Keep benchmarking commentary brief and high-signal.`
+- Keep benchmarking commentary brief and high-signal.`,
+    INSURANCE: `## REPORT TYPE ADDENDUM: INSURANCE
+- Compare against insurance peers using combined ratio, ROE, and solvency metrics.
+- Highlight distribution mix differences and geographic concentration.
+- Avoid forcing banking comparisons unless company is a bancassurer.`
   },
   sku_opportunities: {
     INDUSTRIALS: `## REPORT TYPE ADDENDUM: INDUSTRIALS
@@ -225,7 +215,11 @@ export const REPORT_TYPE_ADDENDUMS: AddendumMap = {
 - Focus on operating model improvements and transformation themes.`,
     GENERIC: `## REPORT TYPE ADDENDUM: GENERIC
 - Limit to 1-3 themes; prioritize relevance to the stated context.
-- Keep issue descriptions short and direct.`
+- Keep issue descriptions short and direct.`,
+    INSURANCE: `## REPORT TYPE ADDENDUM: INSURANCE
+- Map claims processing, underwriting modernization, and distribution challenges to SSA problem areas.
+- Emphasize actuarial and pricing capabilities, fraud detection, and customer experience.
+- Keep alignment analytical and non-prescriptive.`
   },
   recent_news: {
     INDUSTRIALS: `## REPORT TYPE ADDENDUM: INDUSTRIALS
@@ -237,7 +231,10 @@ export const REPORT_TYPE_ADDENDUMS: AddendumMap = {
     PE: `## REPORT TYPE ADDENDUM: PRIVATE EQUITY
 - Emphasize deal announcements, portfolio news, and firm press releases.`,
     GENERIC: `## REPORT TYPE ADDENDUM: GENERIC
-- Keep concise; include only news tied to the meeting context.`
+- Keep concise; include only news tied to the meeting context.`,
+    INSURANCE: `## REPORT TYPE ADDENDUM: INSURANCE
+- Emphasize catastrophe events, reserve charges, rate filings, and regulatory actions.
+- Highlight M&A activity, distribution partnerships, and InsurTech investments.`
   },
   conversation_starters: {
     INDUSTRIALS: `## REPORT TYPE ADDENDUM: INDUSTRIALS
@@ -248,7 +245,10 @@ export const REPORT_TYPE_ADDENDUMS: AddendumMap = {
     PE: `## REPORT TYPE ADDENDUM: PRIVATE EQUITY
 - Use hypothesis-driven questions about portfolio patterns and operating themes.`,
     GENERIC: `## REPORT TYPE ADDENDUM: GENERIC
-- Keep questions short, focused, and tied to immediate context.`
+- Keep questions short, focused, and tied to immediate context.`,
+    INSURANCE: `## REPORT TYPE ADDENDUM: INSURANCE
+- Use call-ready questions tied to underwriting results, claims trends, or distribution strategy.
+- Frame around combined ratio improvement, reserve adequacy, and capital deployment.`
   },
   appendix: {
     INDUSTRIALS: `## REPORT TYPE ADDENDUM: INDUSTRIALS
@@ -258,7 +258,18 @@ export const REPORT_TYPE_ADDENDUMS: AddendumMap = {
     PE: `## REPORT TYPE ADDENDUM: PRIVATE EQUITY
 - Include deal announcements, firm press, portfolio news, and Pitchbook-style sources.`,
     GENERIC: `## REPORT TYPE ADDENDUM: GENERIC
-- Include only sources referenced in sections.`
+- Include only sources referenced in sections.`,
+    INSURANCE: `## REPORT TYPE ADDENDUM: INSURANCE
+- Include statutory filings, AM Best reports, regulatory docs, and credible insurance trade news.
+- Highlight catastrophe and claims data sources where used.`
+  },
+  distribution_analysis: {
+    INSURANCE: `## REPORT TYPE ADDENDUM: INSURANCE
+- Analyze distribution channel mix: captive agents, independent brokers, direct-to-consumer, bancassurance.
+- Include premium share by channel where disclosed.
+- Highlight digital distribution capabilities and InsurTech partnerships.
+- Note any exclusive distribution agreements or key broker relationships.
+- Compare distribution cost efficiency to peers if data available.`
   }
 };
 

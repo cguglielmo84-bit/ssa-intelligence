@@ -12,7 +12,7 @@ Required:
 - Meeting context
 
 Optional:
-- Business focus (banking, wealth, insurance, payments)
+- Business focus (banking, wealth, payments)
 - Stakeholders (CEO, CFO, BU head, etc.)
 
 Legacy UI context (optional):

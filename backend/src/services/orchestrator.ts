@@ -27,6 +27,7 @@ import { buildPortfolioMaturityPrompt } from '../../prompts/portfolio-maturity.j
 import { buildLeadershipAndGovernancePrompt } from '../../prompts/leadership-and-governance.js';
 import { buildStrategicPrioritiesPrompt } from '../../prompts/strategic-priorities.js';
 import { buildOperatingCapabilitiesPrompt } from '../../prompts/operating-capabilities.js';
+import { buildDistributionAnalysisPrompt } from '../../prompts/distribution-analysis.js';
 import { generateAppendix } from '../../prompts/appendix.js';
 import { generateThumbnailForJob } from './thumbnail.js';
 import { getReportBlueprint } from './report-blueprints.js';
@@ -55,6 +56,7 @@ import {
   leadershipAndGovernanceOutputSchema,
   strategicPrioritiesOutputSchema,
   operatingCapabilitiesOutputSchema,
+  distributionAnalysisOutputSchema,
   getValidationSchema,
   type ReportTypeId
 } from '../../prompts/validation.js';
@@ -63,7 +65,7 @@ import {
 // TYPES
 // ============================================================================
 
-export type StageId = 
+export type StageId =
   | 'foundation'
   | 'exec_summary'
   | 'financial_snapshot'
@@ -76,6 +78,7 @@ export type StageId =
   | 'leadership_and_governance'
   | 'strategic_priorities'
   | 'operating_capabilities'
+  | 'distribution_analysis'
   | 'segment_analysis'
   | 'trends'
   | 'peer_benchmarking'
@@ -106,6 +109,7 @@ export const STAGE_OUTPUT_FIELDS: Record<StageId, string | undefined> = {
   leadership_and_governance: undefined,
   strategic_priorities: undefined,
   operating_capabilities: undefined,
+  distribution_analysis: undefined,
   segment_analysis: 'segmentAnalysis',
   trends: 'trends',
   peer_benchmarking: 'peerBenchmarking',
@@ -122,7 +126,7 @@ export const STAGE_OUTPUT_FIELDS: Record<StageId, string | undefined> = {
 export const STAGE_DEPENDENCIES: Record<StageId, StageId[]> = {
   // Phase 0 - Foundation (runs first, not shown in UI)
   'foundation': [],
-  
+
   // Phase 1 - Core sections (parallel execution)
   'financial_snapshot': ['foundation'],
   'company_overview': ['foundation'],
@@ -132,22 +136,23 @@ export const STAGE_DEPENDENCIES: Record<StageId, StageId[]> = {
   'leadership_and_governance': ['foundation'],
   'strategic_priorities': ['foundation'],
   'operating_capabilities': ['foundation'],
+  'distribution_analysis': ['foundation', 'company_overview'],
   'recent_news': ['foundation'],
-  
+
   // Phase 2 - Complex section
   'segment_analysis': ['foundation'],
-  
+
   // Phase 3 - Dependent sections
   'trends': ['foundation'],
   'peer_benchmarking': ['foundation', 'financial_snapshot'],
   'sku_opportunities': ['foundation'],
   'portfolio_maturity': ['foundation'],
   'deal_team': ['foundation'],
-  
+
   // Phase 4 - Synthesis
   'exec_summary': ['foundation', 'financial_snapshot', 'company_overview'],
   'conversation_starters': ['foundation'],
-  
+
   // Phase 5 - Appendix (auto-generated)
   'appendix': ['foundation'],
 };
@@ -162,6 +167,7 @@ const USER_SELECTABLE_STAGES: StageId[] = [
   'leadership_and_governance',
   'strategic_priorities',
   'operating_capabilities',
+  'distribution_analysis',
   'segment_analysis',
   'trends',
   'peer_benchmarking',
@@ -183,6 +189,7 @@ const DEFAULT_STAGE_ORDER: StageId[] = [
   'leadership_and_governance',
   'strategic_priorities',
   'operating_capabilities',
+  'distribution_analysis',
   'segment_analysis',
   'trends',
   'peer_benchmarking',
@@ -284,6 +291,13 @@ export const STAGE_CONFIGS: Record<StageId, StageConfig> = {
     promptBuilder: buildOperatingCapabilitiesPrompt,
     validationSchema: operatingCapabilitiesOutputSchema
   },
+  distribution_analysis: {
+    id: 'distribution_analysis',
+    title: 'Distribution Channels and Partnerships',
+    dependencies: STAGE_DEPENDENCIES.distribution_analysis,
+    promptBuilder: buildDistributionAnalysisPrompt,
+    validationSchema: distributionAnalysisOutputSchema
+  },
   segment_analysis: {
     id: 'segment_analysis',
     title: 'Segment Analysis',
@@ -369,7 +383,7 @@ export class ResearchOrchestrator {
     normalizedIndustry?: string | null;
     domain?: string | null;
     normalizedDomain?: string | null;
-    reportType?: 'GENERIC' | 'INDUSTRIALS' | 'PE' | 'FS';
+    reportType?: 'GENERIC' | 'INDUSTRIALS' | 'PE' | 'FS' | 'INSURANCE';
     blueprintVersion?: string;
     reportInputs?: Record<string, unknown>;
     selectedSections?: string[];
@@ -876,14 +890,15 @@ export class ResearchOrchestrator {
     const timeHorizon = this.getReportInputValue(job, 'timeHorizon');
     const promptSections = [basePrompt];
     if (timeHorizon) {
+      const todayDate = new Date().toISOString().split('T')[0];
       promptSections.push(
         [
           '---',
           '',
           '## TIME HORIZON (MANDATORY)',
           '',
-          `Time horizon: ${timeHorizon}`,
-          'Use this time horizon as a strict rolling window ending today.',
+          `Time horizon: ${timeHorizon} (ending ${todayDate})`,
+          `Today's date is ${todayDate}. Use this time horizon as a strict rolling window ending today.`,
           'Treat any "latest" or "most recent" references as the most recent within the time horizon.',
           'Do not anchor to fixed calendar years or date ranges outside the specified horizon.',
           'If sources fall outside the time horizon, exclude them unless explicitly required by a user input.'
@@ -1432,6 +1447,23 @@ export class ResearchOrchestrator {
           'Cost of Risk / Credit Loss Ratio (%)',
           'Liquidity Coverage Ratio (%)',
           'Net New Assets / AUM ($B)'
+        ];
+      case 'INSURANCE':
+        return [
+          'Gross Written Premiums ($M)',
+          'Net Written Premiums ($M)',
+          'Premium Growth (YoY) (%)',
+          'Combined Ratio (%)',
+          'Loss Ratio (%)',
+          'Expense Ratio (%)',
+          'Underwriting Income (Loss) ($M)',
+          'Net Investment Income ($M)',
+          'Investment Yield (%)',
+          'Net Income ($M)',
+          'Return on Equity (ROE) (%)',
+          'Solvency Ratio / RBC Ratio (%)',
+          'Reserve to Premium Ratio (x)',
+          'Policy Retention Rate (%)'
         ];
       default:
         return [

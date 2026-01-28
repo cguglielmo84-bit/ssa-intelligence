@@ -108,6 +108,23 @@ const fsSections: BlueprintSection[] = [
   { id: 'appendix', title: 'Appendix and Sources', defaultSelected: true, focus: appendixFocus }
 ].map(withDependencies);
 
+const insuranceSections: BlueprintSection[] = [
+  { id: 'exec_summary', title: 'Executive Summary', defaultSelected: true, focus: 'Underwriting performance, investment results, and strategic positioning.' },
+  { id: 'financial_snapshot', title: 'Performance and Capital Snapshot', defaultSelected: true, focus: 'Combined ratio, loss ratio, premiums, investment yield, and solvency metrics.' },
+  { id: 'company_overview', title: 'Insurer Overview and Lines of Business', defaultSelected: true, focus: 'Business mix by line (Life, P&C, Health), distribution channels, and footprint.' },
+  { id: 'leadership_and_governance', title: 'Leadership and Governance', defaultSelected: true, focus: 'Executive team, actuarial leadership, and regulatory compliance signals.', reportSpecific: true },
+  { id: 'strategic_priorities', title: 'Strategic Priorities and Transformation', defaultSelected: true, focus: 'Digital distribution, claims modernization, and product innovation.', reportSpecific: true },
+  { id: 'distribution_analysis', title: 'Distribution Channels and Partnerships', defaultSelected: true, focus: 'Agent/broker networks, direct-to-consumer, bancassurance, distribution costs.', reportSpecific: true },
+  { id: 'trends', title: 'Market, Regulatory, and Competitive Trends', defaultSelected: true, focus: 'Rate environment, claims trends, regulatory changes, and catastrophe exposure.' },
+  { id: 'segment_analysis', title: 'Line of Business Deep Dive', defaultSelected: false, focus: 'Optional when line-specific detail is needed.' },
+  { id: 'peer_benchmarking', title: 'Peer Benchmarking', defaultSelected: false, focus: 'Optional peer comparison when data is available.' },
+  { id: 'operating_capabilities', title: 'Operating Capabilities', defaultSelected: false, focus: 'Claims handling, underwriting platforms, and distribution technology.', reportSpecific: true },
+  { id: 'sku_opportunities', title: 'Operating Priorities and SSA Alignment', defaultSelected: true, focus: 'Map underwriting and claims challenges to SSA problem areas.' },
+  { id: 'recent_news', title: 'Earnings and News Highlights', defaultSelected: true, focus: 'Earnings commentary, catastrophe impacts, regulatory updates.' },
+  { id: 'conversation_starters', title: 'Call-Ready Talking Points', defaultSelected: true, focus: 'Hypothesis-driven questions for insurance exec discussions.' },
+  { id: 'appendix', title: 'Appendix and Sources', defaultSelected: true, focus: appendixFocus }
+].map(withDependencies);
+
 const reportBlueprints: ReportBlueprint[] = [
   {
     version: BLUEPRINT_VERSION,
@@ -152,10 +169,22 @@ const reportBlueprints: ReportBlueprint[] = [
     purpose: 'Distill operational challenges, performance drivers, and strategic priorities into actionable context for exec-level conversations.',
     inputs: [
       ...baseInputs('Institution name'),
-      textInput({ id: 'businessFocus', label: 'Business focus', required: false, helperText: 'Banking, wealth, insurance, payments, etc.' }),
+      textInput({ id: 'businessFocus', label: 'Business focus', required: false, helperText: 'Banking, wealth, payments, etc.' }),
       textInput({ id: 'stakeholders', label: 'Stakeholders', required: false })
     ],
     sections: fsSections
+  },
+  {
+    version: BLUEPRINT_VERSION,
+    reportType: 'INSURANCE',
+    title: 'Insurance',
+    purpose: 'Distill underwriting performance, investment results, and distribution strategy into actionable context for exec-level conversations.',
+    inputs: [
+      ...baseInputs('Insurer name'),
+      textInput({ id: 'lineOfBusiness', label: 'Line of business', required: false, helperText: 'Life, P&C, Health, Reinsurance, etc.' }),
+      textInput({ id: 'stakeholders', label: 'Stakeholders', required: false })
+    ],
+    sections: insuranceSections
   }
 ];
 

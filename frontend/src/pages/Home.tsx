@@ -115,6 +115,7 @@ export const Home: React.FC<HomeProps> = ({ jobs, reportBlueprints = [], onNavig
     if (type === 'INDUSTRIALS') return 'Industrials';
     if (type === 'PE') return 'Private Equity';
     if (type === 'FS') return 'Financial Services';
+    if (type === 'INSURANCE') return 'Insurance';
     return 'Generic';
   };
 

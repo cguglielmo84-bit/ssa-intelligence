@@ -200,6 +200,7 @@ enum ReportType {
   INDUSTRIALS
   PE
   FS
+  INSURANCE
 }
 
 // Bug tracker enums

@@ -156,6 +156,22 @@ const REQUIRED_KPIS_BY_REPORT_TYPE: Record<ReportTypeId, string[]> = {
     'Cash and Equivalents ($M)',
     'Total Debt ($M)',
     'Net Debt ($M)'
+  ],
+  INSURANCE: [
+    'Gross Written Premiums ($M)',
+    'Net Written Premiums ($M)',
+    'Premium Growth (YoY) (%)',
+    'Combined Ratio (%)',
+    'Loss Ratio (%)',
+    'Expense Ratio (%)',
+    'Underwriting Income (Loss) ($M)',
+    'Net Investment Income ($M)',
+    'Investment Yield (%)',
+    'Net Income ($M)',
+    'Return on Equity (ROE) (%)',
+    'Solvency Ratio / RBC Ratio (%)',
+    'Reserve to Premium Ratio (x)',
+    'Policy Retention Rate (%)'
   ]
 };
 
@@ -191,6 +207,12 @@ export function buildFinancialSnapshotPrompt(input: Section2Input): string {
         return [
           '**Industrials focus:** Emphasize operational efficiency, working capital, and margin KPIs.',
           'Include working capital metrics such as DSO/DIO/Inventory Turns when available.'
+        ].join('\n');
+      case 'INSURANCE':
+        return [
+          '**Insurance focus:** Emphasize underwriting performance, loss ratios, and solvency metrics.',
+          'Use insurance-specific KPIs (combined ratio, loss ratio, expense ratio, investment yield).',
+          'Do NOT include banking metrics (NIM, CET1, DSO) unless company has banking operations.'
         ].join('\n');
       default:
         return [

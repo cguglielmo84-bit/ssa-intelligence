@@ -93,7 +93,7 @@ export async function generateResearch(req: Request, res: Response) {
     const userId = req.auth.userId;
 
     const reportType = (body.reportType || 'GENERIC').toUpperCase() as ReportType;
-    const allowedReportTypes = new Set<ReportType>(['GENERIC', 'INDUSTRIALS', 'PE', 'FS']);
+    const allowedReportTypes = new Set<ReportType>(['GENERIC', 'INDUSTRIALS', 'PE', 'FS', 'INSURANCE']);
     if (!allowedReportTypes.has(reportType)) {
       return res.status(400).json({ error: 'Invalid reportType' });
     }

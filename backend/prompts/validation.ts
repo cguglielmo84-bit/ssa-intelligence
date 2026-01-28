@@ -548,6 +548,38 @@ export const operatingCapabilitiesOutputSchema = z.object({
 });
 
 // ============================================================================
+// SECTION: DISTRIBUTION ANALYSIS (Insurance)
+// ============================================================================
+
+export const distributionAnalysisOutputSchema = z.object({
+  confidence: confidenceSchema,
+  summary: z.string().min(50),
+  channels: z.array(z.object({
+    channel_type: z.enum(['Captive Agents', 'Independent Brokers', 'Direct', 'Bancassurance', 'Affinity/Worksite', 'Other']),
+    description: z.string().min(20),
+    premium_share_pct: z.number().min(0).max(100).optional(),
+    key_partners: z.array(z.string()).optional(),
+    trend: z.enum(['Growing', 'Stable', 'Declining']),
+    source: z.string().regex(/^S\d+$/)
+  })).min(1).max(6),
+  distribution_costs: z.object({
+    acquisition_cost_ratio: z.number().min(0).max(100).optional(),
+    commission_rates: z.record(z.string(), z.number()).optional(),
+    notes: z.string(),
+    source: z.string().regex(/^S\d+$/)
+  }),
+  digital_capabilities: z.object({
+    online_quoting: z.boolean(),
+    self_service_portal: z.boolean(),
+    mobile_app: z.boolean(),
+    notes: z.string(),
+    source: z.string().regex(/^S\d+$/)
+  }),
+  competitive_positioning: z.string().min(50),
+  sources_used: z.array(z.string().regex(/^S\d+$/))
+});
+
+// ============================================================================
 // SECTION 10: APPENDIX
 // ============================================================================
 
@@ -585,7 +617,7 @@ export const appendixOutputSchema = z.object({
 // PRESET-AWARE SCHEMA HELPERS
 // ============================================================================
 
-export type ReportTypeId = 'GENERIC' | 'INDUSTRIALS' | 'PE' | 'FS';
+export type ReportTypeId = 'GENERIC' | 'INDUSTRIALS' | 'PE' | 'FS' | 'INSURANCE';
 
 export type ValidationStageId =
   | 'foundation'
@@ -600,6 +632,7 @@ export type ValidationStageId =
   | 'leadership_and_governance'
   | 'strategic_priorities'
   | 'operating_capabilities'
+  | 'distribution_analysis'
   | 'segment_analysis'
   | 'trends'
   | 'peer_benchmarking'
@@ -621,6 +654,7 @@ const BASE_SECTION_SCHEMAS: Record<ValidationStageId, z.ZodSchema<any>> = {
   leadership_and_governance: leadershipAndGovernanceOutputSchema,
   strategic_priorities: strategicPrioritiesOutputSchema,
   operating_capabilities: operatingCapabilitiesOutputSchema,
+  distribution_analysis: distributionAnalysisOutputSchema,
   segment_analysis: segmentAnalysisOutputSchema,
   trends: trendsOutputSchema,
   peer_benchmarking: peerBenchmarkingOutputSchema,
