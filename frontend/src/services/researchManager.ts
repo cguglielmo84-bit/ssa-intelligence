@@ -113,6 +113,7 @@ const STAGE_TO_SECTION_ID: Record<string, SectionId> = {
   leadership_and_governance: 'leadership_and_governance',
   strategic_priorities: 'strategic_priorities',
   operating_capabilities: 'operating_capabilities',
+  distribution_analysis: 'distribution_analysis',
   segment_analysis: 'segment_analysis',
   trends: 'trends',
   peer_benchmarking: 'peer_benchmarking',
@@ -134,6 +135,7 @@ const SECTION_ID_TO_KEY: Record<SectionId, string> = {
   leadership_and_governance: 'leadership_and_governance',
   strategic_priorities: 'strategic_priorities',
   operating_capabilities: 'operating_capabilities',
+  distribution_analysis: 'distribution_analysis',
   segment_analysis: 'segment_analysis',
   trends: 'trends',
   peer_benchmarking: 'peer_benchmarking',
@@ -577,6 +579,55 @@ const formatSectionContent = (sectionId: SectionId, data: any): string => {
       if (Array.isArray(data.gaps) && data.gaps.length) {
         parts.push('\n**Gaps**');
         parts.push(data.gaps.map((g: any) => `- ${g}`).join('\n'));
+      }
+      return parts.filter(Boolean).join('\n\n');
+    }
+    case 'distribution_analysis': {
+      const parts: string[] = [];
+      if (data.summary) parts.push(data.summary);
+      if (Array.isArray(data.channels) && data.channels.length) {
+        parts.push('\n**Distribution Channels**');
+        parts.push(
+          mdTable(
+            ['Channel Type', 'Description', 'Premium Share %', 'Trend', 'Key Partners', 'Source'],
+            data.channels.map((c: any) => [
+              c.channel_type || '',
+              c.description || '',
+              c.premium_share_pct ?? '',
+              c.trend || '',
+              Array.isArray(c.key_partners) ? c.key_partners.join(', ') : (c.key_partners || ''),
+              c.source || ''
+            ])
+          )
+        );
+      }
+      if (data.distribution_costs) {
+        parts.push('\n**Distribution Costs**');
+        if (data.distribution_costs.acquisition_cost_ratio) {
+          parts.push(`- Acquisition Cost Ratio: ${data.distribution_costs.acquisition_cost_ratio}%`);
+        }
+        if (data.distribution_costs.commission_rates) {
+          const rates = data.distribution_costs.commission_rates;
+          const rateEntries = Object.entries(rates)
+            .map(([key, val]) => `${key.replace(/_/g, ' ')}: ${val}%`)
+            .join(', ');
+          if (rateEntries) parts.push(`- Commission Rates: ${rateEntries}`);
+        }
+        if (data.distribution_costs.notes) parts.push(`\n${data.distribution_costs.notes}`);
+      }
+      if (data.digital_capabilities) {
+        parts.push('\n**Digital Capabilities**');
+        const caps = data.digital_capabilities;
+        const capsList: string[] = [];
+        if (caps.online_quoting) capsList.push('Online Quoting');
+        if (caps.self_service_portal) capsList.push('Self-Service Portal');
+        if (caps.mobile_app) capsList.push('Mobile App');
+        if (capsList.length) parts.push(`- Features: ${capsList.join(', ')}`);
+        if (caps.notes) parts.push(`\n${caps.notes}`);
+      }
+      if (data.competitive_positioning) {
+        parts.push('\n**Competitive Positioning**');
+        parts.push(data.competitive_positioning);
       }
       return parts.filter(Boolean).join('\n\n');
     }

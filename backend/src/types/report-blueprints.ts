@@ -1,4 +1,4 @@
-export type ReportTypeId = 'GENERIC' | 'INDUSTRIALS' | 'PE' | 'FS';
+export type ReportTypeId = 'GENERIC' | 'INDUSTRIALS' | 'PE' | 'FS' | 'INSURANCE';
 
 export type BlueprintInputType = 'text' | 'textarea' | 'select';
 

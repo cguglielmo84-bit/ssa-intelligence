@@ -1,10 +1,10 @@
 export type JobStatus = 'idle' | 'queued' | 'running' | 'completed' | 'completed_with_errors' | 'failed' | 'cancelled';
 
-export type ReportType = 'GENERIC' | 'INDUSTRIALS' | 'PE' | 'FS';
+export type ReportType = 'GENERIC' | 'INDUSTRIALS' | 'PE' | 'FS' | 'INSURANCE';
 
 export type VisibilityScope = 'PRIVATE' | 'GROUP' | 'GENERAL';
 
-export type SectionId = 
+export type SectionId =
   | 'exec_summary'
   | 'financial_snapshot'
   | 'company_overview'
@@ -16,6 +16,7 @@ export type SectionId =
   | 'leadership_and_governance'
   | 'strategic_priorities'
   | 'operating_capabilities'
+  | 'distribution_analysis'
   | 'segment_analysis'
   | 'trends'
   | 'peer_benchmarking'
@@ -122,6 +123,7 @@ export const SECTIONS_CONFIG: {id: SectionId, title: string}[] = [
   { id: 'leadership_and_governance', title: 'Leadership and Governance' },
   { id: 'strategic_priorities', title: 'Strategic Priorities and Transformation' },
   { id: 'operating_capabilities', title: 'Operating Capabilities' },
+  { id: 'distribution_analysis', title: 'Distribution Channels and Partnerships' },
   { id: 'segment_analysis', title: 'Segment Analysis' },
   { id: 'trends', title: 'Market Trends' },
   { id: 'peer_benchmarking', title: 'Peer Benchmarking' },
