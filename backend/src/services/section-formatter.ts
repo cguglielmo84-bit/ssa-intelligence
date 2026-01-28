@@ -12,6 +12,7 @@ type SectionId =
   | 'leadership_and_governance'
   | 'strategic_priorities'
   | 'operating_capabilities'
+  | 'distribution_analysis'
   | 'segment_analysis'
   | 'trends'
   | 'peer_benchmarking'
@@ -419,6 +420,55 @@ export const formatSectionContent = (sectionId: SectionId, data: any): string =>
       }
       return parts.filter(Boolean).join('\n\n');
     }
+    case 'distribution_analysis': {
+      const parts: string[] = [];
+      if (data.summary) parts.push(String(data.summary));
+      if (Array.isArray(data.channels) && data.channels.length) {
+        parts.push('**Distribution Channels**');
+        parts.push(
+          mdTable(
+            ['Channel Type', 'Description', 'Premium Share %', 'Trend', 'Key Partners', 'Source'],
+            data.channels.map((c: any) => [
+              c.channel_type || '',
+              c.description || '',
+              c.premium_share_pct ?? '',
+              c.trend || '',
+              Array.isArray(c.key_partners) ? c.key_partners.join(', ') : (c.key_partners || ''),
+              c.source || ''
+            ])
+          )
+        );
+      }
+      if (data.distribution_costs) {
+        parts.push('**Distribution Costs**');
+        if (data.distribution_costs.acquisition_cost_ratio) {
+          parts.push(`- Acquisition Cost Ratio: ${data.distribution_costs.acquisition_cost_ratio}%`);
+        }
+        if (data.distribution_costs.commission_rates) {
+          const rates = data.distribution_costs.commission_rates;
+          const rateEntries = Object.entries(rates)
+            .map(([key, val]) => `${key.replace(/_/g, ' ')}: ${val}%`)
+            .join(', ');
+          if (rateEntries) parts.push(`- Commission Rates: ${rateEntries}`);
+        }
+        if (data.distribution_costs.notes) parts.push(`\n${data.distribution_costs.notes}`);
+      }
+      if (data.digital_capabilities) {
+        parts.push('**Digital Capabilities**');
+        const caps = data.digital_capabilities;
+        const capsList: string[] = [];
+        if (caps.online_quoting) capsList.push('Online Quoting');
+        if (caps.self_service_portal) capsList.push('Self-Service Portal');
+        if (caps.mobile_app) capsList.push('Mobile App');
+        if (capsList.length) parts.push(`- Features: ${capsList.join(', ')}`);
+        if (caps.notes) parts.push(`\n${caps.notes}`);
+      }
+      if (data.competitive_positioning) {
+        parts.push('**Competitive Positioning**');
+        parts.push(String(data.competitive_positioning));
+      }
+      return parts.filter(Boolean).join('\n\n');
+    }
     case 'segment_analysis': {
       const parts: string[] = [];
       if (data.overview) parts.push(String(data.overview));
@@ -597,6 +647,7 @@ export const sectionOrder: { id: SectionId; title: string; field: string }[] = [
   { id: 'trends', title: 'Market Trends', field: 'trends' },
   { id: 'peer_benchmarking', title: 'Peer Benchmarking', field: 'peerBenchmarking' },
   { id: 'sku_opportunities', title: 'SKU Opportunities', field: 'skuOpportunities' },
+  { id: 'distribution_analysis', title: 'Distribution Channels and Partnerships', field: 'distributionAnalysis' },
   { id: 'recent_news', title: 'Recent News', field: 'recentNews' },
   { id: 'conversation_starters', title: 'Conversation Starters', field: 'conversationStarters' },
   { id: 'appendix', title: 'Appendix & Sources', field: 'appendix' }

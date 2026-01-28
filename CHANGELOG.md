@@ -5,6 +5,8 @@ All notable changes to this repository will be documented in this file.
 The format is based on Keep a Changelog and this project adheres to Semantic Versioning.
 
 ## [Unreleased]
+- Fix: add `distribution_analysis` formatter for INSURANCE report PDF exports.
+- Fix: add INSURANCE-specific KPIs to schema-only regeneration fallback path.
 - Fix: increase company name resolver timeout from 5s to 15s to prevent premature timeouts.
 - UI: disable prompt Test button (work in progress).
 - Fix: prevent draft saves from archiving published prompts (caused fallback to code defaults).
