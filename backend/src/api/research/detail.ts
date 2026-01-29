@@ -17,6 +17,7 @@ const SECTION_FIELD_MAP = {
   exec_summary: 'execSummary',
   financial_snapshot: 'financialSnapshot',
   company_overview: 'companyOverview',
+  key_execs_and_board: 'keyExecsAndBoard',
   segment_analysis: 'segmentAnalysis',
   trends: 'trends',
   peer_benchmarking: 'peerBenchmarking',
