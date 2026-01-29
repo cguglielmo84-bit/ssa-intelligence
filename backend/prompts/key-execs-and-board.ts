@@ -431,11 +431,39 @@ export function validateKeyExecsAndBoardOutput(output: any): output is KeyExecsA
     return false;
   }
 
+  // Validate board member shapes
+  for (const member of output.board_of_directors.members) {
+    if (!member ||
+        typeof member.name !== 'string' ||
+        typeof member.role !== 'string' ||
+        !Array.isArray(member.committees) ||
+        typeof member.background !== 'string' ||
+        typeof member.tenure !== 'string' ||
+        !Array.isArray(member.other_boards) ||
+        typeof member.source !== 'string') {
+      return false;
+    }
+  }
+
   // Check c_suite
   if (!output.c_suite ||
       typeof output.c_suite.summary !== 'string' ||
       !Array.isArray(output.c_suite.executives)) {
     return false;
+  }
+
+  // Validate executive shapes
+  for (const exec of output.c_suite.executives) {
+    if (!exec ||
+        typeof exec.name !== 'string' ||
+        typeof exec.title !== 'string' ||
+        typeof exec.role_description !== 'string' ||
+        typeof exec.background !== 'string' ||
+        typeof exec.tenure !== 'string' ||
+        !Array.isArray(exec.performance_actions) ||
+        typeof exec.source !== 'string') {
+      return false;
+    }
   }
 
   // Check business_unit_leaders
@@ -445,9 +473,35 @@ export function validateKeyExecsAndBoardOutput(output: any): output is KeyExecsA
     return false;
   }
 
+  // Validate business unit leader shapes
+  for (const leader of output.business_unit_leaders.leaders) {
+    if (!leader ||
+        typeof leader.name !== 'string' ||
+        typeof leader.title !== 'string' ||
+        typeof leader.business_unit !== 'string' ||
+        typeof leader.role_description !== 'string' ||
+        typeof leader.background !== 'string' ||
+        !Array.isArray(leader.performance_actions) ||
+        typeof leader.source !== 'string') {
+      return false;
+    }
+  }
+
   // Check recent_leadership_changes
   if (!Array.isArray(output.recent_leadership_changes)) {
     return false;
+  }
+
+  // Validate leadership change shapes
+  for (const change of output.recent_leadership_changes) {
+    if (!change ||
+        typeof change.date !== 'string' ||
+        typeof change.change_type !== 'string' ||
+        typeof change.description !== 'string' ||
+        typeof change.implications !== 'string' ||
+        typeof change.source !== 'string') {
+      return false;
+    }
   }
 
   // Check sources
