@@ -62,6 +62,7 @@ const CORE_SECTIONS = new Set([
   'exec_summary',
   'financial_snapshot',
   'company_overview',
+  'key_execs_and_board',
   'segment_analysis',
   'trends',
   'peer_benchmarking',
@@ -88,15 +89,15 @@ const PE_SPECIFIC_SECTIONS = new Set([
   'portfolio_maturity'
 ]);
 
-// Sections shared between FS and Insurance
-const FS_INSURANCE_SHARED_SECTIONS = new Set([
+// FS-specific sections that should be called out
+const FS_SPECIFIC_SECTIONS = new Set([
   'leadership_and_governance',
   'strategic_priorities',
   'operating_capabilities'
 ]);
 
-// Insurance-only sections
-const INSURANCE_ONLY_SECTIONS = new Set([
+// Insurance-specific sections
+const INSURANCE_SPECIFIC_SECTIONS = new Set([
   'distribution_analysis'
 ]);
 
@@ -458,8 +459,8 @@ export const AdminPrompts: React.FC<AdminPromptsProps> = ({ isAdmin }) => {
   const foundationSection = sections.find(s => s.id === 'foundation');
   const coreSections = sections.filter(s => CORE_SECTIONS.has(s.id));
   const peSections = sections.filter(s => PE_SPECIFIC_SECTIONS.has(s.id));
-  const fsInsuranceSharedSections = sections.filter(s => FS_INSURANCE_SHARED_SECTIONS.has(s.id));
-  const insuranceOnlySections = sections.filter(s => INSURANCE_ONLY_SECTIONS.has(s.id));
+  const fsSections = sections.filter(s => FS_SPECIFIC_SECTIONS.has(s.id));
+  const insuranceSections = sections.filter(s => INSURANCE_SPECIFIC_SECTIONS.has(s.id));
 
   return (
     <div className="space-y-6">
@@ -649,23 +650,20 @@ export const AdminPrompts: React.FC<AdminPromptsProps> = ({ isAdmin }) => {
             </div>
           )}
 
-          {/* Financial Services & Insurance Sections */}
-          {fsInsuranceSharedSections.length > 0 && (
+          {/* Financial Services Sections */}
+          {fsSections.length > 0 && (
             <div className="bg-white rounded-lg border border-slate-200 overflow-hidden">
-              <div className="px-4 py-3 bg-teal-50 border-b border-teal-200">
+              <div className="px-4 py-3 bg-emerald-50 border-b border-emerald-200">
                 <div className="flex items-center gap-2">
-                  <h3 className="font-semibold text-teal-800">Financial Services & Insurance Sections</h3>
+                  <h3 className="font-semibold text-emerald-800">Financial Services Sections</h3>
                   <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-emerald-100 text-emerald-700 border border-emerald-200">
-                    FS
-                  </span>
-                  <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-sky-100 text-sky-700 border border-sky-200">
-                    Insurance
+                    FS Only
                   </span>
                 </div>
-                <p className="text-xs text-teal-600 mt-0.5">Used for both Financial Services and Insurance reports</p>
+                <p className="text-xs text-emerald-600 mt-0.5">Used only for Financial Services reports</p>
               </div>
               <div className="divide-y divide-slate-100">
-                {fsInsuranceSharedSections.map(section => (
+                {fsSections.map(section => (
                   <div key={section.id} className="px-4 py-3 flex items-center justify-between hover:bg-slate-50">
                     <div className="flex-1">
                       <div className="flex items-center gap-2">
@@ -688,7 +686,7 @@ export const AdminPrompts: React.FC<AdminPromptsProps> = ({ isAdmin }) => {
           )}
 
           {/* Insurance Sections */}
-          {insuranceOnlySections.length > 0 && (
+          {insuranceSections.length > 0 && (
             <div className="bg-white rounded-lg border border-slate-200 overflow-hidden">
               <div className="px-4 py-3 bg-sky-50 border-b border-sky-200">
                 <div className="flex items-center gap-2">
@@ -700,7 +698,7 @@ export const AdminPrompts: React.FC<AdminPromptsProps> = ({ isAdmin }) => {
                 <p className="text-xs text-sky-600 mt-0.5">Used only for Insurance reports</p>
               </div>
               <div className="divide-y divide-slate-100">
-                {insuranceOnlySections.map(section => (
+                {insuranceSections.map(section => (
                   <div key={section.id} className="px-4 py-3 flex items-center justify-between hover:bg-slate-50">
                     <div className="flex-1">
                       <div className="flex items-center gap-2">

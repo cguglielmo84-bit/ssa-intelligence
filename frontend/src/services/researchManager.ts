@@ -105,6 +105,7 @@ const STAGE_TO_SECTION_ID: Record<string, SectionId> = {
   exec_summary: 'exec_summary',
   financial_snapshot: 'financial_snapshot',
   company_overview: 'company_overview',
+  key_execs_and_board: 'key_execs_and_board',
   investment_strategy: 'investment_strategy',
   portfolio_snapshot: 'portfolio_snapshot',
   deal_activity: 'deal_activity',
@@ -127,6 +128,7 @@ const SECTION_ID_TO_KEY: Record<SectionId, string> = {
   exec_summary: 'exec_summary',
   financial_snapshot: 'financial_snapshot',
   company_overview: 'company_overview',
+  key_execs_and_board: 'key_execs_and_board',
   investment_strategy: 'investment_strategy',
   portfolio_snapshot: 'portfolio_snapshot',
   deal_activity: 'deal_activity',
@@ -441,6 +443,73 @@ const formatSectionContent = (sectionId: SectionId, data: any): string => {
           parts.push('\n**Regional Leaders**');
           parts.push(regionals.map((e: any) => `- ${e.name}, ${e.title}${e.source ? ` [${e.source}]` : ''}`).join('\n'));
         }
+      }
+      return parts.filter(Boolean).join('\n\n');
+    }
+    case 'key_execs_and_board': {
+      const parts: string[] = [];
+      if (data.board_of_directors?.summary) parts.push(`**Board of Directors**\n${data.board_of_directors.summary}`);
+      if (Array.isArray(data.board_of_directors?.members) && data.board_of_directors.members.length) {
+        parts.push(
+          mdTable(
+            ['Name', 'Role', 'Committees', 'Tenure', 'Background', 'Source'],
+            data.board_of_directors.members.map((m: any) => [
+              m.name,
+              m.role,
+              Array.isArray(m.committees) ? m.committees.join(', ') : (m.committees || ''),
+              m.tenure || '',
+              m.background || '',
+              m.source || ''
+            ])
+          )
+        );
+      }
+      if (data.c_suite?.summary) parts.push(`\n**C-Suite Leadership**\n${data.c_suite.summary}`);
+      if (Array.isArray(data.c_suite?.executives) && data.c_suite.executives.length) {
+        parts.push(
+          mdTable(
+            ['Name', 'Title', 'Tenure', 'Background', 'Performance Actions', 'Source'],
+            data.c_suite.executives.map((e: any) => [
+              e.name,
+              e.title,
+              e.tenure || '',
+              e.background || '',
+              Array.isArray(e.performance_actions) ? e.performance_actions.join('; ') : (e.performance_actions || ''),
+              e.source || ''
+            ])
+          )
+        );
+      }
+      if (data.business_unit_leaders?.summary) parts.push(`\n**Business Unit Leaders**\n${data.business_unit_leaders.summary}`);
+      if (Array.isArray(data.business_unit_leaders?.leaders) && data.business_unit_leaders.leaders.length) {
+        parts.push(
+          mdTable(
+            ['Name', 'Title', 'Business Unit', 'Background', 'Performance Actions', 'Source'],
+            data.business_unit_leaders.leaders.map((l: any) => [
+              l.name,
+              l.title,
+              l.business_unit || '',
+              l.background || '',
+              Array.isArray(l.performance_actions) ? l.performance_actions.join('; ') : (l.performance_actions || ''),
+              l.source || ''
+            ])
+          )
+        );
+      }
+      if (Array.isArray(data.recent_leadership_changes) && data.recent_leadership_changes.length) {
+        parts.push('\n**Recent Leadership Changes**');
+        parts.push(
+          mdTable(
+            ['Date', 'Type', 'Description', 'Implications', 'Source'],
+            data.recent_leadership_changes.map((c: any) => [
+              c.date || '',
+              c.change_type || '',
+              c.description || '',
+              c.implications || '',
+              c.source || ''
+            ])
+          )
+        );
       }
       return parts.filter(Boolean).join('\n\n');
     }
