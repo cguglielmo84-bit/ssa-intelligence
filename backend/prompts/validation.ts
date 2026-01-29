@@ -212,13 +212,18 @@ export const strategicPrioritySchema = z.object({
   source: z.string()
 });
 
-export const executiveLeaderSchema = z.object({
+// Brief executive schema for company_overview (detailed profiles in key_execs_and_board)
+export const briefExecutiveSchema = z.object({
   name: z.string(),
   title: z.string(),
-  background: z.string(),
   tenure: z.string().nullish(),
-  geography_relevance: z.string().nullish(),
-  geography_relevance_rating: z.enum(['High', 'Medium', 'Low']).nullish()
+  source: z.string()
+});
+
+export const briefRegionalLeaderSchema = z.object({
+  name: z.string(),
+  title: z.string(),
+  source: z.string()
 });
 
 export const companyOverviewOutputSchema = z.object({
@@ -245,8 +250,9 @@ export const companyOverviewOutputSchema = z.object({
     geography_specific_initiatives: z.union([z.string(), z.array(z.string())])
   }),
   key_leadership: z.object({
-    executives: z.array(executiveLeaderSchema),
-    regional_leaders: z.array(executiveLeaderSchema)
+    summary: z.string().min(20),
+    executives: z.array(briefExecutiveSchema).min(1).max(3),
+    regional_leader: briefRegionalLeaderSchema.nullish()
   }),
   sources_used: z.array(z.string().regex(/^S\d+$/))
 });
@@ -553,7 +559,7 @@ export const operatingCapabilitiesOutputSchema = z.object({
 
 export const distributionAnalysisOutputSchema = z.object({
   confidence: confidenceSchema,
-  summary: z.string().min(50),
+  summary: z.string().min(50).max(1500),
   channels: z.array(z.object({
     channel_type: z.enum(['Captive Agents', 'Independent Brokers', 'Direct', 'Bancassurance', 'Affinity/Worksite', 'Other']),
     description: z.string().min(20),
@@ -575,7 +581,69 @@ export const distributionAnalysisOutputSchema = z.object({
     notes: z.string(),
     source: z.string().regex(/^S\d+$/)
   }),
-  competitive_positioning: z.string().min(50),
+  competitive_positioning: z.string().min(50).max(1500),
+  sources_used: z.array(z.string().regex(/^S\d+$/))
+});
+
+// ============================================================================
+// SECTION: KEY EXECS AND BOARD MEMBERS (Core)
+// ============================================================================
+
+export const boardMemberSchema = z.object({
+  name: z.string().min(1),
+  role: z.string().min(1),
+  committees: z.array(z.string()),
+  background: z.string().min(20),
+  tenure: z.string(),
+  other_boards: z.array(z.string()),
+  source: z.string().regex(/^S\d+$/)
+});
+
+export const cSuiteExecutiveSchema = z.object({
+  name: z.string().min(1),
+  title: z.string().min(1),
+  role_description: z.string().min(10),
+  background: z.string().min(20),
+  tenure: z.string(),
+  performance_actions: z.array(z.string()),
+  geography_relevance: z.enum(['High', 'Medium', 'Low']).optional(),
+  source: z.string().regex(/^S\d+$/)
+});
+
+export const businessUnitLeaderSchema = z.object({
+  name: z.string().min(1),
+  title: z.string().min(1),
+  business_unit: z.string().min(1),
+  role_description: z.string().min(10),
+  background: z.string().min(10),
+  performance_actions: z.array(z.string()),
+  geography_relevance: z.enum(['High', 'Medium', 'Low']).optional(),
+  source: z.string().regex(/^S\d+$/)
+});
+
+export const leadershipChangeSchema = z.object({
+  date: z.string(),
+  change_type: z.enum(['New Hire', 'Departure', 'Promotion', 'Reorganization']),
+  description: z.string().min(20),
+  implications: z.string().min(20),
+  source: z.string().regex(/^S\d+$/)
+});
+
+export const keyExecsAndBoardOutputSchema = z.object({
+  confidence: confidenceSchema,
+  board_of_directors: z.object({
+    summary: z.string().min(30),
+    members: z.array(boardMemberSchema)
+  }),
+  c_suite: z.object({
+    summary: z.string().min(30),
+    executives: z.array(cSuiteExecutiveSchema).min(1)
+  }),
+  business_unit_leaders: z.object({
+    summary: z.string().min(10),
+    leaders: z.array(businessUnitLeaderSchema)
+  }),
+  recent_leadership_changes: z.array(leadershipChangeSchema),
   sources_used: z.array(z.string().regex(/^S\d+$/))
 });
 
@@ -624,6 +692,7 @@ export type ValidationStageId =
   | 'exec_summary'
   | 'financial_snapshot'
   | 'company_overview'
+  | 'key_execs_and_board'
   | 'investment_strategy'
   | 'portfolio_snapshot'
   | 'deal_activity'
@@ -646,6 +715,7 @@ const BASE_SECTION_SCHEMAS: Record<ValidationStageId, z.ZodSchema<any>> = {
   exec_summary: execSummaryOutputSchema,
   financial_snapshot: financialSnapshotOutputSchema,
   company_overview: companyOverviewOutputSchema,
+  key_execs_and_board: keyExecsAndBoardOutputSchema,
   investment_strategy: investmentStrategyOutputSchema,
   portfolio_snapshot: portfolioSnapshotOutputSchema,
   deal_activity: dealActivityOutputSchema,

@@ -125,13 +125,18 @@ export interface StrategicPriority {
   source: string;
 }
 
-export interface ExecutiveLeader {
+// Brief executive for company_overview (detailed profiles in KeyExecsAndBoardOutput)
+export interface BriefExecutive {
   name: string;
   title: string;
-  background: string;
-  tenure: string;
-  geography_relevance?: string;
-  geography_relevance_rating?: 'High' | 'Medium' | 'Low';
+  tenure?: string;
+  source: string;
+}
+
+export interface BriefRegionalLeader {
+  name: string;
+  title: string;
+  source: string;
 }
 
 export interface Section3Output {
@@ -162,14 +167,88 @@ export interface Section3Output {
   };
   
   key_leadership: {
-    executives: ExecutiveLeader[];
-    regional_leaders: ExecutiveLeader[];
+    summary: string;
+    executives: BriefExecutive[];
+    regional_leader?: BriefRegionalLeader | null;
   };
   
   sources_used: string[];
 }
 
 export interface Section3Input {
+  foundation: FoundationOutput;
+  companyName: string;
+  geography: string;
+}
+
+// ============================================================================
+// KEY EXECS AND BOARD MEMBERS (Core Section)
+// ============================================================================
+
+export interface BoardMember {
+  name: string;
+  role: string;
+  committees: string[];
+  background: string;
+  tenure: string;
+  other_boards: string[];
+  source: string;
+}
+
+export interface CSuiteExecutive {
+  name: string;
+  title: string;
+  role_description: string;
+  background: string;
+  tenure: string;
+  performance_actions: string[];
+  geography_relevance?: 'High' | 'Medium' | 'Low';
+  source: string;
+}
+
+export interface BusinessUnitLeader {
+  name: string;
+  title: string;
+  business_unit: string;
+  role_description: string;
+  background: string;
+  performance_actions: string[];
+  geography_relevance?: 'High' | 'Medium' | 'Low';
+  source: string;
+}
+
+export interface LeadershipChange {
+  date: string;
+  change_type: 'New Hire' | 'Departure' | 'Promotion' | 'Reorganization';
+  description: string;
+  implications: string;
+  source: string;
+}
+
+export interface KeyExecsAndBoardOutput {
+  confidence: Confidence;
+
+  board_of_directors: {
+    summary: string;
+    members: BoardMember[];
+  };
+
+  c_suite: {
+    summary: string;
+    executives: CSuiteExecutive[];
+  };
+
+  business_unit_leaders: {
+    summary: string;
+    leaders: BusinessUnitLeader[];
+  };
+
+  recent_leadership_changes: LeadershipChange[];
+
+  sources_used: string[];
+}
+
+export interface KeyExecsAndBoardInput {
   foundation: FoundationOutput;
   companyName: string;
   geography: string;
