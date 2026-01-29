@@ -68,20 +68,18 @@ export interface Section3Output {
   };
   
   key_leadership: {
+    summary: string;  // 1-2 sentences noting top leadership; detailed profiles in Key Execs section
     executives: Array<{
       name: string;
       title: string;
-      background: string;
       tenure?: string;
-      geography_relevance: 'High' | 'Medium' | 'Low';
       source: string;
     }>;
-    regional_leaders: Array<{
+    regional_leader?: {
       name: string;
       title: string;
-      background: string;
       source: string;
-    }>;
+    } | null;
   };
   
   sources_used: string[];
@@ -184,22 +182,20 @@ ${foundationJson}
 
 **Time focus:** Use the time horizon provided in report inputs.
 
-### 4. Key Leadership (Priority: MEDIUM)
+### 4. Key Leadership (Priority: LOW)
+
+**Note:** This subsection provides brief context only. For detailed executive profiles, board composition, and performance initiatives, see the **Key Execs and Board Members** section.
 
 **Search for:**
 - "${companyName} executive team"
-- "${companyName} proxy statement DEF 14A"
-- "${companyName} leadership bios"
-- "${companyName} ${geography} leadership" OR "${companyName} regional management"
+- "${companyName} ${geography} leadership"
 
-**Extract:**
-- **C-suite:** CEO, CFO, COO (names and brief background)
-- **Segment leaders:** Presidents/VPs of major business segments
-- **Regional leaders:** ${geography} country manager, regional president
-  - Name, title, tenure, background
-- **Recent changes:** New hires, departures, reorganizations (within the time horizon)
+**Extract (brief list only):**
+- **CEO:** Name and tenure
+- **CFO:** Name and tenure
+- **Regional leader (if known):** ${geography} country manager or regional president
 
-**Note:** Focus on leaders relevant to ${geography} operations or with P&L responsibility
+**Keep it simple:** Just names, titles, and tenure. No detailed backgrounds here.
 
 ---
 
@@ -255,20 +251,18 @@ interface Section3Output {
   };
   
   key_leadership: {
+    summary: string;          // 1-2 sentences; note detailed profiles in Key Execs section
     executives: Array<{
       name: string;
       title: string;
-      background: string;     // 1 sentence
       tenure?: string;        // "Since 2020" or "3 years"
-      geography_relevance: 'High' | 'Medium' | 'Low';
       source: string;
     }>;
-    regional_leaders: Array<{
+    regional_leader?: {       // Optional: ${geography} country manager or regional president
       name: string;
       title: string;
-      background: string;
       source: string;
-    }>;
+    } | null;
   };
   
   sources_used: string[];
@@ -348,17 +342,20 @@ interface Section3Output {
 
 ### 3.4 Key Leadership
 
-**Executives array (5-8 leaders):**
-- Focus on C-suite and segment/regional leaders
-- Geography relevance:
-  - **High:** Regional president, country manager, ${geography}-based leaders
-  - **Medium:** Segment leader with large ${geography} operations
-  - **Low:** Corporate executive with no direct regional role
+**Note:** This is a brief overview only. Detailed executive profiles belong in the **Key Execs and Board Members** section.
 
-**Regional leaders array (2-5 leaders):**
-- ONLY leaders based in or directly responsible for ${geography}
-- Country president, regional VP, site leaders
-- Include brief background (1 sentence)
+**Summary (1-2 sentences):**
+- Note the CEO and key leadership context
+- Reference Key Execs section for detailed profiles
+
+**Executives array (2-3 leaders max):**
+- CEO with tenure
+- CFO with tenure
+- COO or other key C-suite (if notable)
+
+**Regional leader (optional):**
+- Include ONLY if a ${geography}-specific leader is clearly identified
+- Just name, title, source - no detailed background
 
 ---
 
@@ -381,12 +378,12 @@ interface Section3Output {
 - "**${geography}** is pilot region for AI-powered predictive maintenance program across 6 facilities (S8)..."
 
 **3.4 Key Leadership:**
-- "Regional President Klaus Schmidt (8 years tenure) leads ${geography} operations with P&L responsibility for €1.2B revenue (S4)..."
+- "CEO Jane Smith (since 2019) and CFO John Doe (since 2021) lead the company. For detailed profiles, see Key Execs and Board Members section."
 
 ❌ **WRONG patterns:**
 - "Company operates 85 facilities globally..." [No regional context]
 - "Strategic priorities include digital transformation and sustainability..." [No geography mention]
-- "CEO has 25 years experience..." [Not geography-relevant unless regional role]
+- Detailed executive backgrounds in this section [Belongs in Key Execs section]
 
 ---
 
@@ -437,8 +434,8 @@ interface Section3Output {
 - [ ] Regional stats include global comparison
 - [ ] Strategic priorities rated for geography relevance
 - [ ] Geography-specific initiatives array populated
-- [ ] Leadership includes geography relevance ratings
-- [ ] Regional leaders array populated (if leaders identified)
+- [ ] Leadership summary references Key Execs section
+- [ ] Executives array limited to 2-3 top leaders (CEO, CFO)
 - [ ] 75-80% of content emphasizes ${geography}
 - [ ] All claims cited with sources
 - [ ] Sources_used array complete
@@ -453,8 +450,9 @@ interface Section3Output {
 4. **Geography focus:** Emphasize the target geography throughout
 5. **Exact schema match:** Follow the TypeScript interface exactly
 6. **Use "?" or null** for unavailable data
-7. **Geography relevance** ratings required for segments, priorities, leadership
+7. **Geography relevance** ratings required for segments and priorities
 8. **Facilities array** must include all ${geography} locations
+9. **Key leadership** is brief; detailed profiles go in Key Execs and Board Members section
 
 ---
 
@@ -508,8 +506,8 @@ export function validateSection3Output(output: any): output is Section3Output {
   
   // Check key_leadership
   if (!output.key_leadership ||
-      !Array.isArray(output.key_leadership.executives) ||
-      !Array.isArray(output.key_leadership.regional_leaders)) {
+      typeof output.key_leadership.summary !== 'string' ||
+      !Array.isArray(output.key_leadership.executives)) {
     return false;
   }
   
@@ -569,20 +567,19 @@ export function formatSection3ForDocument(output: Section3Output): string {
   
   // 3.4 Key Leadership
   markdown += `## 3.4 Key Leadership\n\n`;
-  markdown += `**Corporate Executives:**\n\n`;
-  
+  markdown += `${output.key_leadership.summary}\n\n`;
+
   for (const exec of output.key_leadership.executives) {
     markdown += `- **${exec.name}**, ${exec.title}`;
     if (exec.tenure) markdown += ` (${exec.tenure})`;
-    markdown += `: ${exec.background} `;
-    markdown += `(Geography Relevance: ${exec.geography_relevance}) (${exec.source})\n`;
+    markdown += ` (${exec.source})\n`;
   }
-  
-  if (output.key_leadership.regional_leaders.length > 0) {
-    markdown += `\n**Regional Leaders:**\n\n`;
-    for (const leader of output.key_leadership.regional_leaders) {
-      markdown += `- **${leader.name}**, ${leader.title}: ${leader.background} (${leader.source})\n`;
-    }
+
+  if (output.key_leadership.regional_leader) {
+    markdown += `\n**Regional Leader:** `;
+    markdown += `${output.key_leadership.regional_leader.name}, `;
+    markdown += `${output.key_leadership.regional_leader.title} `;
+    markdown += `(${output.key_leadership.regional_leader.source})\n`;
   }
   
   return markdown;

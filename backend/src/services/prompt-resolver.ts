@@ -27,6 +27,7 @@ import { buildLeadershipAndGovernancePrompt } from '../../prompts/leadership-and
 import { buildStrategicPrioritiesPrompt } from '../../prompts/strategic-priorities.js';
 import { buildOperatingCapabilitiesPrompt } from '../../prompts/operating-capabilities.js';
 import { buildDistributionAnalysisPrompt } from '../../prompts/distribution-analysis.js';
+import { buildKeyExecsAndBoardPrompt } from '../../prompts/key-execs-and-board.js';
 import { REPORT_TYPE_ADDENDUMS, type SectionId, type ReportTypeId } from '../../prompts/report-type-addendums.js';
 
 // Re-export types for consumers
@@ -90,6 +91,11 @@ export const SECTION_METADATA: Record<SectionId, { name: string; description: st
   company_overview: {
     name: 'Company Overview',
     description: 'Business description, segments, and geographic footprint',
+    category: 'core'
+  },
+  key_execs_and_board: {
+    name: 'Key Execs and Board Members',
+    description: 'Comprehensive board composition, C-suite leadership, and business unit leaders',
     category: 'core'
   },
   investment_strategy: {
@@ -180,6 +186,7 @@ const PROMPT_BUILDERS: Record<SectionId, (input: any) => string> = {
   exec_summary: buildExecSummaryPrompt,
   financial_snapshot: buildFinancialSnapshotPrompt,
   company_overview: buildCompanyOverviewPrompt,
+  key_execs_and_board: buildKeyExecsAndBoardPrompt,
   investment_strategy: buildInvestmentStrategyPrompt,
   portfolio_snapshot: buildPortfolioSnapshotPrompt,
   deal_activity: buildDealActivityPrompt,

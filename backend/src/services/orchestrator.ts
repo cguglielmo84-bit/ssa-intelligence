@@ -13,6 +13,7 @@ import { buildFoundationPrompt } from '../../prompts/foundation-prompt.js';
 import { buildExecSummaryPrompt } from '../../prompts/exec-summary.js';
 import { buildFinancialSnapshotPrompt } from '../../prompts/financial-snapshot.js';
 import { buildCompanyOverviewPrompt } from '../../prompts/company-overview.js';
+import { buildKeyExecsAndBoardPrompt } from '../../prompts/key-execs-and-board.js';
 import { buildSegmentAnalysisPrompt } from '../../prompts/segment-analysis.js';
 import { buildTrendsPrompt } from '../../prompts/trends.js';
 import { buildPeerBenchmarkingPrompt } from '../../prompts/peer-benchmarking.js';
@@ -41,6 +42,7 @@ import {
   execSummaryOutputSchema,
   financialSnapshotOutputSchema,
   companyOverviewOutputSchema,
+  keyExecsAndBoardOutputSchema,
   segmentAnalysisOutputSchema,
   trendsOutputSchema,
   peerBenchmarkingOutputSchema,
@@ -70,6 +72,7 @@ export type StageId =
   | 'exec_summary'
   | 'financial_snapshot'
   | 'company_overview'
+  | 'key_execs_and_board'
   | 'investment_strategy'
   | 'portfolio_snapshot'
   | 'deal_activity'
@@ -101,6 +104,7 @@ export const STAGE_OUTPUT_FIELDS: Record<StageId, string | undefined> = {
   exec_summary: 'execSummary',
   financial_snapshot: 'financialSnapshot',
   company_overview: 'companyOverview',
+  key_execs_and_board: 'keyExecsAndBoard',
   investment_strategy: undefined,
   portfolio_snapshot: undefined,
   deal_activity: undefined,
@@ -130,6 +134,7 @@ export const STAGE_DEPENDENCIES: Record<StageId, StageId[]> = {
   // Phase 1 - Core sections (parallel execution)
   'financial_snapshot': ['foundation'],
   'company_overview': ['foundation'],
+  'key_execs_and_board': ['foundation'],
   'investment_strategy': ['foundation'],
   'portfolio_snapshot': ['foundation'],
   'deal_activity': ['foundation'],
@@ -161,6 +166,7 @@ const USER_SELECTABLE_STAGES: StageId[] = [
   'exec_summary',
   'financial_snapshot',
   'company_overview',
+  'key_execs_and_board',
   'investment_strategy',
   'portfolio_snapshot',
   'deal_activity',
@@ -183,6 +189,7 @@ const DEFAULT_STAGE_ORDER: StageId[] = [
   'foundation',
   'financial_snapshot',
   'company_overview',
+  'key_execs_and_board',
   'investment_strategy',
   'portfolio_snapshot',
   'deal_activity',
@@ -234,6 +241,13 @@ export const STAGE_CONFIGS: Record<StageId, StageConfig> = {
     dependencies: STAGE_DEPENDENCIES.company_overview,
     promptBuilder: buildCompanyOverviewPrompt,
     validationSchema: companyOverviewOutputSchema
+  },
+  key_execs_and_board: {
+    id: 'key_execs_and_board',
+    title: 'Key Execs and Board Members',
+    dependencies: STAGE_DEPENDENCIES.key_execs_and_board,
+    promptBuilder: buildKeyExecsAndBoardPrompt,
+    validationSchema: keyExecsAndBoardOutputSchema
   },
   investment_strategy: {
     id: 'investment_strategy',
@@ -890,15 +904,14 @@ export class ResearchOrchestrator {
     const timeHorizon = this.getReportInputValue(job, 'timeHorizon');
     const promptSections = [basePrompt];
     if (timeHorizon) {
-      const todayDate = new Date().toISOString().split('T')[0];
       promptSections.push(
         [
           '---',
           '',
           '## TIME HORIZON (MANDATORY)',
           '',
-          `Time horizon: ${timeHorizon} (ending ${todayDate})`,
-          `Today's date is ${todayDate}. Use this time horizon as a strict rolling window ending today.`,
+          `Time horizon: ${timeHorizon}`,
+          'Use this time horizon as a strict rolling window ending today.',
           'Treat any "latest" or "most recent" references as the most recent within the time horizon.',
           'Do not anchor to fixed calendar years or date ranges outside the specified horizon.',
           'If sources fall outside the time horizon, exclude them unless explicitly required by a user input.'
@@ -1447,23 +1460,6 @@ export class ResearchOrchestrator {
           'Cost of Risk / Credit Loss Ratio (%)',
           'Liquidity Coverage Ratio (%)',
           'Net New Assets / AUM ($B)'
-        ];
-      case 'INSURANCE':
-        return [
-          'Gross Written Premiums ($M)',
-          'Net Written Premiums ($M)',
-          'Premium Growth (YoY) (%)',
-          'Combined Ratio (%)',
-          'Loss Ratio (%)',
-          'Expense Ratio (%)',
-          'Underwriting Income (Loss) ($M)',
-          'Net Investment Income ($M)',
-          'Investment Yield (%)',
-          'Net Income ($M)',
-          'Return on Equity (ROE) (%)',
-          'Solvency Ratio / RBC Ratio (%)',
-          'Reserve to Premium Ratio (x)',
-          'Policy Retention Rate (%)'
         ];
       default:
         return [

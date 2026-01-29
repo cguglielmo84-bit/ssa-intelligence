@@ -8,6 +8,7 @@ export type SectionId =
   | 'exec_summary'
   | 'financial_snapshot'
   | 'company_overview'
+  | 'key_execs_and_board'
   | 'investment_strategy'
   | 'portfolio_snapshot'
   | 'deal_activity'
@@ -115,6 +116,7 @@ export const SECTIONS_CONFIG: {id: SectionId, title: string}[] = [
   { id: 'exec_summary', title: 'Executive Summary' },
   { id: 'financial_snapshot', title: 'Financial Snapshot' },
   { id: 'company_overview', title: 'Company Overview' },
+  { id: 'key_execs_and_board', title: 'Key Execs and Board Members' },
   { id: 'investment_strategy', title: 'Investment Strategy and Focus' },
   { id: 'portfolio_snapshot', title: 'Portfolio Snapshot' },
   { id: 'deal_activity', title: 'Recent Investments and Add-ons' },

@@ -5,6 +5,7 @@ export type SectionId =
   | 'exec_summary'
   | 'financial_snapshot'
   | 'company_overview'
+  | 'key_execs_and_board'
   | 'investment_strategy'
   | 'portfolio_snapshot'
   | 'deal_activity'
@@ -107,6 +108,33 @@ export const REPORT_TYPE_ADDENDUMS: AddendumMap = {
 - Frame as insurer overview with lines of business (Life, P&C, Health, Specialty, Reinsurance).
 - Emphasize distribution channels (captive agents, independent brokers, bancassurance, direct).
 - Highlight geographic exposure, catastrophe-prone regions, and regulatory jurisdictions.`
+  },
+  key_execs_and_board: {
+    INDUSTRIALS: `## REPORT TYPE ADDENDUM: INDUSTRIALS
+- Emphasize COO and operations leaders with plant/manufacturing responsibility.
+- Highlight leaders focused on supply chain, automation, and capacity expansion.
+- Include VP-level manufacturing and quality leaders if disclosed.
+- Note board members with industrial operations or manufacturing backgrounds.`,
+    PE: `## REPORT TYPE ADDENDUM: PRIVATE EQUITY
+- Emphasize Operating Partners and their value-creation track records.
+- Highlight board composition (sponsor representatives vs. independent directors).
+- Focus on performance improvement actions and operational transformation initiatives.
+- Include portfolio company oversight roles and investment committee members.`,
+    FS: `## REPORT TYPE ADDENDUM: FINANCIAL SERVICES
+- Emphasize Chief Risk Officer, Chief Compliance Officer, and regulatory-facing leaders.
+- Highlight board risk committee composition and expertise.
+- Focus on digital transformation and efficiency improvement leaders.
+- Note executives with regulatory relationships and compliance backgrounds.`,
+    INSURANCE: `## REPORT TYPE ADDENDUM: INSURANCE
+- Emphasize Chief Underwriting Officer, Chief Actuary, and Chief Claims Officer.
+- Highlight board members with actuarial or insurance regulatory backgrounds.
+- Focus on leaders driving combined ratio improvement and claims automation.
+- Note executives responsible for distribution strategy and InsurTech initiatives.`,
+    GENERIC: `## REPORT TYPE ADDENDUM: GENERIC
+- Focus on the most senior executives and board members.
+- Prioritize leaders most relevant to the meeting context.
+- Keep background summaries concise and decision-relevant.
+- Emphasize recent leadership changes and their strategic implications.`
   },
   investment_strategy: {
     PE: `## REPORT TYPE ADDENDUM: PRIVATE EQUITY

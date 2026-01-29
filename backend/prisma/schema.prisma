@@ -41,6 +41,7 @@ model ResearchJob {
   execSummary           Json?  // Section1Output (renamed for consistency)
   financialSnapshot     Json?  // Section2Output
   companyOverview       Json?  // Section3Output
+  keyExecsAndBoard      Json?  // KeyExecsAndBoardOutput
   segmentAnalysis       Json?  // Section4Output
   trends                Json?  // Section5Output
   peerBenchmarking      Json?  // Section6Output
