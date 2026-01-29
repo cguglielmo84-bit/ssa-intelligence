@@ -419,7 +419,8 @@ export function validateKeyExecsAndBoardOutput(output: any): output is KeyExecsA
 
   // Check confidence
   if (!output.confidence ||
-      !['HIGH', 'MEDIUM', 'LOW'].includes(output.confidence.level)) {
+      !['HIGH', 'MEDIUM', 'LOW'].includes(output.confidence.level) ||
+      typeof output.confidence.reason !== 'string') {
     return false;
   }
 
