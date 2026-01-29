@@ -5,6 +5,8 @@ All notable changes to this repository will be documented in this file.
 The format is based on Keep a Changelog and this project adheres to Semantic Versioning.
 
 ## [Unreleased]
+- Feat: add `key_execs_and_board` core section with Board of Directors, C-Suite, and business unit leaders.
+- Refactor: slim down `company_overview.key_leadership` to avoid duplication with new key_execs_and_board section.
 - Refactor: consolidate FoundationOutput interface from individual prompt files into shared types.js.
 - UI: add Insurance sections to Admin Prompt Library with shared FS & Insurance group.
 - Feat: News Intelligence improvements - time period selection, Deep Dive enhancements, status filters.
