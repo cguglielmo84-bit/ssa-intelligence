@@ -496,10 +496,10 @@ export function formatKeyExecsAndBoardForDocument(output: KeyExecsAndBoardOutput
   }
 
   // Business Unit Leaders
-  if (output.business_unit_leaders.leaders.length > 0) {
-    markdown += `## Business Unit/Division Leaders\n\n`;
-    markdown += `${output.business_unit_leaders.summary}\n\n`;
+  markdown += `## Business Unit/Division Leaders\n\n`;
+  markdown += `${output.business_unit_leaders.summary}\n\n`;
 
+  if (output.business_unit_leaders.leaders.length > 0) {
     for (const leader of output.business_unit_leaders.leaders) {
       markdown += `**${leader.name}**, ${leader.title} - ${leader.business_unit}`;
       if (leader.geography_relevance) markdown += ` [${leader.geography_relevance} Geography Relevance]`;
@@ -514,6 +514,8 @@ export function formatKeyExecsAndBoardForDocument(output: KeyExecsAndBoardOutput
       }
       markdown += `- Source: ${leader.source}\n\n`;
     }
+  } else {
+    markdown += `*None identified in available sources.*\n\n`;
   }
 
   // Recent Leadership Changes

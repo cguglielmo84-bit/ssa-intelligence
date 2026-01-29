@@ -89,14 +89,14 @@ const PE_SPECIFIC_SECTIONS = new Set([
   'portfolio_maturity'
 ]);
 
-// FS-specific sections that should be called out
-const FS_SPECIFIC_SECTIONS = new Set([
+// Sections shared by both FS and Insurance
+const SHARED_FS_INSURANCE_SECTIONS = new Set([
   'leadership_and_governance',
   'strategic_priorities',
   'operating_capabilities'
 ]);
 
-// Insurance-specific sections
+// Insurance-specific sections (only Insurance)
 const INSURANCE_SPECIFIC_SECTIONS = new Set([
   'distribution_analysis'
 ]);
@@ -459,7 +459,7 @@ export const AdminPrompts: React.FC<AdminPromptsProps> = ({ isAdmin }) => {
   const foundationSection = sections.find(s => s.id === 'foundation');
   const coreSections = sections.filter(s => CORE_SECTIONS.has(s.id));
   const peSections = sections.filter(s => PE_SPECIFIC_SECTIONS.has(s.id));
-  const fsSections = sections.filter(s => FS_SPECIFIC_SECTIONS.has(s.id));
+  const sharedFsInsuranceSections = sections.filter(s => SHARED_FS_INSURANCE_SECTIONS.has(s.id));
   const insuranceSections = sections.filter(s => INSURANCE_SPECIFIC_SECTIONS.has(s.id));
 
   return (
@@ -650,20 +650,20 @@ export const AdminPrompts: React.FC<AdminPromptsProps> = ({ isAdmin }) => {
             </div>
           )}
 
-          {/* Financial Services Sections */}
-          {fsSections.length > 0 && (
+          {/* Financial Services & Insurance Shared Sections */}
+          {sharedFsInsuranceSections.length > 0 && (
             <div className="bg-white rounded-lg border border-slate-200 overflow-hidden">
               <div className="px-4 py-3 bg-emerald-50 border-b border-emerald-200">
                 <div className="flex items-center gap-2">
-                  <h3 className="font-semibold text-emerald-800">Financial Services Sections</h3>
+                  <h3 className="font-semibold text-emerald-800">Financial Services & Insurance Sections</h3>
                   <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-emerald-100 text-emerald-700 border border-emerald-200">
-                    FS Only
+                    FS & Insurance
                   </span>
                 </div>
-                <p className="text-xs text-emerald-600 mt-0.5">Used only for Financial Services reports</p>
+                <p className="text-xs text-emerald-600 mt-0.5">Used for Financial Services and Insurance reports</p>
               </div>
               <div className="divide-y divide-slate-100">
-                {fsSections.map(section => (
+                {sharedFsInsuranceSections.map(section => (
                   <div key={section.id} className="px-4 py-3 flex items-center justify-between hover:bg-slate-50">
                     <div className="flex-1">
                       <div className="flex items-center gap-2">
