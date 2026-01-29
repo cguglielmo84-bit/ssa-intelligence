@@ -34,6 +34,7 @@ Uses base section ids plus PE-specific sections derived from the output examples
 | --- | --- | --- | --- |
 | exec_summary | Executive Summary | Yes | Portfolio direction, value-creation themes, and operating signals. |
 | company_overview | Firm Overview | Yes | Firm positioning, sector focus, and portfolio composition. |
+| key_execs_and_board | Key Execs and Board Members | No | Partners, operating partners, and sponsor representatives. |
 | financial_snapshot | Portfolio Performance Snapshot | Yes | Fund size, scale signals, and reported performance indicators. |
 | trends | Deal and Sector Trends | Yes | Deal environment, sector shifts, and value-creation context. |
 | sku_opportunities | Value-Creation Themes and SSA Alignment | Yes | Map operating themes to SSA problem areas. |

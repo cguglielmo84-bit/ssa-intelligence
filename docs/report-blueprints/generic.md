@@ -34,6 +34,7 @@ Uses base section ids and titles with a context-specific focus.
 | exec_summary | Executive Summary | Yes | 4-6 high-signal points tied to meeting context. |
 | financial_snapshot | Financial Snapshot | Yes | Only material metrics tied to the stated topic. |
 | company_overview | Company Overview | Yes | Business model and the most relevant segments. |
+| key_execs_and_board | Key Execs and Board Members | No | Board composition, C-suite leadership, and business unit leaders. |
 | trends | Market Trends | Yes | 2-4 trends that directly affect the context. |
 | sku_opportunities | SKU Opportunities | Yes | 1-3 SSA problem areas tied to the context. |
 | conversation_starters | Conversation Starters | Yes | Short, call-ready questions for the meeting. |

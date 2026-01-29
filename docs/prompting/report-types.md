@@ -29,6 +29,7 @@ Default sections:
 - appendix
 
 Optional sections:
+- key_execs_and_board
 - segment_analysis
 - peer_benchmarking
 - recent_news
@@ -55,7 +56,8 @@ Default sections:
 - conversation_starters
 - appendix
 
-Optional sections: none (all base sections on by default).
+Optional sections:
+- key_execs_and_board
 
 ## PE (Private Equity)
 Purpose: Distill portfolio activity, value-creation themes, and investment strategy into meeting-ready context.
@@ -81,6 +83,7 @@ Default sections:
 - appendix
 
 Optional sections:
+- key_execs_and_board
 - segment_analysis
 - peer_benchmarking
 - deal_team
@@ -109,6 +112,36 @@ Default sections:
 - appendix
 
 Optional sections:
+- segment_analysis
+- peer_benchmarking
+- operating_capabilities
+- key_execs_and_board
+
+## INSURANCE
+Purpose: Distill underwriting performance, investment results, and distribution strategy into meeting-ready context.
+
+Inputs:
+- companyName (insurer name, required)
+- timeHorizon (optional)
+- meetingContext (optional)
+- lineOfBusiness (optional)
+- stakeholders (optional)
+
+Default sections:
+- exec_summary
+- financial_snapshot
+- company_overview
+- leadership_and_governance
+- strategic_priorities
+- distribution_analysis
+- trends
+- sku_opportunities
+- recent_news
+- conversation_starters
+- appendix
+
+Optional sections:
+- key_execs_and_board
 - segment_analysis
 - peer_benchmarking
 - operating_capabilities

@@ -34,6 +34,7 @@ Uses base section ids plus FS-specific sections derived from the output examples
 | --- | --- | --- | --- |
 | exec_summary | Executive Summary | Yes | Performance drivers, operating pressure, and leadership focus. |
 | company_overview | Institution Overview and Business Lines | Yes | Business mix, revenue drivers, and footprint. |
+| key_execs_and_board | Key Execs and Board Members | No | Board composition, C-suite with risk/compliance leadership focus. |
 | financial_snapshot | Performance and Capital Snapshot | Yes | Revenue mix, margins, efficiency, and capital metrics. |
 | trends | Market, Regulatory, and Competitive Trends | Yes | External forces shaping operating priorities. |
 | sku_opportunities | Operating Priorities and SSA Alignment | Yes | Map operating tensions to SSA problem areas. |

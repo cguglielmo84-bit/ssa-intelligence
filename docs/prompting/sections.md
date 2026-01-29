@@ -10,6 +10,7 @@ Source of truth: `backend/src/services/orchestrator.ts`.
 - exec_summary (depends on financial_snapshot, company_overview)
 - financial_snapshot (depends on foundation)
 - company_overview (depends on foundation)
+- key_execs_and_board (depends on foundation)
 - segment_analysis (depends on foundation)
 - trends (depends on foundation)
 - peer_benchmarking (depends on foundation, financial_snapshot)
@@ -30,6 +31,12 @@ Financial Services:
 - leadership_and_governance (depends on foundation)
 - strategic_priorities (depends on foundation)
 - operating_capabilities (depends on foundation)
+
+Insurance:
+- leadership_and_governance (depends on foundation)
+- strategic_priorities (depends on foundation)
+- operating_capabilities (depends on foundation)
+- distribution_analysis (depends on foundation, company_overview)
 
 ## Selection rules
 - If `selectedSections` is empty, the blueprint defaults are used.

@@ -34,6 +34,7 @@ Industrials uses the original section set and titles.
 | exec_summary | Executive Summary | Yes | Operating pressure points and call-ready takeaways. |
 | financial_snapshot | Financial Snapshot | Yes | Performance drivers and margin dynamics with interpretation. |
 | company_overview | Company Overview | Yes | Business model, segments, and end markets. |
+| key_execs_and_board | Key Execs and Board Members | No | Board composition, C-suite leadership with manufacturing/operations focus. |
 | segment_analysis | Segment Analysis | Yes | Segment-level performance and competitor context. |
 | trends | Market Trends | Yes | Macro, supply chain, and end-market trends. |
 | peer_benchmarking | Peer Benchmarking | Yes | Peer performance and positioning signals. |

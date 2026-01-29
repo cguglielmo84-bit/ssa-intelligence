@@ -35,6 +35,7 @@ Uses base section ids plus Insurance-specific sections.
 | --- | --- | --- | --- |
 | exec_summary | Executive Summary | Yes | Underwriting performance, investment results, and strategic positioning. |
 | company_overview | Insurer Overview and Lines of Business | Yes | Business mix by line (Life, P&C, Health), distribution channels, and footprint. |
+| key_execs_and_board | Key Execs and Board Members | No | Board composition, C-suite with actuarial/underwriting leadership focus. |
 | financial_snapshot | Performance and Capital Snapshot | Yes | Combined ratio, loss ratio, premiums, investment yield, and solvency metrics. |
 | trends | Market, Regulatory, and Competitive Trends | Yes | Rate environment, claims trends, regulatory changes, and catastrophe exposure. |
 | sku_opportunities | Operating Priorities and SSA Alignment | Yes | Map underwriting and claims challenges to SSA problem areas. |
