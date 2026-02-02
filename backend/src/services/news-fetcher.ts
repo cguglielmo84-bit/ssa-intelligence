@@ -345,12 +345,13 @@ Return maximum 25 results, prioritizing the most actionable and relevant news.`;
 
     const response = await withRetry(
       () => anthropic.messages.create({
-        model: 'claude-sonnet-4-20250514',
+        model: 'claude-sonnet-4-5-20250929',
         max_tokens: 4000,
         tools: [
           {
             type: 'web_search_20250305',
             name: 'web_search',
+            max_uses: 5,
           } as any,
         ],
         messages: [
@@ -360,7 +361,7 @@ Return maximum 25 results, prioritizing the most actionable and relevant news.`;
           },
         ],
       }),
-      { maxRetries: 3, baseDelayMs: 1000, maxDelayMs: 30000 }
+      { maxRetries: 2, baseDelayMs: 2000, maxDelayMs: 15000 }
     );
 
     // Record success for circuit breaker
@@ -405,13 +406,26 @@ Return maximum 25 results, prioritizing the most actionable and relevant news.`;
       publishedAt: r.publishedAt ? new Date(r.publishedAt) : new Date(),
       fetchLayer: 'layer2_llm' as const,
     }));
-  } catch (error) {
+  } catch (error: any) {
     // Record failure for circuit breaker
     layer2CircuitBreaker.recordFailure();
 
-    console.error('[layer2] Error in contextual search:', error);
-    if (error instanceof Error) {
-      console.error('[layer2] Error message:', error.message);
+    // Detailed error logging
+    console.error('[layer2] Error in contextual search');
+    console.error('[layer2] Error type:', error?.constructor?.name);
+    console.error('[layer2] Error message:', error?.message);
+    console.error('[layer2] Error status:', error?.status ?? error?.statusCode ?? 'N/A');
+    console.error('[layer2] Error code:', error?.code ?? error?.error?.type ?? 'N/A');
+    if (error?.error) {
+      console.error('[layer2] Error details:', JSON.stringify(error.error, null, 2));
+    }
+    if (error?.body) {
+      const bodyPreview = typeof error.body === 'string'
+        ? error.body.substring(0, 500)
+        : JSON.stringify(error.body).substring(0, 500);
+      console.error('[layer2] Error body preview:', bodyPreview);
+    }
+    if (error?.stack) {
       console.error('[layer2] Error stack:', error.stack);
     }
     return [];
@@ -542,7 +556,7 @@ Return ALL relevant articles, sorted by recency (most recent first).`;
     console.log('[process] Sending articles to Claude for processing...');
 
     const response = await anthropic.messages.create({
-      model: 'claude-sonnet-4-20250514',
+      model: 'claude-sonnet-4-5-20250929',
       max_tokens: 16000,
       temperature: 0,
       messages: [
@@ -752,7 +766,7 @@ Return ONLY valid JSON:
     console.log('[llm-dedup] Sending', articles.length, 'articles for LLM deduplication...');
 
     const response = await anthropic.messages.create({
-      model: 'claude-sonnet-4-20250514',
+      model: 'claude-sonnet-4-5-20250929',
       max_tokens: 4000,
       temperature: 0,
       messages: [{ role: 'user', content: prompt }],
@@ -922,7 +936,7 @@ If you're unsure whether an article is a duplicate, EXCLUDE it (don't include in
     console.log('[hist-dedup] Sending to LLM for semantic comparison...');
 
     const response = await anthropic.messages.create({
-      model: 'claude-sonnet-4-20250514',
+      model: 'claude-sonnet-4-5-20250929',
       max_tokens: 2000,
       temperature: 0,
       messages: [{ role: 'user', content: prompt }],
@@ -1064,12 +1078,13 @@ Return only HIGH-QUALITY, RELEVANT articles where ${entityName} is the PRIMARY s
   try {
     const response = await withRetry(
       () => anthropic.messages.create({
-        model: 'claude-sonnet-4-20250514',
+        model: 'claude-sonnet-4-5-20250929',
         max_tokens: 4000,
         tools: [
           {
             type: 'web_search_20250305',
             name: 'web_search',
+            max_uses: 5,
           } as any,
         ],
         messages: [
@@ -1079,7 +1094,7 @@ Return only HIGH-QUALITY, RELEVANT articles where ${entityName} is the PRIMARY s
           },
         ],
       }),
-      { maxRetries: 3, baseDelayMs: 1000, maxDelayMs: 30000 }
+      { maxRetries: 2, baseDelayMs: 2000, maxDelayMs: 15000 }
     );
 
     const textBlocks = response.content.filter((c) => c.type === 'text');

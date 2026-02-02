@@ -11,15 +11,32 @@ export interface RetryOptions {
 
 const DEFAULT_OPTIONS: Required<RetryOptions> = {
   maxRetries: 3,
-  baseDelayMs: 1000,
+  baseDelayMs: 2000, // Increased base delay for API stability
   maxDelayMs: 30000,
   retryableErrors: (error: any) => {
-    // Retry on 5xx errors, rate limits, and network errors
-    if (error?.status >= 500 && error?.status < 600) return true;
-    if (error?.status === 429) return true; // Rate limit
-    if (error?.code === 'ECONNRESET' || error?.code === 'ETIMEDOUT') return true;
-    if (error?.message?.includes('502') || error?.message?.includes('503')) return true;
-    if (error?.message?.includes('overloaded') || error?.message?.includes('rate limit')) return true;
+    // Check various error formats for status codes
+    const status = error?.status ?? error?.statusCode ?? error?.response?.status;
+
+    // Retry on 5xx errors
+    if (status >= 500 && status < 600) return true;
+
+    // Retry on rate limits
+    if (status === 429) return true;
+
+    // Network errors
+    if (error?.code === 'ECONNRESET' || error?.code === 'ETIMEDOUT' || error?.code === 'ECONNREFUSED') return true;
+
+    // Check error message for common retryable patterns
+    const errorStr = String(error?.message ?? error?.body ?? error ?? '').toLowerCase();
+    if (errorStr.includes('502') || errorStr.includes('bad gateway')) return true;
+    if (errorStr.includes('503') || errorStr.includes('service unavailable')) return true;
+    if (errorStr.includes('504') || errorStr.includes('gateway timeout')) return true;
+    if (errorStr.includes('overloaded') || errorStr.includes('rate limit') || errorStr.includes('too many requests')) return true;
+    if (errorStr.includes('econnreset') || errorStr.includes('etimedout') || errorStr.includes('socket hang up')) return true;
+
+    // Anthropic-specific errors
+    if (error?.error?.type === 'overloaded_error') return true;
+
     return false;
   },
 };
@@ -50,9 +67,11 @@ export async function withRetry<T>(
       const jitter = Math.random() * 0.3 * exponentialDelay; // 30% jitter
       const delay = Math.min(exponentialDelay + jitter, opts.maxDelayMs);
 
+      const errorMsg = error instanceof Error ? error.message : String(error);
+      const status = (error as any)?.status ?? (error as any)?.statusCode ?? 'unknown';
       console.log(
-        `[retry] Attempt ${attempt + 1}/${opts.maxRetries} failed, retrying in ${Math.round(delay)}ms...`,
-        error instanceof Error ? error.message : error
+        `[retry] Attempt ${attempt + 1}/${opts.maxRetries} failed (status: ${status}), retrying in ${Math.round(delay)}ms...`,
+        errorMsg.substring(0, 200)
       );
 
       await sleep(delay);
