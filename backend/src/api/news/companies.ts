@@ -16,7 +16,7 @@ router.get('/', async (req: Request, res: Response) => {
       orderBy: { name: 'asc' },
       include: {
         _count: {
-          select: { callDiets: true, articles: true },
+          select: { callDiets: true, articles: true, people: true },
         },
       },
     });
@@ -67,6 +67,74 @@ router.post('/', async (req: Request, res: Response) => {
   } catch (error) {
     console.error('Error creating company:', error);
     res.status(500).json({ error: 'Failed to create company' });
+  }
+});
+
+// PUT /api/news/companies/:id - Update a tracked company
+router.put('/:id', async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const { name, ticker, cik } = req.body;
+
+    // Validate ID exists
+    const existing = await prisma.trackedCompany.findUnique({
+      where: { id },
+    });
+
+    if (!existing) {
+      res.status(404).json({ error: 'Company not found' });
+      return;
+    }
+
+    // Prepare update data
+    const updateData: { name?: string; ticker?: string | null; cik?: string | null } = {};
+
+    if (name !== undefined) {
+      if (typeof name !== 'string' || !name.trim()) {
+        res.status(400).json({ error: 'Name must be a non-empty string' });
+        return;
+      }
+
+      // Check for duplicate name (case-insensitive), excluding current company
+      const duplicate = await prisma.trackedCompany.findFirst({
+        where: {
+          name: {
+            equals: name.trim(),
+            mode: 'insensitive',
+          },
+          NOT: { id },
+        },
+      });
+
+      if (duplicate) {
+        res.status(409).json({
+          error: 'A company with this name already exists',
+          existing: duplicate,
+        });
+        return;
+      }
+
+      updateData.name = name.trim();
+    }
+
+    if (ticker !== undefined) {
+      updateData.ticker = ticker?.trim() || null;
+    }
+
+    if (cik !== undefined) {
+      updateData.cik = cik?.trim() || null;
+    }
+
+    // Update company
+    const company = await prisma.trackedCompany.update({
+      where: { id },
+      data: updateData,
+    });
+
+    res.json(company);
+  } catch (error) {
+    console.error('Error updating company:', error);
+    res.status(500).json({ error: 'Failed to update company' });
   }
 });
 

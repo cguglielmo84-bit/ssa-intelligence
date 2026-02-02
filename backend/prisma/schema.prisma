@@ -304,6 +304,7 @@ model TrackedCompany {
 
   callDiets CallDietCompany[]
   articles  NewsArticle[]
+  people    TrackedPerson[]   // People affiliated with this company
 
   @@map("tracked_companies")
 }
@@ -313,12 +314,15 @@ model TrackedPerson {
   id                 String   @id @default(cuid())
   name               String
   title              String?
-  companyAffiliation String?  @map("company_affiliation")
+  companyAffiliation String?  @map("company_affiliation")  // Denormalized for display
+  companyId          String?  @map("company_id")            // FK to TrackedCompany
   createdAt          DateTime @default(now())
 
+  company   TrackedCompany?  @relation(fields: [companyId], references: [id], onDelete: SetNull)
   callDiets CallDietPerson[]
   articles  NewsArticle[]
 
+  @@index([companyId])
   @@map("tracked_people")
 }
 

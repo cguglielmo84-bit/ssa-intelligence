@@ -30,6 +30,11 @@ interface RefreshState {
     afterDedup: number;
     afterProcessing: number;
   } | null;
+  // Error details from each layer
+  layerErrors?: {
+    layer1Error?: string;
+    layer2Error?: string;
+  };
 }
 
 const DEFAULT_STATE: RefreshState = {
@@ -346,8 +351,9 @@ router.post('/', async (req: Request, res: Response) => {
     refreshState.articlesFound = savedCount;
     refreshState.coverageGaps = result.coverageGaps;
     refreshState.progress = 100;
-    refreshState.progressMessage = 'Complete';
+    refreshState.progressMessage = result.errors ? 'Complete with warnings' : 'Complete';
     refreshState.stats = result.stats || null;
+    refreshState.layerErrors = result.errors;
     await setRefreshState(refreshState);
 
     res.json({
@@ -355,6 +361,7 @@ router.post('/', async (req: Request, res: Response) => {
       articlesFound: savedCount,
       coverageGaps: result.coverageGaps,
       stats: result.stats,
+      errors: result.errors,
     });
   } catch (error) {
     console.error('[refresh] Error:', error);

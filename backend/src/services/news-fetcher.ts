@@ -14,8 +14,12 @@ import {
   RawArticle,
 } from './layer1-fetcher.js';
 import { prisma } from '../lib/prisma.js';
+import { withRetry, CircuitBreaker } from '../lib/retry.js';
 
 const anthropic = new Anthropic();
+
+// Circuit breaker for Layer 2 API calls (opens after 3 consecutive failures, 5-min cooldown)
+const layer2CircuitBreaker = new CircuitBreaker('layer2', 3, 5 * 60 * 1000);
 
 export interface CallDietInput {
   revenueOwnerId: string;
@@ -65,6 +69,10 @@ export interface FetchResult {
     totalRaw: number;
     afterDedup: number;
     afterProcessing: number;
+  };
+  errors?: {
+    layer1Error?: string;
+    layer2Error?: string;
   };
 }
 
@@ -121,60 +129,98 @@ export async function fetchNewsHybrid(
   await onProgress?.(10, 'Starting Layer 1 and Layer 2 in parallel...', { index: 2, status: 'in_progress' });
   console.log('[hybrid] Starting Layer 1 and Layer 2 in parallel...');
 
-  // Run Layer 1 and Layer 2 concurrently
-  const [layer1Results, layer2Articles] = await Promise.all([
+  // Track errors from each layer
+  const errors: { layer1Error?: string; layer2Error?: string } = {};
+
+  // Run Layer 1 and Layer 2 concurrently, capturing errors
+  const [layer1Result, layer2Result] = await Promise.all([
     // Layer 1: RSS/API fetch
-    (async () => {
-      const layer1Articles: RawArticle[] = [];
+    (async (): Promise<{ articles: RawArticle[]; error?: string }> => {
+      try {
+        const layer1Articles: RawArticle[] = [];
 
-      // Fetch Google News for each company
-      let googleNewsCount = 0;
-      for (const company of companies) {
-        const articles = await fetchGoogleNewsRSS(company.name);
-        googleNewsCount += articles.length;
-        layer1Articles.push(...articles);
+        // Fetch Google News for each company
+        let googleNewsCount = 0;
+        for (const company of companies) {
+          const articles = await fetchGoogleNewsRSS(company.name);
+          googleNewsCount += articles.length;
+          layer1Articles.push(...articles);
+        }
+
+        // Fetch Google News for each person
+        for (const person of people) {
+          const articles = await fetchGoogleNewsRSS(`"${person.name}"`);
+          googleNewsCount += articles.length;
+          layer1Articles.push(...articles);
+        }
+
+        console.log(`[layer1] Google News: ${googleNewsCount} articles`);
+
+        // Fetch PE industry feeds and filter for relevant mentions
+        const peFeedArticles = await fetchPEFeeds();
+        const relevantPEArticles = filterPEFeedArticles(
+          peFeedArticles,
+          companies.map((c) => c.name),
+          people.map((p) => p.name)
+        );
+        layer1Articles.push(...relevantPEArticles);
+
+        console.log(`[layer1] PE feeds: ${relevantPEArticles.length} relevant articles`);
+
+        return { articles: layer1Articles };
+      } catch (error) {
+        const errorMsg = error instanceof Error ? error.message : 'Unknown Layer 1 error';
+        console.error('[layer1] Error:', errorMsg);
+        return { articles: [], error: errorMsg };
       }
-
-      // Fetch Google News for each person
-      for (const person of people) {
-        const articles = await fetchGoogleNewsRSS(`"${person.name}"`);
-        googleNewsCount += articles.length;
-        layer1Articles.push(...articles);
-      }
-
-      console.log(`[layer1] Google News: ${googleNewsCount} articles`);
-
-      // Fetch PE industry feeds and filter for relevant mentions
-      const peFeedArticles = await fetchPEFeeds();
-      const relevantPEArticles = filterPEFeedArticles(
-        peFeedArticles,
-        companies.map((c) => c.name),
-        people.map((p) => p.name)
-      );
-      layer1Articles.push(...relevantPEArticles);
-
-      console.log(`[layer1] PE feeds: ${relevantPEArticles.length} relevant articles`);
-
-      return layer1Articles;
     })(),
 
     // Layer 2: Claude web search (runs independently for ALL companies/people)
-    fetchLayer2Contextual(
-      companies.map((c) => c.name),
-      people.slice(0, 10).map((p) => p.name), // Top 10 people
-      days
-    ),
+    (async (): Promise<{ articles: RawArticle[]; error?: string }> => {
+      // Check if circuit breaker is open
+      if (layer2CircuitBreaker.isCircuitOpen()) {
+        const remainingMs = layer2CircuitBreaker.getRemainingCooldownMs();
+        const errorMsg = `AI search temporarily unavailable (cooldown: ${Math.round(remainingMs / 1000)}s remaining)`;
+        return { articles: [], error: errorMsg };
+      }
+
+      try {
+        const articles = await fetchLayer2Contextual(
+          companies.map((c) => c.name),
+          people.slice(0, 10).map((p) => p.name), // Top 10 people
+          days
+        );
+        return { articles };
+      } catch (error) {
+        const errorMsg = error instanceof Error ? error.message : 'Unknown Layer 2 error';
+        console.error('[layer2] Error in wrapper:', errorMsg);
+        return { articles: [], error: errorMsg };
+      }
+    })(),
   ]);
 
-  const layer1Articles = layer1Results;
+  // Extract articles and errors
+  const layer1Articles = layer1Result.articles;
+  const layer2Articles = layer2Result.articles;
+  if (layer1Result.error) errors.layer1Error = layer1Result.error;
+  if (layer2Result.error) errors.layer2Error = layer2Result.error;
+
   stats.layer1Articles = layer1Articles.length;
   stats.layer2Articles = layer2Articles.length;
 
-  console.log(`[hybrid] Layer 1 complete: ${layer1Articles.length} articles`);
-  console.log(`[hybrid] Layer 2 complete: ${layer2Articles.length} articles`);
+  console.log(`[hybrid] Layer 1 complete: ${layer1Articles.length} articles${layer1Result.error ? ' (with errors)' : ''}`);
+  console.log(`[hybrid] Layer 2 complete: ${layer2Articles.length} articles${layer2Result.error ? ' (with errors)' : ''}`);
 
-  await onProgress?.(30, `Layer 1: ${layer1Articles.length} articles`, { index: 1, status: 'completed', detail: `${layer1Articles.length} from Google News & PE feeds` });
-  await onProgress?.(40, `Layer 2: ${layer2Articles.length} articles`, { index: 2, status: 'completed', detail: `${layer2Articles.length} from AI web search` });
+  await onProgress?.(30, `Layer 1: ${layer1Articles.length} articles`, {
+    index: 1,
+    status: layer1Result.error ? 'error' : 'completed',
+    detail: layer1Result.error || `${layer1Articles.length} from Google News & PE feeds`
+  });
+  await onProgress?.(40, `Layer 2: ${layer2Articles.length} articles`, {
+    index: 2,
+    status: layer2Result.error ? 'error' : 'completed',
+    detail: layer2Result.error || `${layer2Articles.length} from AI web search`
+  });
 
   // ═══════════════════════════════════════════════════════════════════
   // COMBINE & DEDUPLICATE (Two-phase: heuristic + LLM)
@@ -227,6 +273,7 @@ export async function fetchNewsHybrid(
   return {
     ...processed,
     stats,
+    errors: Object.keys(errors).length > 0 ? errors : undefined,
   };
 }
 
@@ -284,27 +331,40 @@ Return results as JSON array with this format:
 
 Return maximum 25 results, prioritizing the most actionable and relevant news.`;
 
+  // Check circuit breaker before making the call
+  if (layer2CircuitBreaker.isCircuitOpen()) {
+    const remainingMs = layer2CircuitBreaker.getRemainingCooldownMs();
+    console.log(`[layer2] Circuit breaker open, skipping. Cooldown remaining: ${Math.round(remainingMs / 1000)}s`);
+    return [];
+  }
+
   try {
     console.log('[layer2] Starting Claude web search...');
     console.log('[layer2] Searching for companies:', companies.join(', '));
     console.log('[layer2] Searching for people:', people.join(', '));
 
-    const response = await anthropic.messages.create({
-      model: 'claude-sonnet-4-20250514',
-      max_tokens: 4000,
-      tools: [
-        {
-          type: 'web_search_20250305',
-          name: 'web_search',
-        } as any,
-      ],
-      messages: [
-        {
-          role: 'user',
-          content: searchPrompt,
-        },
-      ],
-    });
+    const response = await withRetry(
+      () => anthropic.messages.create({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 4000,
+        tools: [
+          {
+            type: 'web_search_20250305',
+            name: 'web_search',
+          } as any,
+        ],
+        messages: [
+          {
+            role: 'user',
+            content: searchPrompt,
+          },
+        ],
+      }),
+      { maxRetries: 3, baseDelayMs: 1000, maxDelayMs: 30000 }
+    );
+
+    // Record success for circuit breaker
+    layer2CircuitBreaker.recordSuccess();
 
     console.log('[layer2] Response received, content blocks:', response.content.length);
     console.log('[layer2] Content types:', response.content.map(c => c.type).join(', '));
@@ -346,6 +406,9 @@ Return maximum 25 results, prioritizing the most actionable and relevant news.`;
       fetchLayer: 'layer2_llm' as const,
     }));
   } catch (error) {
+    // Record failure for circuit breaker
+    layer2CircuitBreaker.recordFailure();
+
     console.error('[layer2] Error in contextual search:', error);
     if (error instanceof Error) {
       console.error('[layer2] Error message:', error.message);
@@ -414,6 +477,9 @@ ${callDiets.map((cd) => `- ${cd.revenueOwnerName}: tracks ${cd.companies.map((c)
    - Marketing campaign announcements, advertising initiatives, or brand promotion activities
    - Price target changes, analyst price target updates, or stock rating changes for the company's shares
    - Share purchases, stock buybacks, or insider trading activity UNLESS it represents a controlling share acquisition, takeover attempt, or significant ownership change (>10% stake)
+   - **Announcements of UPCOMING quarterly earnings** (e.g., "Company X to report Q3 earnings on DATE", "Company X scheduled to release earnings") - only include ACTUAL earnings results
+   - News about banks being underwriters or bookrunners for IPOs where the tracked entity is the underwriter, not the company going public
+   - Analyst recommendations, "buy/sell/hold" ratings, or stock picks where the tracked company's stock is being rated (not actionable business news)
 
    **KEEP only articles that are definitively ABOUT a tracked company/person as the main subject and cover:**
    - Mergers, acquisitions, divestitures, strategic partnerships
@@ -947,6 +1013,9 @@ ${company ? `- **CRITICAL: Analyst ratings, upgrades, or downgrades where ${comp
 - Marketing campaign announcements, advertising initiatives, or brand promotion activities
 - Price target changes, analyst price target updates, or stock rating changes for the ${entityType}'s shares
 - Share purchases, stock buybacks, or insider trading activity UNLESS it represents a controlling share acquisition, takeover attempt, or significant ownership change (>10% stake)
+- **Announcements of UPCOMING quarterly earnings** (e.g., "${entityName} to report Q3 earnings on DATE", "${entityName} scheduled to release earnings") - only include ACTUAL earnings results
+${company ? `- News about ${company} being an underwriter or bookrunner for IPOs where ${company} is the underwriter, not the company going public` : ''}
+- Analyst recommendations, "buy/sell/hold" ratings, or stock picks where ${entityName}'s stock is being rated (not actionable business news)
 
 ## KEEP only articles that are definitively ABOUT ${entityName} as the main subject and cover:
 - Mergers, acquisitions, divestitures, strategic partnerships
@@ -993,22 +1062,25 @@ Return only HIGH-QUALITY, RELEVANT articles where ${entityName} is the PRIMARY s
   console.log(`[search] Ad-hoc search for company="${company}", person="${person}"`);
 
   try {
-    const response = await anthropic.messages.create({
-      model: 'claude-sonnet-4-20250514',
-      max_tokens: 4000,
-      tools: [
-        {
-          type: 'web_search_20250305',
-          name: 'web_search',
-        } as any,
-      ],
-      messages: [
-        {
-          role: 'user',
-          content: searchPrompt,
-        },
-      ],
-    });
+    const response = await withRetry(
+      () => anthropic.messages.create({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 4000,
+        tools: [
+          {
+            type: 'web_search_20250305',
+            name: 'web_search',
+          } as any,
+        ],
+        messages: [
+          {
+            role: 'user',
+            content: searchPrompt,
+          },
+        ],
+      }),
+      { maxRetries: 3, baseDelayMs: 1000, maxDelayMs: 30000 }
+    );
 
     const textBlocks = response.content.filter((c) => c.type === 'text');
     const textContent = textBlocks[textBlocks.length - 1];

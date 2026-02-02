@@ -39,6 +39,12 @@ export interface TrackedPerson {
   name: string;
   title: string | null;
   companyAffiliation: string | null;
+  companyId: string | null;
+  company?: {
+    id: string;
+    name: string;
+    ticker: string | null;
+  } | null;
   createdAt: string;
   _count?: {
     callDiets: number;
@@ -109,6 +115,10 @@ export interface RefreshStatus {
   progressMessage: string;
   currentStep: string;
   steps: RefreshStep[];
+  layerErrors?: {
+    layer1Error?: string;
+    layer2Error?: string;
+  };
 }
 
 // ============================================================================
@@ -206,7 +216,21 @@ export const useTrackedCompanies = () => {
     return company;
   };
 
-  return { companies, loading, error, fetchCompanies, createCompany };
+  const updateCompany = async (id: string, data: { name?: string; ticker?: string | null; cik?: string | null }) => {
+    const company = await fetchJson(`/news/companies/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    });
+    setCompanies(prev => prev.map(c => (c.id === id ? { ...c, ...company } : c)));
+    return company;
+  };
+
+  const deleteCompany = async (id: string) => {
+    await fetchJson(`/news/companies/${id}`, { method: 'DELETE' });
+    setCompanies(prev => prev.filter(c => c.id !== id));
+  };
+
+  return { companies, loading, error, fetchCompanies, createCompany, updateCompany, deleteCompany };
 };
 
 // ============================================================================
@@ -244,7 +268,21 @@ export const useTrackedPeople = () => {
     return person;
   };
 
-  return { people, loading, error, fetchPeople, createPerson };
+  const updatePerson = async (id: string, data: { name?: string; title?: string | null; companyId?: string | null; companyAffiliation?: string | null }) => {
+    const person = await fetchJson(`/news/people/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    });
+    setPeople(prev => prev.map(p => (p.id === id ? { ...p, ...person } : p)));
+    return person;
+  };
+
+  const deletePerson = async (id: string) => {
+    await fetchJson(`/news/people/${id}`, { method: 'DELETE' });
+    setPeople(prev => prev.filter(p => p.id !== id));
+  };
+
+  return { people, loading, error, fetchPeople, createPerson, updatePerson, deletePerson };
 };
 
 // ============================================================================
@@ -436,6 +474,10 @@ export const useNewsRefresh = () => {
     lastError: null,
     articlesFound: 0,
     coverageGaps: [],
+    progress: 0,
+    progressMessage: '',
+    currentStep: '',
+    steps: [],
   });
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);

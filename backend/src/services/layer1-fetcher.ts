@@ -13,15 +13,72 @@ const rssParser = new Parser({
 });
 
 /**
- * Resolve Google News redirect URL to the actual article URL.
- * Google News uses encoded redirect URLs that need to be followed.
+ * Decode Google News base64-encoded article ID to extract the actual URL.
+ * Google News URLs contain a base64-encoded payload with the real article URL.
  */
-async function resolveGoogleNewsUrl(googleUrl: string): Promise<string> {
+function decodeGoogleNewsUrl(googleUrl: string): string | null {
+  try {
+    // Extract the article ID from the URL path
+    // Format: https://news.google.com/rss/articles/CBMi...
+    const match = googleUrl.match(/\/articles\/([A-Za-z0-9_-]+)/);
+    if (!match) return null;
+
+    const articleId = match[1];
+
+    // Google News uses URL-safe base64 encoding
+    // Replace URL-safe characters with standard base64 characters
+    let base64 = articleId.replace(/-/g, '+').replace(/_/g, '/');
+
+    // Add padding if needed
+    while (base64.length % 4) {
+      base64 += '=';
+    }
+
+    // Decode the base64 string
+    const decoded = Buffer.from(base64, 'base64').toString('utf-8');
+
+    // The decoded string contains the URL typically starting with http
+    // Look for URL patterns in the decoded content
+    const urlMatch = decoded.match(/https?:\/\/[^\s\x00-\x1f]+/);
+    if (urlMatch) {
+      // Clean up any trailing control characters or garbage
+      let url = urlMatch[0];
+      // Remove common garbage characters at the end
+      url = url.replace(/[\x00-\x1f\x80-\x9f]+.*$/, '');
+      // Remove trailing non-URL characters
+      url = url.replace(/[^a-zA-Z0-9\/\-_.~:?#\[\]@!$&'()*+,;=%]+$/, '');
+      return url;
+    }
+
+    return null;
+  } catch (error) {
+    return null;
+  }
+}
+
+/**
+ * Resolve Google News redirect URL to the actual article URL.
+ * Google News uses encoded redirect URLs that need to be decoded.
+ *
+ * Strategy:
+ * 1. Try to decode the base64-encoded URL from the article ID (most reliable)
+ * 2. Fallback to HTTP redirect following
+ * 3. Final fallback: return original URL
+ */
+async function resolveGoogleNewsUrl(googleUrl: string, sourceName?: string): Promise<string> {
   // If it's not a Google News redirect URL, return as-is
   if (!googleUrl.includes('news.google.com/rss/articles/')) {
     return googleUrl;
   }
 
+  // Strategy 1: Try to decode the base64-encoded URL
+  const decodedUrl = decodeGoogleNewsUrl(googleUrl);
+  if (decodedUrl) {
+    console.log(`[layer1] Decoded Google News URL: ${decodedUrl.substring(0, 80)}...`);
+    return decodedUrl;
+  }
+
+  // Strategy 2: Try HTTP redirect following
   try {
     // Follow the redirect to get the actual article URL
     const response = await fetch(googleUrl, {
@@ -37,7 +94,7 @@ async function resolveGoogleNewsUrl(googleUrl: string): Promise<string> {
     if (location) {
       // Google News may do multiple redirects, follow them
       if (location.includes('news.google.com')) {
-        return resolveGoogleNewsUrl(location);
+        return resolveGoogleNewsUrl(location, sourceName);
       }
       return location;
     }
@@ -52,11 +109,16 @@ async function resolveGoogleNewsUrl(googleUrl: string): Promise<string> {
     });
 
     // Return the final URL after redirects
-    return fullResponse.url || googleUrl;
+    if (fullResponse.url && !fullResponse.url.includes('news.google.com')) {
+      return fullResponse.url;
+    }
   } catch (error) {
-    console.warn(`[layer1] Failed to resolve Google News URL: ${googleUrl}`, error);
-    return googleUrl; // Return original URL as fallback
+    console.warn(`[layer1] Failed to resolve Google News URL via HTTP: ${googleUrl.substring(0, 80)}...`);
   }
+
+  // Strategy 3: Return original URL as fallback
+  console.warn(`[layer1] Could not resolve Google News URL, using original: ${googleUrl.substring(0, 80)}...`);
+  return googleUrl;
 }
 
 export interface RawArticle {
