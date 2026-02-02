@@ -38,15 +38,15 @@ function decodeGoogleNewsUrl(googleUrl: string): string | null {
     const decoded = Buffer.from(base64, 'base64').toString('utf-8');
 
     // The decoded string contains the URL typically starting with http
-    // Look for URL patterns in the decoded content
-    const urlMatch = decoded.match(/https?:\/\/[^\s\x00-\x1f]+/);
+    // Look for URL patterns in the decoded content (using Unicode-safe regex)
+    const urlMatch = decoded.match(/https?:\/\/[^\s\p{Cc}]+/u);
     if (urlMatch) {
       // Clean up any trailing control characters or garbage
       let url = urlMatch[0];
-      // Remove common garbage characters at the end
-      url = url.replace(/[\x00-\x1f\x80-\x9f]+.*$/, '');
-      // Remove trailing non-URL characters
-      url = url.replace(/[^a-zA-Z0-9\/\-_.~:?#\[\]@!$&'()*+,;=%]+$/, '');
+      // Remove control characters and everything after (Unicode-safe)
+      url = url.replace(/\p{Cc}+.*$/u, '');
+      // Remove trailing non-URL characters (Unicode-safe)
+      url = url.replace(/[^\p{L}\p{N}\/-_.~:?#[\]@!$&'()*+,;=%]+$/u, '');
       return url;
     }
 
