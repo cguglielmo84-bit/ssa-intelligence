@@ -4,11 +4,12 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { Plus, Trash2, X, Building2, User, Tag, ChevronRight, ChevronDown, Loader2, Save, Settings, Users, Briefcase, Sparkles, Mail } from 'lucide-react';
+import { Plus, Trash2, X, Building2, User, Tag, ChevronRight, ChevronDown, Loader2, Save, Settings, Users, Briefcase, Sparkles, Mail, Pencil } from 'lucide-react';
 import {
   useRevenueOwners,
   useNewsTags,
   useTrackedCompanies,
+  useTrackedPeople,
   RevenueOwner,
   NewsTag,
   TrackedCompany,
@@ -41,7 +42,8 @@ export const NewsSetup: React.FC<NewsSetupProps> = ({ onNavigate }) => {
   } = useRevenueOwners();
 
   const { tags, loading: tagsLoading } = useNewsTags();
-  const { companies: allCompanies } = useTrackedCompanies();
+  const { companies: allCompanies, updateCompany } = useTrackedCompanies();
+  const { updatePerson } = useTrackedPeople();
 
   const [selectedOwner, setSelectedOwner] = useState<RevenueOwner | null>(null);
   const [ownerDetails, setOwnerDetails] = useState<RevenueOwner | null>(null);
@@ -82,6 +84,15 @@ export const NewsSetup: React.FC<NewsSetupProps> = ({ onNavigate }) => {
   const [selectedCompanyIds, setSelectedCompanyIds] = useState<Set<string>>(new Set());
   const [selectedPeopleIds, setSelectedPeopleIds] = useState<Set<string>>(new Set());
   const [bulkDeleting, setBulkDeleting] = useState(false);
+
+  // Edit modal state
+  const [editingCompany, setEditingCompany] = useState<TrackedCompany | null>(null);
+  const [editingPerson, setEditingPerson] = useState<TrackedPerson | null>(null);
+  const [editName, setEditName] = useState('');
+  const [editTicker, setEditTicker] = useState('');
+  const [editTitle, setEditTitle] = useState('');
+  const [editCompanyId, setEditCompanyId] = useState<string>('');
+  const [savingEdit, setSavingEdit] = useState(false);
 
   // Load owner details when selected
   useEffect(() => {
@@ -411,6 +422,66 @@ export const NewsSetup: React.FC<NewsSetupProps> = ({ onNavigate }) => {
       alert(err instanceof Error ? err.message : 'Failed to delete people');
     } finally {
       setBulkDeleting(false);
+    }
+  };
+
+  // Edit company handlers
+  const openEditCompany = (company: TrackedCompany) => {
+    setEditingCompany(company);
+    setEditName(company.name);
+    setEditTicker(company.ticker || '');
+  };
+
+  const handleSaveCompanyEdit = async () => {
+    if (!editingCompany || !editName.trim()) return;
+    setSavingEdit(true);
+    try {
+      await updateCompany(editingCompany.id, {
+        name: editName.trim(),
+        ticker: editTicker.trim() || null,
+      });
+      setEditingCompany(null);
+      // Refresh owner details to show updated name
+      if (selectedOwner) {
+        const updated = await getOwnerDetails(selectedOwner.id);
+        setOwnerDetails(updated);
+      }
+    } catch (err) {
+      alert(err instanceof Error ? err.message : 'Failed to update company');
+    } finally {
+      setSavingEdit(false);
+    }
+  };
+
+  // Edit person handlers
+  const openEditPerson = (person: TrackedPerson) => {
+    setEditingPerson(person);
+    setEditName(person.name);
+    setEditTitle(person.title || '');
+    // Use companyId if available, otherwise try to find company by affiliation name
+    const companyId = person.companyId || allCompanies.find(c => c.name === person.companyAffiliation)?.id || '';
+    setEditCompanyId(companyId);
+  };
+
+  const handleSavePersonEdit = async () => {
+    if (!editingPerson || !editName.trim()) return;
+    setSavingEdit(true);
+    try {
+      await updatePerson(editingPerson.id, {
+        name: editName.trim(),
+        title: editTitle.trim() || null,
+        companyId: editCompanyId || null,
+      });
+      setEditingPerson(null);
+      // Refresh owner details to show updated name
+      if (selectedOwner) {
+        const updated = await getOwnerDetails(selectedOwner.id);
+        setOwnerDetails(updated);
+      }
+    } catch (err) {
+      alert(err instanceof Error ? err.message : 'Failed to update person');
+    } finally {
+      setSavingEdit(false);
     }
   };
 
@@ -749,13 +820,28 @@ export const NewsSetup: React.FC<NewsSetupProps> = ({ onNavigate }) => {
                                     )}
                                   </button>
                                   <span className="text-slate-700 font-medium">{company.name}</span>
+                                  {company.ticker && (
+                                    <span className="text-xs text-slate-400 bg-slate-100 px-1.5 py-0.5 rounded">
+                                      {company.ticker}
+                                    </span>
+                                  )}
                                 </div>
-                                <button
-                                  onClick={() => handleRemoveCompany(company.id)}
-                                  className="p-1.5 text-slate-400 hover:text-rose-500 hover:bg-rose-50 rounded-lg transition-all"
-                                >
-                                  <Trash2 size={14} />
-                                </button>
+                                <div className="flex items-center gap-1">
+                                  <button
+                                    onClick={() => openEditCompany(company)}
+                                    className="p-1.5 text-slate-400 hover:text-blue-500 hover:bg-blue-50 rounded-lg transition-all"
+                                    title="Edit company"
+                                  >
+                                    <Pencil size={14} />
+                                  </button>
+                                  <button
+                                    onClick={() => handleRemoveCompany(company.id)}
+                                    className="p-1.5 text-slate-400 hover:text-rose-500 hover:bg-rose-50 rounded-lg transition-all"
+                                    title="Remove company"
+                                  >
+                                    <Trash2 size={14} />
+                                  </button>
+                                </div>
                               </div>
                             ))}
                           </div>
@@ -925,7 +1011,7 @@ export const NewsSetup: React.FC<NewsSetupProps> = ({ onNavigate }) => {
                             }).map((person) => (
                               <div
                                 key={person.id}
-                                className={`grid grid-cols-[auto,1fr,1fr,40px] items-center gap-3 px-4 py-2.5 hover:bg-pink-50/50 transition-colors ${
+                                className={`grid grid-cols-[auto,1fr,1fr,auto] items-center gap-3 px-4 py-2.5 hover:bg-pink-50/50 transition-colors ${
                                   selectedPeopleIds.has(person.id) ? 'bg-pink-50/80' : ''
                                 }`}
                               >
@@ -945,12 +1031,22 @@ export const NewsSetup: React.FC<NewsSetupProps> = ({ onNavigate }) => {
                                 </button>
                                 <span className="text-slate-700 font-medium">{person.name}</span>
                                 <span className="text-slate-500 text-sm">{person.companyAffiliation || '—'}</span>
-                                <button
-                                  onClick={() => handleRemovePerson(person.id)}
-                                  className="p-1.5 text-slate-400 hover:text-rose-500 hover:bg-rose-50 rounded-lg transition-all justify-self-end"
-                                >
-                                  <Trash2 size={14} />
-                                </button>
+                                <div className="flex items-center gap-1 justify-self-end">
+                                  <button
+                                    onClick={() => openEditPerson(person)}
+                                    className="p-1.5 text-slate-400 hover:text-pink-500 hover:bg-pink-50 rounded-lg transition-all"
+                                    title="Edit person"
+                                  >
+                                    <Pencil size={14} />
+                                  </button>
+                                  <button
+                                    onClick={() => handleRemovePerson(person.id)}
+                                    className="p-1.5 text-slate-400 hover:text-rose-500 hover:bg-rose-50 rounded-lg transition-all"
+                                    title="Remove person"
+                                  >
+                                    <Trash2 size={14} />
+                                  </button>
+                                </div>
                               </div>
                             ))}
                           </div>
@@ -1097,6 +1193,151 @@ export const NewsSetup: React.FC<NewsSetupProps> = ({ onNavigate }) => {
         onConfirm={handleResolveConfirm}
         onCancel={handleResolveCancel}
       />
+
+      {/* Edit Company Modal */}
+      {editingCompany && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-md flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full overflow-hidden">
+            <div className="px-6 py-4 bg-gradient-to-r from-blue-500 to-cyan-500">
+              <div className="flex items-center justify-between">
+                <h3 className="text-lg font-bold text-white flex items-center gap-2">
+                  <Building2 size={20} />
+                  Edit Company
+                </h3>
+                <button
+                  onClick={() => setEditingCompany(null)}
+                  className="p-2 text-white/70 hover:text-white hover:bg-white/10 rounded-lg transition-colors"
+                >
+                  <X size={20} />
+                </button>
+              </div>
+            </div>
+            <div className="p-6 space-y-4">
+              <div>
+                <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">
+                  Company Name
+                </label>
+                <input
+                  type="text"
+                  value={editName}
+                  onChange={(e) => setEditName(e.target.value)}
+                  className="w-full px-4 py-2.5 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 transition-all"
+                  placeholder="Company name"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">
+                  Ticker Symbol
+                </label>
+                <input
+                  type="text"
+                  value={editTicker}
+                  onChange={(e) => setEditTicker(e.target.value)}
+                  className="w-full px-4 py-2.5 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 transition-all"
+                  placeholder="Optional ticker (e.g., AAPL)"
+                />
+              </div>
+              <div className="flex justify-end gap-3 pt-4">
+                <button
+                  onClick={() => setEditingCompany(null)}
+                  className="px-4 py-2.5 text-slate-600 hover:text-slate-800 font-medium transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleSaveCompanyEdit}
+                  disabled={savingEdit || !editName.trim()}
+                  className="px-5 py-2.5 bg-gradient-to-r from-blue-500 to-cyan-500 text-white rounded-xl hover:from-blue-600 hover:to-cyan-600 disabled:opacity-50 transition-all font-medium flex items-center gap-2"
+                >
+                  {savingEdit ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />}
+                  Save
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Person Modal */}
+      {editingPerson && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-md flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full overflow-hidden">
+            <div className="px-6 py-4 bg-gradient-to-r from-pink-500 to-rose-500">
+              <div className="flex items-center justify-between">
+                <h3 className="text-lg font-bold text-white flex items-center gap-2">
+                  <User size={20} />
+                  Edit Person
+                </h3>
+                <button
+                  onClick={() => setEditingPerson(null)}
+                  className="p-2 text-white/70 hover:text-white hover:bg-white/10 rounded-lg transition-colors"
+                >
+                  <X size={20} />
+                </button>
+              </div>
+            </div>
+            <div className="p-6 space-y-4">
+              <div>
+                <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">
+                  Name
+                </label>
+                <input
+                  type="text"
+                  value={editName}
+                  onChange={(e) => setEditName(e.target.value)}
+                  className="w-full px-4 py-2.5 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-pink-500/20 focus:border-pink-400 transition-all"
+                  placeholder="Person name"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">
+                  Title
+                </label>
+                <input
+                  type="text"
+                  value={editTitle}
+                  onChange={(e) => setEditTitle(e.target.value)}
+                  className="w-full px-4 py-2.5 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-pink-500/20 focus:border-pink-400 transition-all"
+                  placeholder="Job title (optional)"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">
+                  Company
+                </label>
+                <select
+                  value={editCompanyId}
+                  onChange={(e) => setEditCompanyId(e.target.value)}
+                  className="w-full px-4 py-2.5 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-pink-500/20 focus:border-pink-400 transition-all cursor-pointer"
+                >
+                  <option value="">No company affiliation</option>
+                  {allCompanies.map((company) => (
+                    <option key={company.id} value={company.id}>
+                      {company.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className="flex justify-end gap-3 pt-4">
+                <button
+                  onClick={() => setEditingPerson(null)}
+                  className="px-4 py-2.5 text-slate-600 hover:text-slate-800 font-medium transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleSavePersonEdit}
+                  disabled={savingEdit || !editName.trim()}
+                  className="px-5 py-2.5 bg-gradient-to-r from-pink-500 to-rose-500 text-white rounded-xl hover:from-pink-600 hover:to-rose-600 disabled:opacity-50 transition-all font-medium flex items-center gap-2"
+                >
+                  {savingEdit ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />}
+                  Save
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

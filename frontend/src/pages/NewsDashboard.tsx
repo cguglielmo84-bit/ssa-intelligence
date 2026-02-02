@@ -1225,6 +1225,24 @@ const ProgressPopup: React.FC<{
               </div>
             </div>
           )}
+
+          {/* Layer Warnings (partial failures) */}
+          {!refreshing && status.layerErrors && (
+            <div className="mt-5 p-4 bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200 rounded-xl">
+              <div className="flex items-start gap-3">
+                <AlertCircle size={18} className="text-amber-500 flex-shrink-0 mt-0.5" />
+                <div className="text-sm">
+                  <p className="font-semibold text-amber-700 mb-1">Completed with warnings</p>
+                  {status.layerErrors.layer1Error && (
+                    <p className="text-amber-600">RSS/API: {status.layerErrors.layer1Error}</p>
+                  )}
+                  {status.layerErrors.layer2Error && (
+                    <p className="text-amber-600">AI Search: {status.layerErrors.layer2Error}</p>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </div>
