@@ -5,6 +5,7 @@ All notable changes to this repository will be documented in this file.
 The format is based on Keep a Changelog and this project adheres to Semantic Versioning.
 
 ## [Unreleased]
+- Refactor: remove string character limits from validation schemas (analyst quotes, conversation starters, distribution analysis).
 - Feat: add `key_execs_and_board` core section with Board of Directors, C-Suite, and business unit leaders.
 - Refactor: slim down `company_overview.key_leadership` to avoid duplication with new key_execs_and_board section.
 - Refactor: consolidate FoundationOutput interface from individual prompt files into shared types.js.
