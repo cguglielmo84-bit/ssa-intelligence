@@ -66,10 +66,7 @@ export const sourceReferenceSchema = z.object({
 });
 
 export const analystQuoteSchema = z.object({
-  quote: z.string().refine(
-    (quote) => quote.split(/\s+/).length <= 15,
-    { message: 'Analyst quote must be 15 words or fewer' }
-  ),
+  quote: z.string(),
   analyst: z.string().min(1),
   firm: z.string().min(1),
   source: z.string().regex(/^S\d+$/)
@@ -436,7 +433,7 @@ export const recentNewsOutputSchema = z.object({
 // ============================================================================
 
 export const conversationStarterSchema = z.object({
-  title: z.string().min(10).max(100),
+  title: z.string().min(10),
   question: z.string().min(100),
   supporting_data: z.string().min(50),
   business_value: z.string().min(50),
@@ -559,7 +556,7 @@ export const operatingCapabilitiesOutputSchema = z.object({
 
 export const distributionAnalysisOutputSchema = z.object({
   confidence: confidenceSchema,
-  summary: z.string().min(50).max(1500),
+  summary: z.string().min(50),
   channels: z.array(z.object({
     channel_type: z.enum(['Captive Agents', 'Independent Brokers', 'Direct', 'Bancassurance', 'Affinity/Worksite', 'Other']),
     description: z.string().min(20),
@@ -581,7 +578,7 @@ export const distributionAnalysisOutputSchema = z.object({
     notes: z.string(),
     source: z.string().regex(/^S\d+$/)
   }),
-  competitive_positioning: z.string().min(50).max(1500),
+  competitive_positioning: z.string().min(50),
   sources_used: z.array(z.string().regex(/^S\d+$/))
 });
 
