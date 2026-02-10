@@ -10,6 +10,7 @@ import { logger } from '../utils/logger';
 
 interface HomeProps {
   jobs: ResearchJob[];
+  loading?: boolean;
   reportBlueprints?: ReportBlueprint[];
   onNavigate: (path: string) => void;
   onCancel?: (id: string) => Promise<void>;
@@ -17,7 +18,7 @@ interface HomeProps {
   logoToken?: string | null;
 }
 
-export const Home: React.FC<HomeProps> = ({ jobs, reportBlueprints = [], onNavigate, onCancel, onDelete, logoToken: logoTokenProp }) => {
+export const Home: React.FC<HomeProps> = ({ jobs, loading = false, reportBlueprints = [], onNavigate, onCancel, onDelete, logoToken: logoTokenProp }) => {
   const { showToast, ToastContainer } = useToast();
   const [confirmState, setConfirmState] = useState<{ open: boolean; jobId: string } | null>(null);
   const completedJobs = [...jobs.filter(j =>
@@ -311,7 +312,12 @@ export const Home: React.FC<HomeProps> = ({ jobs, reportBlueprints = [], onNavig
           </div>
         </div>
 
-        {filteredGroups.length === 0 ? (
+        {loading ? (
+          <div className="bg-white border border-slate-200 rounded-xl p-8 text-center text-slate-400">
+            <Loader2 size={24} className="animate-spin mx-auto mb-2" />
+            Loading reports...
+          </div>
+        ) : filteredGroups.length === 0 ? (
           <div className="bg-white border border-slate-200 rounded-xl p-8 text-center text-slate-400">
             No research yet. Start a new job above.
           </div>

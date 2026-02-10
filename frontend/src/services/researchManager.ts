@@ -1215,6 +1215,7 @@ const mergeDetail = (job: ResearchJob, detail: ApiResearchDetail): ResearchJob =
 
 export const useResearchManager = () => {
   const [jobs, setJobs] = useState<ResearchJob[]>([]);
+  const [loading, setLoading] = useState(true);
   const activeJobsRef = useRef<Set<string>>(new Set());
   const abortControllersRef = useRef<Map<string, AbortController>>(new Map());
 
@@ -1238,7 +1239,8 @@ export const useResearchManager = () => {
           }
         }
       })
-      .catch((err) => logger.error(err));
+      .catch((err) => logger.error(err))
+      .finally(() => setLoading(false));
   }, []);
 
   // Abort all polling loops on unmount to prevent orphaned requests
@@ -1459,7 +1461,7 @@ export const useResearchManager = () => {
     }
   }, []);
 
-  return { jobs, createJob, runJob, rerunJob, cancelJob, deleteJob, refreshJobDetail };
+  return { jobs, loading, createJob, runJob, rerunJob, cancelJob, deleteJob, refreshJobDetail };
 };
 
 export const useUserContext = () => {

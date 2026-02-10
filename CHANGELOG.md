@@ -5,6 +5,7 @@ All notable changes to this repository will be documented in this file.
 The format is based on Keep a Changelog and this project adheres to Semantic Versioning.
 
 ## [Unreleased]
+- Fix: (P2-20) expose `loading` state from `useResearchManager` so Home page shows a spinner during initial fetch instead of flashing "No research yet".
 - Fix: add Escape key handler to UserEditModal and NewsSetup edit modals for full keyboard accessibility.
 - Chore: remove unused `ArrowRight` and `MapPin` imports from Home.tsx.
 - Fix: (P3-3) lift logo token config fetch from Home to App level to avoid redundant API call on every mount.
