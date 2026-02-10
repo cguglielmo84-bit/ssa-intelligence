@@ -5,6 +5,7 @@ All notable changes to this repository will be documented in this file.
 The format is based on Keep a Changelog and this project adheres to Semantic Versioning.
 
 ## [Unreleased]
+- Feat: always show company resolve confirmation modal before starting research — exact matches get a green checkmark "Confirm company" prompt; multi-suggestion and corrected results keep existing disambiguation UI.
 - Docs: add project context, architecture, and coding standards to CLAUDE.md and AGENTS.md.
 - Fix: (P2-20) expose `loading` state from `useResearchManager` so Home page shows a spinner during initial fetch instead of flashing "No research yet".
 - Fix: add Escape key handler to UserEditModal and NewsSetup edit modals for full keyboard accessibility.
