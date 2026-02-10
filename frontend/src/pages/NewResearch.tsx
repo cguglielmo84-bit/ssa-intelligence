@@ -354,7 +354,7 @@ export const NewResearch: React.FC<NewResearchProps> = ({
         reportType: reportType ?? undefined
       }, draftId);
 
-      if (result.status === 'exact' || result.status === 'unknown') {
+      if (result.status === 'unknown' || !result.suggestions?.length) {
         // Proceed normally - no modal needed
         return true;
       }
@@ -909,7 +909,7 @@ export const NewResearch: React.FC<NewResearchProps> = ({
             isOpen={showResolveModal}
             input={formData.company}
             suggestions={resolveResult.suggestions}
-            status={resolveResult.status as 'corrected' | 'ambiguous'}
+            status={resolveResult.status as 'exact' | 'corrected' | 'ambiguous'}
             onConfirm={handleResolveConfirm}
             onCancel={handleResolveCancel}
           />
