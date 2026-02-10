@@ -15,8 +15,8 @@
 | Severity | Fixed | Remaining | Notes |
 |----------|-------|-----------|-------|
 | **P0** | 3/3 | 0 | All critical issues resolved |
-| **P1** | 11/12 | 1 | P1-4 (stage output fields) deferred -- needs schema migration |
-| **P2** | 14/27 | 13 | Key ones done; remaining are lower-impact |
+| **P1** | 12/12 | 0 | All P1 issues resolved |
+| **P2** | 15/27 | 12 | Key ones done; remaining are lower-impact |
 | **P3** | 4/14 | 10 | Quick wins done; rest are cosmetic/a11y |
 
 ### Files Changed
@@ -88,8 +88,8 @@ These are deferred to follow-up PRs:
 
 | ID | Description | Reason Deferred |
 |----|-------------|-----------------|
-| P1-4 | Stage output fields for PE/FS/Insurance stages | Needs new DB column + migration |
-| P2-25 | Graceful shutdown | Needs new orchestrator methods (`stop()`/`waitForIdle()`) |
+| ~~P1-4~~ | ~~Stage output fields for PE/FS/Insurance stages~~ | **Fixed** in `qa/p1-4-p2-25-stage-fields-shutdown` |
+| ~~P2-25~~ | ~~Graceful shutdown~~ | **Fixed** in `qa/p1-4-p2-25-stage-fields-shutdown` |
 | P2-18 | Replace `window.confirm/alert` with modals | 10+ call sites, new UI component |
 | P2-19 | News articles pagination | API + frontend changes |
 | P2-23 | Browser back stale data | Needs `refreshJobDetail` plumbing |
@@ -100,15 +100,14 @@ These are deferred to follow-up PRs:
 
 ---
 
-## Prisma Migration Required
+## Prisma Migrations Required
 
-The schema change (P1-2: `onDelete: SetNull` on NewsArticle FKs) requires running:
+Two migrations must be applied for full QA remediation:
 
-```bash
-cd backend && npx prisma migrate dev --name add-news-article-on-delete-set-null
-```
+1. **P1-2** (`onDelete: SetNull` on NewsArticle FKs) — covered by existing migration `20260202_add_company_person_relationship`
+2. **P1-4** (9 stage output columns on ResearchJob) — migration `20260210_add_report_specific_stage_output_fields`
 
-For production deployment, use:
+For production deployment, run:
 
 ```bash
 cd backend && npx prisma migrate deploy
