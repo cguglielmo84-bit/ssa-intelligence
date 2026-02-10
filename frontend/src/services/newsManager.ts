@@ -129,8 +129,8 @@ const fetchJson = async (path: string, options?: RequestInit) => {
   const url = `${API_BASE.replace(/\/$/, '')}${path}`;
   const res = await fetch(url, {
     credentials: 'include',
-    headers: { 'Content-Type': 'application/json', ...(options?.headers || {}) },
     ...options,
+    headers: { 'Content-Type': 'application/json', ...(options?.headers || {}) },
   });
   if (!res.ok) {
     const text = await res.text();

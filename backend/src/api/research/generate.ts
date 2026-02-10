@@ -142,15 +142,21 @@ export async function generateResearch(req: Request, res: Response) {
     const dependencyMap = new Map(
       blueprint.sections.map((section) => [section.id, section.dependencies || []])
     );
-    // Auto-expand missing dependencies instead of rejecting
-    const missingDependencies = selectedSections.flatMap((sectionId) => {
-      const deps = dependencyMap.get(sectionId) || [];
-      return deps.filter((dep) => !selectedSections.includes(dep));
-    });
-    if (missingDependencies.length) {
-      const uniqueMissing = Array.from(new Set(missingDependencies));
-      selectedSections = [...new Set([...selectedSections, ...uniqueMissing])];
+    // Auto-expand missing dependencies (including transitive) instead of rejecting
+    const selected = new Set(selectedSections);
+    let changed = true;
+    while (changed) {
+      changed = false;
+      for (const sectionId of Array.from(selected)) {
+        for (const dep of dependencyMap.get(sectionId) || []) {
+          if (!selected.has(dep)) {
+            selected.add(dep);
+            changed = true;
+          }
+        }
+      }
     }
+    selectedSections = Array.from(selected);
 
     const visibilityScope = (body.visibilityScope || 'PRIVATE').toUpperCase() as VisibilityScope;
     const allowedScopes = new Set<VisibilityScope>(['PRIVATE', 'GROUP', 'GENERAL']);
