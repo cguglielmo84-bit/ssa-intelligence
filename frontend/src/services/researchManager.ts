@@ -1444,7 +1444,21 @@ export const useResearchManager = () => {
     activeJobsRef.current.delete(jobId);
   }, []);
 
-  return { jobs, createJob, runJob, rerunJob, cancelJob, deleteJob };
+  const refreshJobDetail = useCallback(async (jobId: string) => {
+    try {
+      const detail = await getJobDetailApi(jobId);
+      setJobs((prev) => {
+        const existing = prev.find((j) => j.id === jobId);
+        if (!existing) return prev;
+        const merged = mergeDetail(existing, detail);
+        return prev.map((j) => (j.id === jobId ? merged : j));
+      });
+    } catch (err) {
+      console.error('[refreshJobDetail]', err);
+    }
+  }, []);
+
+  return { jobs, createJob, runJob, rerunJob, cancelJob, deleteJob, refreshJobDetail };
 };
 
 export const useUserContext = () => {

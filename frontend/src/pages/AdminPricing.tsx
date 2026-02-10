@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Plus, Edit2, Trash2, X, Save } from 'lucide-react';
+import { ConfirmDialog } from '../components/ConfirmDialog';
+import { useToast } from '../components/Toast';
 
 interface AdminPricingProps {
   isAdmin?: boolean;
@@ -20,6 +22,14 @@ interface PricingRate {
 const apiBase = (import.meta as any).env?.VITE_API_BASE_URL || '/api';
 
 export const AdminPricing: React.FC<AdminPricingProps> = ({ isAdmin }) => {
+  const { showToast, ToastContainer } = useToast();
+  const [confirmState, setConfirmState] = useState<{
+    open: boolean;
+    title: string;
+    message: string;
+    onConfirm: () => void;
+    variant?: 'danger' | 'default';
+  } | null>(null);
   const [rates, setRates] = useState<PricingRate[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -146,26 +156,31 @@ export const AdminPricing: React.FC<AdminPricingProps> = ({ isAdmin }) => {
     }
   };
 
-  const handleDelete = async (rate: PricingRate) => {
-    if (!confirm(`Delete pricing rate for ${rate.provider}/${rate.model}?`)) {
-      return;
-    }
+  const handleDelete = (rate: PricingRate) => {
+    setConfirmState({
+      open: true,
+      title: 'Delete Pricing Rate',
+      message: `Delete pricing rate for ${rate.provider}/${rate.model}?`,
+      variant: 'danger',
+      onConfirm: async () => {
+        setConfirmState(null);
+        try {
+          const res = await fetch(`${apiBase}/admin/pricing/${rate.id}`, {
+            method: 'DELETE',
+            headers: { 'Content-Type': 'application/json' },
+          });
 
-    try {
-      const res = await fetch(`${apiBase}/admin/pricing/${rate.id}`, {
-        method: 'DELETE',
-        headers: { 'Content-Type': 'application/json' },
-      });
+          if (!res.ok && res.status !== 204) {
+            const data = await res.json().catch(() => ({}));
+            throw new Error(data.error || 'Failed to delete pricing rate');
+          }
 
-      if (!res.ok && res.status !== 204) {
-        const data = await res.json().catch(() => ({}));
-        throw new Error(data.error || 'Failed to delete pricing rate');
-      }
-
-      fetchRates();
-    } catch (err) {
-      alert(err instanceof Error ? err.message : 'Failed to delete');
-    }
+          fetchRates();
+        } catch (err) {
+          showToast(err instanceof Error ? err.message : 'Failed to delete', 'error');
+        }
+      },
+    });
   };
 
   const formatDate = (dateStr: string) => {
@@ -411,6 +426,19 @@ export const AdminPricing: React.FC<AdminPricingProps> = ({ isAdmin }) => {
           </div>
         </div>
       )}
+
+      {confirmState && (
+        <ConfirmDialog
+          open={confirmState.open}
+          title={confirmState.title}
+          message={confirmState.message}
+          variant={confirmState.variant}
+          onConfirm={confirmState.onConfirm}
+          onCancel={() => setConfirmState(null)}
+        />
+      )}
+
+      <ToastContainer />
     </div>
   );
 };

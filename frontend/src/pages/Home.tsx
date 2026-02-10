@@ -4,6 +4,8 @@ import { ReportBlueprint, ResearchJob, SECTIONS_CONFIG } from '../types';
 import { StatusPill } from '../components/StatusPill';
 import { ArrowRight, Search, TrendingUp, Building2, MapPin, MoreHorizontal, Loader2 } from 'lucide-react';
 import { ShaderGradientCanvas, ShaderGradient } from '@shadergradient/react';
+import { ConfirmDialog } from '../components/ConfirmDialog';
+import { useToast } from '../components/Toast';
 
 interface HomeProps {
   jobs: ResearchJob[];
@@ -14,6 +16,8 @@ interface HomeProps {
 }
 
 export const Home: React.FC<HomeProps> = ({ jobs, reportBlueprints = [], onNavigate, onCancel, onDelete }) => {
+  const { showToast, ToastContainer } = useToast();
+  const [confirmState, setConfirmState] = useState<{ open: boolean; jobId: string } | null>(null);
   const completedJobs = [...jobs.filter(j =>
     j.status === 'completed' ||
     j.status === 'completed_with_errors' ||
@@ -160,7 +164,7 @@ export const Home: React.FC<HomeProps> = ({ jobs, reportBlueprints = [], onNavig
       window.URL.revokeObjectURL(url);
     } catch (err) {
       console.error(err);
-      alert('Failed to export PDF. Please try again.');
+      showToast('Failed to export PDF. Please try again.', 'error');
     } finally {
       setExportingId(null);
       setOpenMenuId(null);
@@ -529,13 +533,8 @@ export const Home: React.FC<HomeProps> = ({ jobs, reportBlueprints = [], onNavig
                                             onClick={() => {
                                               if (!onDelete) return;
                                               if (job.status === 'running' || job.status === 'queued') return;
-                                              const confirmed = window.confirm('Delete this report? This cannot be undone.');
-                                              if (!confirmed) return;
-                                              setDeletingId(job.id);
                                               setOpenMenuId(null);
-                                              onDelete(job.id)
-                                                .catch(() => {})
-                                                .finally(() => setDeletingId(null));
+                                              setConfirmState({ open: true, jobId: job.id });
                                             }}
                                             disabled={!onDelete || job.status === 'running' || job.status === 'queued' || deletingId === job.id}
                                             className="w-full text-left px-3 py-2 text-sm text-rose-700 hover:bg-rose-50 disabled:opacity-60"
@@ -561,6 +560,27 @@ export const Home: React.FC<HomeProps> = ({ jobs, reportBlueprints = [], onNavig
           </div>
         );
       })()}
+
+      <ConfirmDialog
+        open={!!confirmState?.open}
+        title="Delete Report"
+        message="Delete this report? This cannot be undone."
+        confirmLabel="Delete"
+        variant="danger"
+        onConfirm={() => {
+          if (confirmState && onDelete) {
+            setDeletingId(confirmState.jobId);
+            onDelete(confirmState.jobId)
+              .catch(() => {
+                showToast('Failed to delete report. Please try again.', 'error');
+              })
+              .finally(() => setDeletingId(null));
+          }
+          setConfirmState(null);
+        }}
+        onCancel={() => setConfirmState(null)}
+      />
+      <ToastContainer />
 
       {contextJob && (
         <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center p-4 z-50">

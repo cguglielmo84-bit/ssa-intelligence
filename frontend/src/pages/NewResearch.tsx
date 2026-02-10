@@ -112,6 +112,7 @@ const SECTION_DEPENDENCIES: Record<SectionId, SectionId[]> = {
   segment_analysis: [],
   trends: [],
   peer_benchmarking: ['financial_snapshot'],
+  key_execs_and_board: [],
   sku_opportunities: [],
   recent_news: [],
   conversation_starters: [],

@@ -5,6 +5,8 @@
 
 import React, { useState, useEffect } from 'react';
 import { Plus, Trash2, X, Building2, User, Tag, ChevronRight, ChevronDown, Loader2, Save, Settings, Users, Briefcase, Sparkles, Mail, Pencil } from 'lucide-react';
+import { ConfirmDialog } from '../components/ConfirmDialog';
+import { useToast } from '../components/Toast';
 import {
   useRevenueOwners,
   useNewsTags,
@@ -23,6 +25,15 @@ interface NewsSetupProps {
 }
 
 export const NewsSetup: React.FC<NewsSetupProps> = ({ onNavigate }) => {
+  const { showToast, ToastContainer } = useToast();
+  const [confirmState, setConfirmState] = useState<{
+    open: boolean;
+    title: string;
+    message: string;
+    onConfirm: () => void;
+    variant?: 'danger' | 'default';
+  } | null>(null);
+
   const {
     owners,
     loading: ownersLoading,
@@ -125,20 +136,28 @@ export const NewsSetup: React.FC<NewsSetupProps> = ({ onNavigate }) => {
       setNewOwnerName('');
       setSelectedOwner(owner);
     } catch (err) {
-      alert(err instanceof Error ? err.message : 'Failed to create');
+      showToast(err instanceof Error ? err.message : 'Failed to create', 'error');
     }
   };
 
-  const handleDeleteOwner = async (id: string) => {
-    if (!confirm('Are you sure you want to delete this Revenue Owner?')) return;
-    try {
-      await deleteOwner(id);
-      if (selectedOwner?.id === id) {
-        setSelectedOwner(null);
-      }
-    } catch (err) {
-      alert(err instanceof Error ? err.message : 'Failed to delete');
-    }
+  const handleDeleteOwner = (id: string) => {
+    setConfirmState({
+      open: true,
+      title: 'Delete Revenue Owner',
+      message: 'Are you sure you want to delete this Revenue Owner?',
+      variant: 'danger',
+      onConfirm: async () => {
+        setConfirmState(null);
+        try {
+          await deleteOwner(id);
+          if (selectedOwner?.id === id) {
+            setSelectedOwner(null);
+          }
+        } catch (err) {
+          showToast(err instanceof Error ? err.message : 'Failed to delete', 'error');
+        }
+      },
+    });
   };
 
   const handleSaveEmail = async () => {
@@ -151,7 +170,7 @@ export const NewsSetup: React.FC<NewsSetupProps> = ({ onNavigate }) => {
         setOwnerDetails({ ...ownerDetails, email: ownerEmail.trim() || null });
       }
     } catch (err) {
-      alert(err instanceof Error ? err.message : 'Failed to save email');
+      showToast(err instanceof Error ? err.message : 'Failed to save email', 'error');
     } finally {
       setSavingEmail(false);
     }
@@ -286,7 +305,7 @@ export const NewsSetup: React.FC<NewsSetupProps> = ({ onNavigate }) => {
       // Refresh the owners list to update counts
       fetchOwners();
     } catch (err) {
-      alert(err instanceof Error ? err.message : 'Failed to save changes');
+      showToast(err instanceof Error ? err.message : 'Failed to save changes', 'error');
     } finally {
       setSaving(false);
     }
@@ -309,7 +328,7 @@ export const NewsSetup: React.FC<NewsSetupProps> = ({ onNavigate }) => {
       setOwnerDetails(updated);
       fetchOwners();
     } catch (err) {
-      alert(err instanceof Error ? err.message : 'Failed to remove company');
+      showToast(err instanceof Error ? err.message : 'Failed to remove company', 'error');
     }
   };
 
@@ -321,7 +340,7 @@ export const NewsSetup: React.FC<NewsSetupProps> = ({ onNavigate }) => {
       setOwnerDetails(updated);
       fetchOwners();
     } catch (err) {
-      alert(err instanceof Error ? err.message : 'Failed to remove person');
+      showToast(err instanceof Error ? err.message : 'Failed to remove person', 'error');
     }
   };
 
@@ -337,7 +356,7 @@ export const NewsSetup: React.FC<NewsSetupProps> = ({ onNavigate }) => {
       const updated = await getOwnerDetails(selectedOwner.id);
       setOwnerDetails(updated);
     } catch (err) {
-      alert(err instanceof Error ? err.message : 'Failed to update tag');
+      showToast(err instanceof Error ? err.message : 'Failed to update tag', 'error');
     }
   };
 
@@ -388,41 +407,55 @@ export const NewsSetup: React.FC<NewsSetupProps> = ({ onNavigate }) => {
   };
 
   // Bulk delete companies
-  const handleBulkDeleteCompanies = async () => {
+  const handleBulkDeleteCompanies = () => {
     if (!selectedOwner || selectedCompanyIds.size === 0) return;
-    if (!confirm(`Are you sure you want to remove ${selectedCompanyIds.size} company(ies)?`)) return;
-
-    setBulkDeleting(true);
-    try {
-      await bulkRemoveCompaniesFromOwner(selectedOwner.id, Array.from(selectedCompanyIds));
-      setSelectedCompanyIds(new Set());
-      const updated = await getOwnerDetails(selectedOwner.id);
-      setOwnerDetails(updated);
-      fetchOwners();
-    } catch (err) {
-      alert(err instanceof Error ? err.message : 'Failed to delete companies');
-    } finally {
-      setBulkDeleting(false);
-    }
+    setConfirmState({
+      open: true,
+      title: 'Remove Companies',
+      message: `Are you sure you want to remove ${selectedCompanyIds.size} company(ies)?`,
+      variant: 'danger',
+      onConfirm: async () => {
+        setConfirmState(null);
+        setBulkDeleting(true);
+        try {
+          await bulkRemoveCompaniesFromOwner(selectedOwner.id, Array.from(selectedCompanyIds));
+          setSelectedCompanyIds(new Set());
+          const updated = await getOwnerDetails(selectedOwner.id);
+          setOwnerDetails(updated);
+          fetchOwners();
+        } catch (err) {
+          showToast(err instanceof Error ? err.message : 'Failed to delete companies', 'error');
+        } finally {
+          setBulkDeleting(false);
+        }
+      },
+    });
   };
 
   // Bulk delete people
-  const handleBulkDeletePeople = async () => {
+  const handleBulkDeletePeople = () => {
     if (!selectedOwner || selectedPeopleIds.size === 0) return;
-    if (!confirm(`Are you sure you want to remove ${selectedPeopleIds.size} person(s)?`)) return;
-
-    setBulkDeleting(true);
-    try {
-      await bulkRemovePeopleFromOwner(selectedOwner.id, Array.from(selectedPeopleIds));
-      setSelectedPeopleIds(new Set());
-      const updated = await getOwnerDetails(selectedOwner.id);
-      setOwnerDetails(updated);
-      fetchOwners();
-    } catch (err) {
-      alert(err instanceof Error ? err.message : 'Failed to delete people');
-    } finally {
-      setBulkDeleting(false);
-    }
+    setConfirmState({
+      open: true,
+      title: 'Remove People',
+      message: `Are you sure you want to remove ${selectedPeopleIds.size} person(s)?`,
+      variant: 'danger',
+      onConfirm: async () => {
+        setConfirmState(null);
+        setBulkDeleting(true);
+        try {
+          await bulkRemovePeopleFromOwner(selectedOwner.id, Array.from(selectedPeopleIds));
+          setSelectedPeopleIds(new Set());
+          const updated = await getOwnerDetails(selectedOwner.id);
+          setOwnerDetails(updated);
+          fetchOwners();
+        } catch (err) {
+          showToast(err instanceof Error ? err.message : 'Failed to delete people', 'error');
+        } finally {
+          setBulkDeleting(false);
+        }
+      },
+    });
   };
 
   // Edit company handlers
@@ -447,7 +480,7 @@ export const NewsSetup: React.FC<NewsSetupProps> = ({ onNavigate }) => {
         setOwnerDetails(updated);
       }
     } catch (err) {
-      alert(err instanceof Error ? err.message : 'Failed to update company');
+      showToast(err instanceof Error ? err.message : 'Failed to update company', 'error');
     } finally {
       setSavingEdit(false);
     }
@@ -479,7 +512,7 @@ export const NewsSetup: React.FC<NewsSetupProps> = ({ onNavigate }) => {
         setOwnerDetails(updated);
       }
     } catch (err) {
-      alert(err instanceof Error ? err.message : 'Failed to update person');
+      showToast(err instanceof Error ? err.message : 'Failed to update person', 'error');
     } finally {
       setSavingEdit(false);
     }
@@ -1338,6 +1371,19 @@ export const NewsSetup: React.FC<NewsSetupProps> = ({ onNavigate }) => {
           </div>
         </div>
       )}
+      {/* Confirm Dialog */}
+      {confirmState && (
+        <ConfirmDialog
+          open={confirmState.open}
+          title={confirmState.title}
+          message={confirmState.message}
+          variant={confirmState.variant}
+          onConfirm={confirmState.onConfirm}
+          onCancel={() => setConfirmState(null)}
+        />
+      )}
+
+      <ToastContainer />
     </div>
   );
 };
