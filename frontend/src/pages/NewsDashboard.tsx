@@ -915,7 +915,7 @@ export const NewsDashboard: React.FC<NewsDashboardProps> = ({ onNavigate }) => {
           {totalPages > 1 && (
             <div className="flex items-center justify-between px-4 py-3 bg-white border border-slate-200 rounded-xl shadow-sm">
               <button
-                onClick={() => setPage(Math.max(0, page - 1))}
+                onClick={() => { setSelectedArticleIds(new Set()); setPage(Math.max(0, page - 1)); }}
                 disabled={page === 0}
                 className="px-4 py-2 text-sm font-medium text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
@@ -925,7 +925,7 @@ export const NewsDashboard: React.FC<NewsDashboardProps> = ({ onNavigate }) => {
                 Page {page + 1} of {totalPages} ({total} articles)
               </span>
               <button
-                onClick={() => setPage(Math.min(totalPages - 1, page + 1))}
+                onClick={() => { setSelectedArticleIds(new Set()); setPage(Math.min(totalPages - 1, page + 1)); }}
                 disabled={page >= totalPages - 1}
                 className="px-4 py-2 text-sm font-medium text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >

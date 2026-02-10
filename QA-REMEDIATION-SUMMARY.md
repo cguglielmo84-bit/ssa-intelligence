@@ -21,7 +21,7 @@
 
 ### Files Changed
 
-- 29 files modified, 5 new files created
+- 41 files modified, 5 new files created (across all QA PRs)
 - `backend/src/lib/error-utils.ts` -- shared error handling utilities
 - `backend/src/lib/constants.ts` -- shared section number map
 - `frontend/src/components/ErrorBoundary.tsx` -- React error boundary

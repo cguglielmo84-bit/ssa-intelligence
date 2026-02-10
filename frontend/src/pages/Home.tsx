@@ -571,7 +571,9 @@ export const Home: React.FC<HomeProps> = ({ jobs, reportBlueprints = [], onNavig
           if (confirmState && onDelete) {
             setDeletingId(confirmState.jobId);
             onDelete(confirmState.jobId)
-              .catch(() => {})
+              .catch(() => {
+                showToast('Failed to delete report. Please try again.', 'error');
+              })
               .finally(() => setDeletingId(null));
           }
           setConfirmState(null);

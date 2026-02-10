@@ -304,6 +304,7 @@ export const AdminPrompts: React.FC<AdminPromptsProps> = ({ isAdmin }) => {
 
   const handleRevert = (version: number) => {
     if (!editingPrompt?.dbOverride) return;
+    const overrideId = editingPrompt.dbOverride.id;
 
     setConfirmState({
       open: true,
@@ -315,7 +316,7 @@ export const AdminPrompts: React.FC<AdminPromptsProps> = ({ isAdmin }) => {
 
         try {
           const res = await fetch(
-            `${apiBase}/admin/prompts/${editingPrompt.dbOverride!.id}/revert/${version}`,
+            `${apiBase}/admin/prompts/${overrideId}/revert/${version}`,
             {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' }
@@ -338,6 +339,7 @@ export const AdminPrompts: React.FC<AdminPromptsProps> = ({ isAdmin }) => {
 
   const handleDelete = () => {
     if (!editingPrompt?.dbOverride) return;
+    const overrideId = editingPrompt.dbOverride.id;
 
     setConfirmState({
       open: true,
@@ -348,7 +350,7 @@ export const AdminPrompts: React.FC<AdminPromptsProps> = ({ isAdmin }) => {
         setConfirmState(null);
         try {
           const res = await fetch(
-            `${apiBase}/admin/prompts/${editingPrompt.dbOverride!.id}`,
+            `${apiBase}/admin/prompts/${overrideId}`,
             {
               method: 'DELETE',
               headers: { 'Content-Type': 'application/json' }

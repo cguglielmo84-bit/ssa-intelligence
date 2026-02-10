@@ -37,7 +37,7 @@ export const useToast = () => {
     setToasts((prev) => prev.filter((t) => t.id !== id));
   }, []);
 
-  const ToastContainer: React.FC = () => {
+  const ToastContainer = useCallback(() => {
     if (toasts.length === 0) return null;
 
     return (
@@ -59,7 +59,7 @@ export const useToast = () => {
         ))}
       </div>
     );
-  };
+  }, [toasts, dismiss]);
 
   return { showToast, ToastContainer };
 };
