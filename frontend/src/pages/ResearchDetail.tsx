@@ -124,6 +124,7 @@ interface ResearchDetailProps {
   reportBlueprints?: ReportBlueprint[];
   onNavigate: (path: string) => void;
   onRerun?: (jobId: string, sections: SectionId[]) => Promise<void>;
+  onRefreshDetail?: (jobId: string) => Promise<void>;
 }
 
 export const ResearchDetail: React.FC<ResearchDetailProps> = ({
@@ -131,11 +132,19 @@ export const ResearchDetail: React.FC<ResearchDetailProps> = ({
   jobId: jobIdProp,
   reportBlueprints = [],
   onNavigate,
-  onRerun
+  onRerun,
+  onRefreshDetail
 }) => {
   // Use prop if provided, otherwise fall back to hash extraction
   const id = jobIdProp || window.location.hash.split('/research/')[1];
-  
+
+  // Refresh detail data on mount to handle browser back with stale cache
+  useEffect(() => {
+    if (id && onRefreshDetail) {
+      onRefreshDetail(id);
+    }
+  }, [id, onRefreshDetail]);
+
   const job = jobs.find(j => j.id === id);
   const reportBlueprint = useMemo(
     () => reportBlueprints.find((bp) => bp.reportType === job?.reportType),
@@ -285,7 +294,7 @@ export const ResearchDetail: React.FC<ResearchDetailProps> = ({
               <div className="text-emerald-400">
                 &gt; Initializing session for: <span className="text-white font-bold">{job.companyName}</span>
               </div>
-              {job.currentAction && job.status !== 'completed' && (
+              {job.currentAction && (
                 <div className="flex items-start gap-2 text-blue-300 animate-pulse">
                   <span>&gt;</span>
                   <span>{job.currentAction}</span>
