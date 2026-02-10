@@ -347,7 +347,9 @@ async function gracefulShutdown(signal: string) {
   console.log(`${signal} received, initiating graceful shutdown...`);
 
   // Stop accepting new HTTP connections
-  server.close();
+  await new Promise<void>((resolve, reject) => {
+    server.close((err) => (err ? reject(err) : resolve()));
+  });
 
   // Stop the orchestrator from picking up new jobs
   const orch = getResearchOrchestrator(prisma);

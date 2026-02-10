@@ -1120,7 +1120,16 @@ export class ResearchOrchestrator {
       section6: job.peerBenchmarking,
       section7: job.skuOpportunities,
       section8: job.recentNews,
-      section9: job.conversationStarters
+      section9: job.conversationStarters,
+      investmentStrategy: job.investmentStrategy,
+      portfolioSnapshot: job.portfolioSnapshot,
+      dealActivity: job.dealActivity,
+      dealTeam: job.dealTeam,
+      portfolioMaturity: job.portfolioMaturity,
+      leadershipAndGovernance: job.leadershipAndGovernance,
+      strategicPriorities: job.strategicPriorities,
+      operatingCapabilities: job.operatingCapabilities,
+      distributionAnalysis: job.distributionAnalysis,
     };
 
     const appendixOutput = generateAppendix({
