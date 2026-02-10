@@ -8,6 +8,7 @@ import { prisma } from '../../lib/prisma.js';
 import { getResearchOrchestrator } from '../../services/orchestrator.js';
 import { buildVisibilityWhere } from '../../middleware/auth.js';
 import { deriveJobStatus } from './status-utils.js';
+import { safeErrorMessage } from '../../lib/error-utils.js';
 
 export async function getJobStatus(req: Request, res: Response) {
   try {
@@ -109,7 +110,7 @@ export async function getJobStatus(req: Request, res: Response) {
     
     return res.status(500).json({
       error: 'Failed to fetch job status',
-      message: error instanceof Error ? error.message : 'Unknown error'
+      message: safeErrorMessage(error)
     });
   }
 }

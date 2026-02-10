@@ -10,6 +10,7 @@
 import { Request, Response } from 'express';
 import { prisma } from '../lib/prisma.js';
 import { FeedbackType, FeedbackStatus } from '@prisma/client';
+import { safeErrorMessage } from '../lib/error-utils.js';
 
 // Validation constants
 const MAX_TITLE_LENGTH = 200;
@@ -95,7 +96,7 @@ export async function submitFeedback(req: Request, res: Response) {
     console.error('Error saving feedback:', error);
     return res.status(500).json({
       error: 'Failed to submit feedback',
-      message: error instanceof Error ? error.message : 'Unknown error'
+      message: safeErrorMessage(error)
     });
   }
 }
@@ -148,7 +149,7 @@ export async function listFeedback(req: Request, res: Response) {
     console.error('Error listing feedback:', error);
     return res.status(500).json({
       error: 'Failed to list feedback',
-      message: error instanceof Error ? error.message : 'Unknown error'
+      message: safeErrorMessage(error)
     });
   }
 }
@@ -227,7 +228,7 @@ export async function updateFeedback(req: Request, res: Response) {
     console.error('Error updating feedback:', error);
     return res.status(500).json({
       error: 'Failed to update feedback',
-      message: error instanceof Error ? error.message : 'Unknown error'
+      message: safeErrorMessage(error)
     });
   }
 }
@@ -259,7 +260,7 @@ export async function deleteFeedback(req: Request, res: Response) {
     console.error('Error deleting feedback:', error);
     return res.status(500).json({
       error: 'Failed to delete feedback',
-      message: error instanceof Error ? error.message : 'Unknown error'
+      message: safeErrorMessage(error)
     });
   }
 }

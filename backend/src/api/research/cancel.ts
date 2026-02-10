@@ -8,6 +8,7 @@ import { prisma } from '../../lib/prisma.js';
 import { getResearchOrchestrator } from '../../services/orchestrator.js';
 import { buildVisibilityWhere } from '../../middleware/auth.js';
 import { buildCancelResponse } from './cancel-utils.js';
+import { safeErrorMessage } from '../../lib/error-utils.js';
 
 export async function cancelResearchJob(req: Request, res: Response) {
   try {
@@ -31,31 +32,33 @@ export async function cancelResearchJob(req: Request, res: Response) {
       return res.status(403).json({ error: 'Not authorized to cancel this job' });
     }
 
+    if (job.status === 'cancelled') {
+      return res.status(400).json({ error: 'Job already cancelled', status: job.status });
+    }
+
     if (job.status === 'completed' || job.status === 'failed') {
       return res.status(400).json({ error: 'Job already completed', status: job.status });
     }
 
-    const deleteResult = await prisma.$transaction(async (tx) => {
-      const subJobs = await tx.researchSubJob.deleteMany({
-        where: { researchId: id }
-      });
-      const jobGroups = await tx.researchJobGroup.deleteMany({
-        where: { jobId: id }
-      });
-      const jobs = await tx.researchJob.deleteMany({
-        where: { id }
-      });
-      return { subJobs, jobGroups, jobs };
+    // Soft-cancel: update status instead of deleting to preserve audit trail
+    // and avoid race conditions with the orchestrator mid-execution
+    await prisma.researchJob.update({
+      where: { id },
+      data: { status: 'cancelled' }
     });
 
-    if (deleteResult.jobs.count === 0) {
-      return res.status(404).json({ error: 'Job not found', jobId: id });
-    }
+    // Mark all non-terminal sub-jobs as cancelled
+    const cancelledSubJobs = await prisma.researchSubJob.updateMany({
+      where: {
+        researchId: id,
+        status: { in: ['pending', 'running'] }
+      },
+      data: { status: 'cancelled' }
+    });
 
-    console.log('[cancel] deleted job', {
+    console.log('[cancel] soft-cancelled job', {
       jobId: id,
-      subJobs: deleteResult.subJobs.count,
-      jobGroups: deleteResult.jobGroups.count
+      cancelledSubJobs: cancelledSubJobs.count
     });
 
     // Nudge the queue to pick the next job if this one was running/queued
@@ -67,7 +70,7 @@ export async function cancelResearchJob(req: Request, res: Response) {
     console.error('Error cancelling research job:', error);
     return res.status(500).json({
       error: 'Failed to cancel research job',
-      message: error instanceof Error ? error.message : 'Unknown error'
+      message: safeErrorMessage(error)
     });
   }
 }

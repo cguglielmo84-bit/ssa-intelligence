@@ -8,7 +8,9 @@ import { prisma } from '../../lib/prisma.js';
 import { buildVisibilityWhere } from '../../middleware/auth.js';
 import { filterJobsByDerivedStatus } from './list-utils.js';
 import { buildCompletedStages } from '../../services/stage-tracking-utils.js';
+import { SECTION_NUMBER_MAP } from '../../lib/constants.js';
 import { deriveJobStatus } from './status-utils.js';
+import { safeErrorMessage } from '../../lib/error-utils.js';
 
 interface ListQueryParams {
   limit?: string;
@@ -26,9 +28,9 @@ export async function listResearch(req: Request, res: Response) {
       return res.status(401).json({ error: 'Unauthorized' });
     }
 
-    // Parse pagination
-    const limit = Math.min(parseInt(query.limit || '50'), 100);
-    const offset = parseInt(query.offset || '0');
+    // Parse pagination with NaN guard
+    const limit = Math.max(1, Math.min(parseInt(query.limit || '50') || 50, 100));
+    const offset = Math.max(0, parseInt(query.offset || '0') || 0);
 
     // Parse sorting
     const sortBy = query.sortBy || 'createdAt';
@@ -81,7 +83,7 @@ export async function listResearch(req: Request, res: Response) {
     };
 
     const jobs = shouldFilterByDerivedStatus
-      ? await prisma.researchJob.findMany(baseQuery)
+      ? await prisma.researchJob.findMany({ ...baseQuery, take: 1000 })
       : await prisma.researchJob.findMany({
           ...baseQuery,
           take: limit,
@@ -128,20 +130,7 @@ export async function listResearch(req: Request, res: Response) {
       generatedSections: job.subJobs
         .filter(subJob => subJob.status === 'completed' && subJob.stage !== 'foundation')
         .map(subJob => {
-          // Map stage to section number
-          const sectionMap: Record<string, number> = {
-            exec_summary: 1,
-            financial_snapshot: 2,
-            company_overview: 3,
-            segment_analysis: 4,
-            trends: 5,
-            peer_benchmarking: 6,
-            sku_opportunities: 7,
-            recent_news: 8,
-            conversation_starters: 9,
-            appendix: 10
-          };
-          return sectionMap[subJob.stage] || 0;
+          return SECTION_NUMBER_MAP[subJob.stage] || 0;
         })
         .filter(n => n > 0)
       ,
@@ -164,7 +153,7 @@ export async function listResearch(req: Request, res: Response) {
     
     return res.status(500).json({
       error: 'Failed to list research',
-      message: error instanceof Error ? error.message : 'Unknown error'
+      message: safeErrorMessage(error)
     });
   }
 }

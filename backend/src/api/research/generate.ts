@@ -9,6 +9,7 @@ import { prisma } from '../../lib/prisma.js';
 import { getResearchOrchestrator } from '../../services/orchestrator.js';
 import { ensureDomainForJob } from '../../services/domain-infer.js';
 import { getReportBlueprint } from '../../services/report-blueprints.js';
+import { safeErrorMessage } from '../../lib/error-utils.js';
 
 interface GenerateRequestBody {
   companyName: string;
@@ -44,7 +45,7 @@ const toTitleLike = (value: string) => {
     .join(' ');
 };
 
-const hasMeaningfulChars = (value: string) => /[A-Za-z0-9]/.test(value);
+const hasMeaningfulChars = (value: string) => /[\p{L}\p{N}]/u.test(value);
 
 const normalizeForKey = (value: string) => value.trim().replace(/\s+/g, ' ').toLowerCase();
 const normalizeDomain = (value: string | undefined | null) => {
@@ -126,7 +127,7 @@ export async function generateResearch(req: Request, res: Response) {
 
     const allowedSections = new Set(blueprint.sections.map((section) => section.id));
     const rawSelected = Array.isArray(body.selectedSections) ? body.selectedSections : [];
-    const selectedSections = Array.from(
+    let selectedSections = Array.from(
       new Set(
         rawSelected
           .map((s) => (typeof s === 'string' ? s.trim() : ''))
@@ -141,15 +142,14 @@ export async function generateResearch(req: Request, res: Response) {
     const dependencyMap = new Map(
       blueprint.sections.map((section) => [section.id, section.dependencies || []])
     );
+    // Auto-expand missing dependencies instead of rejecting
     const missingDependencies = selectedSections.flatMap((sectionId) => {
       const deps = dependencyMap.get(sectionId) || [];
       return deps.filter((dep) => !selectedSections.includes(dep));
     });
     if (missingDependencies.length) {
       const uniqueMissing = Array.from(new Set(missingDependencies));
-      return res.status(400).json({
-        error: `Missing required dependencies: ${uniqueMissing.join(', ')}`
-      });
+      selectedSections = [...new Set([...selectedSections, ...uniqueMissing])];
     }
 
     const visibilityScope = (body.visibilityScope || 'PRIVATE').toUpperCase() as VisibilityScope;
@@ -209,7 +209,7 @@ export async function generateResearch(req: Request, res: Response) {
             industry: industry || null
           }
         ],
-        status: { in: ['queued', 'running', 'completed'] }
+        status: { in: ['queued', 'running', 'completed', 'completed_with_errors'] }
       },
       select: { id: true, status: true }
     });
@@ -290,7 +290,7 @@ export async function generateResearch(req: Request, res: Response) {
     
     return res.status(500).json({
       error: 'Failed to create research job',
-      message: error instanceof Error ? error.message : 'Unknown error'
+      message: safeErrorMessage(error)
     });
   }
 }
