@@ -15,7 +15,7 @@ import { useReportBlueprints, useResearchManager, useUserContext } from './servi
 export default function App() {
   const [currentPath, setCurrentPath] = useState(window.location.hash.slice(1) || '/');
   const [navResetKey, setNavResetKey] = useState(0);
-  const { jobs, createJob, runJob, rerunJob, cancelJob, deleteJob, refreshJobDetail } = useResearchManager();
+  const { jobs, loading: jobsLoading, createJob, runJob, rerunJob, cancelJob, deleteJob, refreshJobDetail } = useResearchManager();
   const userContext = useUserContext();
   const reportBlueprints = useReportBlueprints();
   const [logoToken, setLogoToken] = useState<string | null>(null);
@@ -62,6 +62,7 @@ export default function App() {
       return (
         <Home
           jobs={jobs}
+          loading={jobsLoading}
           reportBlueprints={reportBlueprints.blueprints}
           onNavigate={navigate}
           onCancel={cancelJob}
@@ -114,7 +115,7 @@ export default function App() {
         />
       );
     }
-    return <Home jobs={jobs} reportBlueprints={reportBlueprints.blueprints} onNavigate={navigate} onCancel={cancelJob} onDelete={deleteJob} logoToken={logoToken} />;
+    return <Home jobs={jobs} loading={jobsLoading} reportBlueprints={reportBlueprints.blueprints} onNavigate={navigate} onCancel={cancelJob} onDelete={deleteJob} logoToken={logoToken} />;
   };
 
   return (

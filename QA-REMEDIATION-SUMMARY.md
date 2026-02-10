@@ -8,7 +8,7 @@
 
 ## What Was Done
 
-**52 of 54 findings fixed** across 41 modified files + 6 new files. 2 findings dropped (not fixable). Backend compiles clean. Frontend has 2 pre-existing third-party type warnings (ShaderGradient, React.cloneElement). No regressions introduced.
+**53 of 54 findings fixed** across 41 modified files + 6 new files. 1 finding dropped (not fixable). Backend compiles clean. Frontend has 2 pre-existing third-party type warnings (ShaderGradient, React.cloneElement). No regressions introduced.
 
 ### Fixes by Severity
 
@@ -16,7 +16,7 @@
 |----------|-------|-----------|-------|
 | **P0** | 3/3 | 0 | All critical issues resolved |
 | **P1** | 12/12 | 0 | All P1 issues resolved |
-| **P2** | 25/27 | 0 | All resolved (P2-20 and P2-26 dropped) |
+| **P2** | 26/27 | 0 | All resolved (P2-26 dropped) |
 | **P3** | 14/14 | 0 | All resolved (P3-9 = P3-10, same fix) |
 
 ### Files Changed
@@ -106,6 +106,10 @@
 - **P3-8 (F-025):** Topic toggle uses div click -- added `role="checkbox"`, `tabIndex={0}`, `aria-checked`, `aria-label`, and `onKeyDown` handler (Space/Enter) to topic toggle rows in `NewsSetup.tsx`
 - **P3-10 (F-026):** AdminMetrics Tooltip formatter type assertion -- added `typeof value === 'number'` runtime guard before calling `.toFixed()` in `AdminMetrics.tsx`
 
+### Phase 7: P2-20 Loading State (1 fix)
+
+- **P2-20 (F-014):** `useResearchManager` missing loading state -- added `loading` boolean with `.finally(() => setLoading(false))` on initial fetch, passed through `App.tsx` to `Home.tsx` which now shows a spinner instead of "No research yet" during load
+
 ---
 
 ## Deferred / Dropped Items
@@ -114,7 +118,6 @@ All fixable findings have been resolved. The following were intentionally droppe
 
 | ID | Description | Reason |
 |----|-------------|--------|
-| P2-20 | Unknown (audit ID not mapped to a specific finding) | **Dropped** -- no matching finding in audit report |
 | P2-26 | Company resolution abort | **Dropped** -- SDK doesn't support tool-level abort; current behavior already graceful |
 | P3-9 | AdminMetrics Tooltip formatter type guard | **Duplicate** of P3-10 (F-026) -- same fix, tracked under two IDs |
 
@@ -130,6 +133,7 @@ All fixable findings have been resolved. The following were intentionally droppe
 | P2-23 | Browser back stale data | `qa/p2-remaining-fixes` |
 | P2-27 | News refresh TOCTOU race | `qa/p2-remaining-fixes` |
 | P3-3/4/5/6/7/8/10 | Cosmetic and accessibility improvements | `qa/p3-cosmetic-a11y-fixes` |
+| P2-20 | `useResearchManager` loading state | `fix/p2-20-loading-state` |
 
 ---
 
@@ -150,7 +154,7 @@ cd backend && npx prisma migrate deploy
 
 ## Summary for Non-Technical Stakeholders
 
-**What was the problem?** A comprehensive quality audit found 54 issues in the SSA Intelligence application, ranging from critical security vulnerabilities to minor cosmetic problems. Three were rated "critical" -- meaning they could cause data loss, security breaches, or broken core features. **All fixable findings have now been resolved** (52 fixed, 2 dropped as not applicable).
+**What was the problem?** A comprehensive quality audit found 54 issues in the SSA Intelligence application, ranging from critical security vulnerabilities to minor cosmetic problems. Three were rated "critical" -- meaning they could cause data loss, security breaches, or broken core features. **All fixable findings have now been resolved** (53 fixed, 1 dropped as not applicable).
 
 **What was fixed?**
 
