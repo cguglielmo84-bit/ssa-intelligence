@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { ErrorBoundary } from './components/ErrorBoundary';
 import { Layout } from './components/Layout';
 import { Home } from './pages/Home';
 import { NewResearch } from './pages/NewResearch';
@@ -30,11 +31,11 @@ export default function App() {
   }, []);
 
   const navigate = (path: string) => {
-    setCurrentPath(path);
     if (path === '/new') {
       setNavResetKey((k) => k + 1);
     }
     window.location.hash = path;
+    // hashchange listener will call setCurrentPath
   };
 
   const renderContent = () => {
@@ -85,18 +86,21 @@ export default function App() {
       return (
         <ResearchDetail
           jobs={jobs}
+          jobId={currentPath.split('/research/')[1]}
           reportBlueprints={reportBlueprints.blueprints}
           onNavigate={navigate}
           onRerun={rerunJob}
         />
       );
     }
-    return <Home jobs={jobs} reportBlueprints={reportBlueprints.blueprints} onNavigate={navigate} onDelete={deleteJob} />;
+    return <Home jobs={jobs} reportBlueprints={reportBlueprints.blueprints} onNavigate={navigate} onCancel={cancelJob} onDelete={deleteJob} />;
   };
 
   return (
     <Layout onNavigate={navigate} activePath={currentPath} isAdmin={userContext.user?.isAdmin}>
-      {renderContent()}
+      <ErrorBoundary>
+        {renderContent()}
+      </ErrorBoundary>
     </Layout>
   );
 }

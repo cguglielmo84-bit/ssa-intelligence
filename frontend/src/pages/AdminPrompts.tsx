@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { FileText, Edit2, ChevronDown, ChevronRight, X, Save, Play, History, RotateCcw, Check, AlertCircle, Clock, Loader2, Info, Maximize2, Minimize2 } from 'lucide-react';
 
 interface AdminPromptsProps {
@@ -127,6 +127,14 @@ export const AdminPrompts: React.FC<AdminPromptsProps> = ({ isAdmin }) => {
   const [testGeography, setTestGeography] = useState('');
   const [testRun, setTestRun] = useState<TestRun | null>(null);
   const [runningTest, setRunningTest] = useState(false);
+  const pollTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Cleanup poll timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (pollTimeoutRef.current) clearTimeout(pollTimeoutRef.current);
+    };
+  }, []);
 
   useEffect(() => {
     fetchPrompts();
@@ -380,6 +388,7 @@ export const AdminPrompts: React.FC<AdminPromptsProps> = ({ isAdmin }) => {
     const poll = async () => {
       try {
         const res = await fetch(`${apiBase}/admin/prompts/test/${testRunId}`, {
+          credentials: 'include',
           headers: { 'Content-Type': 'application/json' }
         });
 
@@ -389,7 +398,7 @@ export const AdminPrompts: React.FC<AdminPromptsProps> = ({ isAdmin }) => {
         setTestRun(data.testRun);
 
         if (data.testRun.status === 'running') {
-          setTimeout(poll, 2000);
+          pollTimeoutRef.current = setTimeout(poll, 2000);
         } else {
           setRunningTest(false);
         }

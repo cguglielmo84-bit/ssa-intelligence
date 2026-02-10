@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import {
   BarChart,
   Bar,
@@ -91,11 +91,7 @@ export const AdminMetrics: React.FC<AdminMetricsProps> = ({ isAdmin }) => {
   const [selectedReportType, setSelectedReportType] = useState<string>('');
   const [activeTab, setActiveTab] = useState<'groups' | 'reportTypes' | 'stages'>('groups');
 
-  useEffect(() => {
-    fetchMetrics();
-  }, [selectedYear, selectedMonth, selectedGroup, selectedReportType]);
-
-  const fetchMetrics = async () => {
+  const fetchMetrics = useCallback(async () => {
     setLoading(true);
     setError(null);
 
@@ -108,6 +104,7 @@ export const AdminMetrics: React.FC<AdminMetricsProps> = ({ isAdmin }) => {
 
       const url = `${apiBase}/admin/metrics${params.toString() ? '?' + params.toString() : ''}`;
       const res = await fetch(url, {
+        credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
       });
 
@@ -122,7 +119,11 @@ export const AdminMetrics: React.FC<AdminMetricsProps> = ({ isAdmin }) => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [selectedYear, selectedMonth, selectedGroup, selectedReportType]);
+
+  useEffect(() => {
+    fetchMetrics();
+  }, [fetchMetrics]);
 
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('en-US', {

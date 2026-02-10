@@ -926,6 +926,7 @@ const buildEmptySections = (): Record<SectionId, ResearchSection> => {
 const fetchJson = async (path: string, options?: RequestInit) => {
   const url = `${API_BASE.replace(/\/$/, '')}${path}`;
   const res = await fetch(url, {
+    credentials: 'include',
     headers: { 'Content-Type': 'application/json', ...(options?.headers || {}) },
     ...options,
   });
@@ -970,6 +971,7 @@ const createJobApi = async (payload: {
     `${API_BASE}/research/generate`,
     {
       method: 'POST',
+      credentials: 'include',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(body)
     }
@@ -1213,6 +1215,7 @@ const mergeDetail = (job: ResearchJob, detail: ApiResearchDetail): ResearchJob =
 export const useResearchManager = () => {
   const [jobs, setJobs] = useState<ResearchJob[]>([]);
   const activeJobsRef = useRef<Set<string>>(new Set());
+  const abortControllersRef = useRef<Map<string, AbortController>>(new Map());
 
   useEffect(() => {
     listJobsApi()
@@ -1235,6 +1238,15 @@ export const useResearchManager = () => {
         }
       })
       .catch((err) => console.error(err));
+  }, []);
+
+  // Abort all polling loops on unmount to prevent orphaned requests
+  useEffect(() => {
+    return () => {
+      for (const controller of abortControllersRef.current.values()) {
+        controller.abort();
+      }
+    };
   }, []);
 
   const createJob = useCallback(async (
@@ -1300,11 +1312,14 @@ export const useResearchManager = () => {
     async (jobId: string, companyNameOverride?: string) => {
       if (activeJobsRef.current.has(jobId)) return;
       activeJobsRef.current.add(jobId);
+      const controller = new AbortController();
+      abortControllersRef.current.set(jobId, controller);
       let lastStatus: ApiJobStatus | null = null;
 
       try {
-        while (true) {
+        while (!controller.signal.aborted) {
           const status = await getJobStatusApi(jobId);
+          if (controller.signal.aborted) break;
           lastStatus = status;
 
           setJobs((prev) => {
@@ -1358,6 +1373,7 @@ export const useResearchManager = () => {
         });
       } finally {
         activeJobsRef.current.delete(jobId);
+        abortControllersRef.current.delete(jobId);
       }
     },
     [],
@@ -1403,15 +1419,17 @@ export const useResearchManager = () => {
 
   const cancelJob = useCallback(async (jobId: string) => {
     try {
+      // Abort the polling loop for this job
+      const controller = abortControllersRef.current.get(jobId);
+      if (controller) controller.abort();
+
       await cancelJobApi(jobId);
       setJobs((prev) =>
-        prev
-          .map((j) =>
-            j.id === jobId
-              ? { ...j, status: 'cancelled', currentAction: 'Cancelled' }
-              : j
-          )
-          .filter((j) => j.id !== jobId || j.status !== 'cancelled')
+        prev.map((j) =>
+          j.id === jobId
+            ? { ...j, status: 'cancelled' as JobStatus, currentAction: 'Cancelled' }
+            : j
+        )
       );
     } catch (error) {
       console.error('Failed to cancel job', error);
@@ -1509,6 +1527,7 @@ export const resolveCompanyApi = async (
 ): Promise<CompanyResolveResponse> => {
   const res = await fetch(`${API_BASE}/company/resolve`, {
     method: 'POST',
+    credentials: 'include',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ input, context, draftId })
   });
