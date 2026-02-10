@@ -82,6 +82,8 @@ export async function listResearch(req: Request, res: Response) {
       }
     };
 
+    // Note: take:1000 is an upper bound for in-memory derived status filtering.
+    // If a user has >1000 jobs, total count may be approximate for derived status filters.
     const jobs = shouldFilterByDerivedStatus
       ? await prisma.researchJob.findMany({ ...baseQuery, take: 1000 })
       : await prisma.researchJob.findMany({

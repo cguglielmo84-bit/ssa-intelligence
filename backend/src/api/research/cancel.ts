@@ -36,15 +36,15 @@ export async function cancelResearchJob(req: Request, res: Response) {
       return res.status(400).json({ error: 'Job already cancelled', status: job.status });
     }
 
-    if (job.status === 'completed' || job.status === 'failed') {
-      return res.status(400).json({ error: 'Job already completed', status: job.status });
+    if (job.status === 'completed' || job.status === 'completed_with_errors' || job.status === 'failed') {
+      return res.status(400).json({ error: 'Job already in terminal state', status: job.status });
     }
 
     // Soft-cancel: update status instead of deleting to preserve audit trail
     // and avoid race conditions with the orchestrator mid-execution
     await prisma.researchJob.update({
       where: { id },
-      data: { status: 'cancelled' }
+      data: { status: 'cancelled', completedAt: new Date() }
     });
 
     // Mark all non-terminal sub-jobs as cancelled
@@ -53,7 +53,7 @@ export async function cancelResearchJob(req: Request, res: Response) {
         researchId: id,
         status: { in: ['pending', 'running'] }
       },
-      data: { status: 'cancelled' }
+      data: { status: 'cancelled', completedAt: new Date() }
     });
 
     console.log('[cancel] soft-cancelled job', {

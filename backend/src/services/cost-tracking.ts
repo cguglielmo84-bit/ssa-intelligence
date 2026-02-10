@@ -166,7 +166,7 @@ export class CostTrackingService {
    * Record a cost event in the database
    */
   async recordCostEvent(params: CostEventParams): Promise<string> {
-    const costUsd = params.costUsd != null
+    const costUsd = (params.costUsd != null && Number.isFinite(params.costUsd) && params.costUsd >= 0)
       ? params.costUsd
       : this.calculateCost(params.usage, await this.getPricing(params.provider, params.model));
 

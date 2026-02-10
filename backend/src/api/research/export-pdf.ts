@@ -69,7 +69,8 @@ export async function exportResearchPdf(req: Request, res: Response) {
     const dateStr = new Date(job.createdAt).toISOString().slice(0, 10);
     const sanitize = (name: string) =>
       name.replace(/[^a-zA-Z0-9_\-. ]/g, '').replace(/\s+/g, '_');
-    const filename = `${sanitize(job.companyName)}-${dateStr}.pdf`;
+    const sanitized = sanitize(job.companyName) || 'report';
+    const filename = `${sanitized}-${dateStr}.pdf`;
 
     const blueprint = getReportBlueprint(job.reportType || 'GENERIC');
     const exportSections = buildExportSections({

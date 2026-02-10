@@ -104,7 +104,7 @@ Categories:
 List the top 20 highest-risk areas ranked by (likelihood of bug) × (severity if
 it occurs). For each:
 - What could go wrong
-- Why it's high risk
+- Why it's high-risk
 - Specific code locations to scrutinize
 - Recommended test approach
 

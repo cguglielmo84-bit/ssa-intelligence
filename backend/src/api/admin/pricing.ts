@@ -6,7 +6,7 @@
 import type { RequestHandler } from 'express';
 import { prisma } from '../../lib/prisma.js';
 import { getCostTrackingService } from '../../services/cost-tracking.js';
-import { safeErrorMessage } from '../../lib/error-utils.js';
+import { safeErrorMessage, isPrismaNotFound } from '../../lib/error-utils.js';
 
 /**
  * GET /api/admin/pricing
@@ -204,6 +204,9 @@ export const deletePricingRate: RequestHandler = async (req, res) => {
 
     return res.status(204).send();
   } catch (error) {
+    if (isPrismaNotFound(error)) {
+      return res.status(404).json({ error: 'Pricing rate not found' });
+    }
     console.error('Error deleting pricing rate:', error);
     return res.status(500).json({
       error: 'Failed to delete pricing rate',

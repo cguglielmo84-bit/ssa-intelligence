@@ -621,7 +621,7 @@ async function executeTestRun(
     });
   } catch (error) {
     const durationMs = Date.now() - startTime;
-    const errorMessage = safeErrorMessage(error);
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
 
     await prisma.promptTestRun.update({
       where: { id: testRunId },

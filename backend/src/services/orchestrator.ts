@@ -1917,6 +1917,8 @@ export class ResearchOrchestrator {
               where: { id: sj.id },
               data: { status: 'failed', output: { error: 'Timed out -- stale running sub-job' } as any, completedAt: new Date() }
             });
+            // Update in-memory snapshot so downstream computeFinalStatus sees the correct status
+            (sj as any).status = 'failed';
           }
         }
       }

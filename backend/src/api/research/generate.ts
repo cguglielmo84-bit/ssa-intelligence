@@ -216,30 +216,31 @@ export async function generateResearch(req: Request, res: Response) {
 
     const force = Boolean(body.force);
     if (existing) {
-      // Only allow force when existing is completed; block queued/running
-      if (!force && existing.status !== 'completed') {
+      const isTerminal = existing.status === 'completed' || existing.status === 'completed_with_errors';
+      // Only allow force when existing is in a terminal state; block queued/running
+      if (!force && !isTerminal) {
         return res.status(409).json({
           error: 'Research already exists for this company/geography/industry.',
           status: existing.status,
           jobId: existing.id
         });
       }
-      if (force && existing.status !== 'completed') {
+      if (force && !isTerminal) {
         return res.status(409).json({
           error: 'An active job exists for this company/geography/industry.',
           status: existing.status,
           jobId: existing.id
         });
       }
-      if (!force && existing.status === 'completed') {
+      if (!force && isTerminal) {
         return res.status(409).json({
           error: 'Research already exists for this company/geography/industry.',
           status: existing.status,
           jobId: existing.id
         });
       }
-      // force + completed: allow
-      console.log('[duplicate] Forcing new research for existing completed job', existing.id);
+      // force + terminal: allow
+      console.log('[duplicate] Forcing new research for existing terminal job', existing.id);
     }
 
     // Create orchestrator

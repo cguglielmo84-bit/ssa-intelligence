@@ -98,7 +98,7 @@ export default function App() {
 
   return (
     <Layout onNavigate={navigate} activePath={currentPath} isAdmin={userContext.user?.isAdmin}>
-      <ErrorBoundary>
+      <ErrorBoundary key={currentPath}>
         {renderContent()}
       </ErrorBoundary>
     </Layout>

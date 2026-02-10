@@ -1340,7 +1340,9 @@ export const useResearchManager = () => {
           await delay(2000);
         }
 
+        if (controller.signal.aborted) return;
         const detail = await getJobDetailApi(jobId);
+        if (controller.signal.aborted) return;
         setJobs((prev) => {
           const existing = prev.find((j) => j.id === jobId) || (lastStatus ? mapJobFromStatus(lastStatus, undefined, companyNameOverride ? { companyName: companyNameOverride } : undefined) : undefined);
           if (!existing) return prev;
@@ -1419,11 +1421,10 @@ export const useResearchManager = () => {
 
   const cancelJob = useCallback(async (jobId: string) => {
     try {
-      // Abort the polling loop for this job
+      await cancelJobApi(jobId);
+      // Abort the polling loop only after successful cancel
       const controller = abortControllersRef.current.get(jobId);
       if (controller) controller.abort();
-
-      await cancelJobApi(jobId);
       setJobs((prev) =>
         prev.map((j) =>
           j.id === jobId

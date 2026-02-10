@@ -108,6 +108,12 @@ The schema change (P1-2: `onDelete: SetNull` on NewsArticle FKs) requires runnin
 cd backend && npx prisma migrate dev --name add-news-article-on-delete-set-null
 ```
 
+For production deployment, use:
+
+```bash
+cd backend && npx prisma migrate deploy
+```
+
 ---
 
 ## Summary for Non-Technical Stakeholders

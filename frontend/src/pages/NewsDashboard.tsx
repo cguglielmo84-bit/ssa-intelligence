@@ -412,14 +412,14 @@ export const NewsDashboard: React.FC<NewsDashboardProps> = ({ onNavigate }) => {
       const summary = article.longSummary || article.shortSummary || article.summary || '';
       return `
         <div style="margin-bottom: 24px; padding-bottom: 24px; border-bottom: 1px solid #e2e8f0;">
-          <h3 style="color: #003399; margin: 0 0 12px 0;">${index + 1}. ${article.headline}</h3>
-          ${summary ? `<div style="margin-bottom: 8px;"><strong>Summary:</strong><br/>${summary.replace(/\n/g, '<br/>')}</div>` : ''}
-          ${article.whyItMatters ? `<div style="margin-bottom: 8px;"><strong>Why it Matters:</strong><br/>${article.whyItMatters.replace(/\n/g, '<br/>')}</div>` : ''}
-          ${article.company ? `<div><strong>Company:</strong> ${article.company.name}</div>` : ''}
-          ${article.person ? `<div><strong>Person:</strong> ${article.person.name}</div>` : ''}
-          ${article.tag ? `<div><strong>Topic:</strong> ${article.tag.name}</div>` : ''}
+          <h3 style="color: #003399; margin: 0 0 12px 0;">${index + 1}. ${escapeHtml(article.headline)}</h3>
+          ${summary ? `<div style="margin-bottom: 8px;"><strong>Summary:</strong><br/>${escapeHtml(summary).replace(/\n/g, '<br/>')}</div>` : ''}
+          ${article.whyItMatters ? `<div style="margin-bottom: 8px;"><strong>Why it Matters:</strong><br/>${escapeHtml(article.whyItMatters).replace(/\n/g, '<br/>')}</div>` : ''}
+          ${article.company ? `<div><strong>Company:</strong> ${escapeHtml(article.company.name)}</div>` : ''}
+          ${article.person ? `<div><strong>Person:</strong> ${escapeHtml(article.person.name)}</div>` : ''}
+          ${article.tag ? `<div><strong>Topic:</strong> ${escapeHtml(article.tag.name)}</div>` : ''}
           <div style="margin-top: 12px;">
-            <a href="${article.sourceUrl}" style="color: #003399; font-weight: bold;">Read More</a>
+            <a href="${escapeHtml(article.sourceUrl)}" style="color: #003399; font-weight: bold;">Read More</a>
           </div>
         </div>
       `;
@@ -432,7 +432,7 @@ export const NewsDashboard: React.FC<NewsDashboardProps> = ({ onNavigate }) => {
   <meta charset="UTF-8">
 </head>
 <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
-  <h1 style="color: #003399; border-bottom: 2px solid #003399; padding-bottom: 12px;">News Digest - ${today}</h1>
+  <h1 style="color: #003399; border-bottom: 2px solid #003399; padding-bottom: 12px;">News Digest - ${escapeHtml(today)}</h1>
   ${articleHtml}
 </body>
 </html>`.trim();
@@ -485,14 +485,14 @@ export const NewsDashboard: React.FC<NewsDashboardProps> = ({ onNavigate }) => {
       const summary = article.longSummary || article.shortSummary || article.summary || '';
       return `
         <div style="margin-bottom: 24px; padding-bottom: 24px; border-bottom: 1px solid #e2e8f0;">
-          <h3 style="color: #003399; margin: 0 0 12px 0;">${index + 1}. ${article.headline}</h3>
-          ${summary ? `<div style="margin-bottom: 8px;"><strong>Summary:</strong><br/>${summary.replace(/\n/g, '<br/>')}</div>` : ''}
-          ${article.whyItMatters ? `<div style="margin-bottom: 8px;"><strong>Why it Matters:</strong><br/>${article.whyItMatters.replace(/\n/g, '<br/>')}</div>` : ''}
-          ${article.company ? `<div><strong>Company:</strong> ${article.company.name}</div>` : ''}
-          ${article.person ? `<div><strong>Person:</strong> ${article.person.name}</div>` : ''}
-          ${article.tag ? `<div><strong>Topic:</strong> ${article.tag.name}</div>` : ''}
+          <h3 style="color: #003399; margin: 0 0 12px 0;">${index + 1}. ${escapeHtml(article.headline)}</h3>
+          ${summary ? `<div style="margin-bottom: 8px;"><strong>Summary:</strong><br/>${escapeHtml(summary).replace(/\n/g, '<br/>')}</div>` : ''}
+          ${article.whyItMatters ? `<div style="margin-bottom: 8px;"><strong>Why it Matters:</strong><br/>${escapeHtml(article.whyItMatters).replace(/\n/g, '<br/>')}</div>` : ''}
+          ${article.company ? `<div><strong>Company:</strong> ${escapeHtml(article.company.name)}</div>` : ''}
+          ${article.person ? `<div><strong>Person:</strong> ${escapeHtml(article.person.name)}</div>` : ''}
+          ${article.tag ? `<div><strong>Topic:</strong> ${escapeHtml(article.tag.name)}</div>` : ''}
           <div style="margin-top: 12px;">
-            <a href="${article.sourceUrl}" style="color: #003399; font-weight: bold;">Read More</a>
+            <a href="${escapeHtml(article.sourceUrl)}" style="color: #003399; font-weight: bold;">Read More</a>
           </div>
         </div>
       `;
@@ -505,7 +505,7 @@ export const NewsDashboard: React.FC<NewsDashboardProps> = ({ onNavigate }) => {
   <meta charset="UTF-8">
 </head>
 <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
-  <h1 style="color: #003399; border-bottom: 2px solid #003399; padding-bottom: 12px;">News Digest - ${today}</h1>
+  <h1 style="color: #003399; border-bottom: 2px solid #003399; padding-bottom: 12px;">News Digest - ${escapeHtml(today)}</h1>
   ${articleHtml}
 </body>
 </html>`.trim();

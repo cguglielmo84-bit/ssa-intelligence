@@ -10,7 +10,7 @@
 import { Request, Response } from 'express';
 import { prisma } from '../lib/prisma.js';
 import { FeedbackType, FeedbackStatus } from '@prisma/client';
-import { safeErrorMessage } from '../lib/error-utils.js';
+import { safeErrorMessage, isPrismaNotFound } from '../lib/error-utils.js';
 
 // Validation constants
 const MAX_TITLE_LENGTH = 200;
@@ -225,6 +225,9 @@ export async function updateFeedback(req: Request, res: Response) {
       data: updated
     });
   } catch (error) {
+    if (isPrismaNotFound(error)) {
+      return res.status(404).json({ error: 'Feedback not found.' });
+    }
     console.error('Error updating feedback:', error);
     return res.status(500).json({
       error: 'Failed to update feedback',
@@ -257,6 +260,9 @@ export async function deleteFeedback(req: Request, res: Response) {
 
     return res.json({ success: true });
   } catch (error) {
+    if (isPrismaNotFound(error)) {
+      return res.status(404).json({ error: 'Feedback not found.' });
+    }
     console.error('Error deleting feedback:', error);
     return res.status(500).json({
       error: 'Failed to delete feedback',
