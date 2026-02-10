@@ -84,59 +84,79 @@ router.get('/status', async (req: Request, res: Response) => {
   res.json(state);
 });
 
+// Advisory lock ID for refresh (unique, orchestrator uses 937451)
+const REFRESH_LOCK_ID = BigInt(937452);
+
 // POST /api/news/refresh - Trigger news fetch
 router.post('/', async (req: Request, res: Response) => {
   // Extract days parameter (default to 1 day)
   const { days = 1 } = req.body || {};
   const daysNum = Math.min(Math.max(Number(days) || 1, 1), 30); // Clamp between 1-30
 
-  // Check current state from database
-  let refreshState = await getRefreshState();
+  // Use PG advisory lock to atomically check-and-set refresh state (prevents TOCTOU race)
+  const canProceed = await prisma.$transaction(async (tx) => {
+    const lockResult = await tx.$queryRaw<{ locked: boolean }[]>`
+      SELECT pg_try_advisory_xact_lock(${REFRESH_LOCK_ID}) AS locked
+    `;
+    if (!lockResult?.[0]?.locked) return false;
 
-  // Prevent concurrent refreshes, but auto-recover from stuck refreshes
-  if (refreshState.isRefreshing) {
-    // Check if refresh has been stuck for more than 10 minutes (likely crashed/killed on Render)
-    const STALE_THRESHOLD_MS = 10 * 60 * 1000; // 10 minutes
-    const startedAt = refreshState.startedAt ? new Date(refreshState.startedAt).getTime() : 0;
-    const refreshAge = startedAt ? Date.now() - startedAt : Infinity;
+    const config = await tx.newsConfig.findUnique({
+      where: { key: 'refresh_status' },
+    });
+    const currentState: RefreshState = config ? JSON.parse(config.value) : { ...DEFAULT_STATE };
 
-    if (refreshAge > STALE_THRESHOLD_MS) {
-      console.log('[refresh] Detected stale refresh (started', Math.round(refreshAge / 60000), 'min ago), auto-recovering...');
-      // Mark as failed and allow new refresh
-      refreshState.isRefreshing = false;
-      refreshState.lastError = 'Previous refresh timed out';
-      refreshState.steps = refreshState.steps.map(step => ({
-        ...step,
-        status: step.status === 'in_progress' ? 'error' : step.status,
-      }));
-      await setRefreshState(refreshState);
-    } else {
-      res.status(409).json({
-        error: 'Refresh already in progress',
-        status: refreshState,
-      });
-      return;
+    if (currentState.isRefreshing) {
+      // Check if refresh has been stuck for more than 10 minutes (likely crashed/killed on Render)
+      const STALE_THRESHOLD_MS = 10 * 60 * 1000;
+      const startedAt = currentState.startedAt ? new Date(currentState.startedAt).getTime() : 0;
+      const refreshAge = startedAt ? Date.now() - startedAt : Infinity;
+
+      if (refreshAge > STALE_THRESHOLD_MS) {
+        console.log('[refresh] Detected stale refresh (started', Math.round(refreshAge / 60000), 'min ago), auto-recovering...');
+        // Mark as failed and allow new refresh (fall through)
+      } else {
+        return false;
+      }
     }
+
+    // Atomically set refreshing within the lock
+    const newState: RefreshState = {
+      ...DEFAULT_STATE,
+      isRefreshing: true,
+      startedAt: new Date().toISOString(),
+      progress: 0,
+      progressMessage: 'Starting...',
+      currentStep: 'init',
+      steps: [
+        { step: 'Loading revenue owners', status: 'in_progress' },
+        { step: 'Layer 1: RSS feeds & APIs', status: 'pending' },
+        { step: 'Layer 2: AI web search', status: 'pending' },
+        { step: 'Combining & deduplicating', status: 'pending' },
+        { step: 'AI processing & categorization', status: 'pending' },
+        { step: 'Saving to database', status: 'pending' },
+      ],
+    };
+
+    await tx.newsConfig.upsert({
+      where: { key: 'refresh_status' },
+      create: { key: 'refresh_status', value: JSON.stringify(newState) },
+      update: { value: JSON.stringify(newState) },
+    });
+
+    return true;
+  });
+
+  if (!canProceed) {
+    const currentStatus = await getRefreshState();
+    res.status(409).json({
+      error: 'Refresh already in progress',
+      status: currentStatus,
+    });
+    return;
   }
 
-  // Initialize refresh state
-  refreshState = {
-    ...DEFAULT_STATE,
-    isRefreshing: true,
-    startedAt: new Date().toISOString(),  // Track start time for stale detection
-    progress: 0,
-    progressMessage: 'Starting...',
-    currentStep: 'init',
-    steps: [
-      { step: 'Loading revenue owners', status: 'in_progress' },
-      { step: 'Layer 1: RSS feeds & APIs', status: 'pending' },
-      { step: 'Layer 2: AI web search', status: 'pending' },
-      { step: 'Combining & deduplicating', status: 'pending' },
-      { step: 'AI processing & categorization', status: 'pending' },
-      { step: 'Saving to database', status: 'pending' },
-    ],
-  };
-  await setRefreshState(refreshState);
+  // Re-read the state we just set (outside the transaction, lock is released)
+  let refreshState = await getRefreshState();
 
   try {
     // Get all revenue owners with their call diets

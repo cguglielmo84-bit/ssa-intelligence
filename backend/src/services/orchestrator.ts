@@ -1779,6 +1779,45 @@ export class ResearchOrchestrator {
         throw new Error('Segment Analysis missing overview or segments');
       }
     }
+
+    if (stageId === 'financial_snapshot') {
+      const metrics = output?.kpi_table?.metrics;
+      if (!Array.isArray(metrics) || metrics.length === 0) {
+        throw new Error('Financial Snapshot missing kpi_table.metrics');
+      }
+    }
+
+    if (stageId === 'company_overview') {
+      if (!output.business_description) {
+        throw new Error('Company Overview missing business_description');
+      }
+    }
+
+    if (stageId === 'peer_benchmarking') {
+      const peers = output?.peer_comparison_table?.peers;
+      if (!Array.isArray(peers) || peers.length === 0) {
+        throw new Error('Peer Benchmarking missing peers');
+      }
+    }
+
+    if (stageId === 'recent_news') {
+      if (!Array.isArray(output.news_items) || output.news_items.length === 0) {
+        throw new Error('Recent News missing news_items');
+      }
+    }
+
+    if (stageId === 'conversation_starters') {
+      if (!Array.isArray(output.conversation_starters) || output.conversation_starters.length < 3) {
+        throw new Error('Conversation Starters missing items');
+      }
+    }
+
+    if (stageId === 'key_execs_and_board') {
+      const execs = output?.c_suite?.executives;
+      if (!Array.isArray(execs) || execs.length === 0) {
+        throw new Error('Key Execs missing executives');
+      }
+    }
   }
 
   /**
