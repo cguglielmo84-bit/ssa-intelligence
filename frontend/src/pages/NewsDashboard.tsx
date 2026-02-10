@@ -45,6 +45,14 @@ import {
 } from '../services/newsManager';
 import { resolveCompanyApi, CompanySuggestion } from '../services/researchManager';
 
+/** Escape HTML special characters to prevent XSS in raw HTML templates */
+const escapeHtml = (str: string): string =>
+  str.replace(/&/g, '&amp;')
+     .replace(/</g, '&lt;')
+     .replace(/>/g, '&gt;')
+     .replace(/"/g, '&quot;')
+     .replace(/'/g, '&#39;');
+
 interface NewsDashboardProps {
   onNavigate: (path: string) => void;
 }
@@ -289,12 +297,12 @@ export const NewsDashboard: React.FC<NewsDashboardProps> = ({ onNavigate }) => {
   <meta charset="UTF-8">
 </head>
 <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
-  <h2 style="color: #003399; margin-bottom: 16px;">${article.headline}</h2>
-  ${summary ? `<div style="margin-bottom: 16px;"><strong>Summary:</strong><br/>${summary.replace(/\n/g, '<br/>')}</div>` : ''}
-  ${whyItMatters ? `<div style="margin-bottom: 16px;"><strong>Why it Matters:</strong><br/>${whyItMatters.replace(/\n/g, '<br/>')}</div>` : ''}
-  ${tagText ? `<div style="margin-bottom: 16px;"><strong>Tags:</strong> ${tagText}</div>` : ''}
+  <h2 style="color: #003399; margin-bottom: 16px;">${escapeHtml(article.headline)}</h2>
+  ${summary ? `<div style="margin-bottom: 16px;"><strong>Summary:</strong><br/>${escapeHtml(summary).replace(/\n/g, '<br/>')}</div>` : ''}
+  ${whyItMatters ? `<div style="margin-bottom: 16px;"><strong>Why it Matters:</strong><br/>${escapeHtml(whyItMatters).replace(/\n/g, '<br/>')}</div>` : ''}
+  ${tagText ? `<div style="margin-bottom: 16px;"><strong>Tags:</strong> ${escapeHtml(tagText)}</div>` : ''}
   <div style="margin-top: 20px;">
-    <a href="${article.sourceUrl}" style="color: #003399; font-weight: bold;">Read More</a>
+    <a href="${escapeHtml(article.sourceUrl)}" style="color: #003399; font-weight: bold;">Read More</a>
   </div>
 </body>
 </html>`.trim();

@@ -66,8 +66,11 @@ const __dirname = path.dirname(__filename);
 app.set('trust proxy', 1);
 
 // CORS
+const corsOrigin = process.env.CORS_ORIGIN;
 app.use(cors({
-  origin: process.env.CORS_ORIGIN || 'http://localhost:5174',
+  origin: corsOrigin?.includes(',')
+    ? corsOrigin.split(',').map(s => s.trim())
+    : corsOrigin || 'http://localhost:5174',
   credentials: true
 }));
 
@@ -112,6 +115,15 @@ const writeLimiter: RequestHandler | undefined = isProd
   ? rateLimit({
       windowMs: parseEnvInt('RATE_LIMIT_WRITE_WINDOW_MS', 900000), // 15 minutes
       max: parseEnvInt('RATE_LIMIT_WRITE_MAX', 60),
+      message: rateLimitMessage
+    })
+  : undefined;
+
+// Stricter rate limit for anonymous feedback endpoint
+const feedbackLimiter: RequestHandler | undefined = isProd
+  ? rateLimit({
+      windowMs: 15 * 60 * 1000,
+      max: 5,
       message: rateLimitMessage
     })
   : undefined;
@@ -178,7 +190,7 @@ app.delete('/api/research/:id', ...applyLimiter(writeLimiter), authMiddleware, d
 app.get('/api/research/:id/export/pdf', ...applyLimiter(exportLimiter), authMiddleware, exportResearchPdf);
 app.post('/api/research/:id/rerun', ...applyLimiter(writeLimiter), authMiddleware, rerunResearchSections);
 // Bug Tracker / Feedback routes
-app.post('/api/feedback', ...applyLimiter(writeLimiter), submitFeedback);
+app.post('/api/feedback', ...applyLimiter(feedbackLimiter), submitFeedback);
 app.get('/api/feedback', ...applyLimiter(getLimiter), authMiddleware, listFeedback);
 app.patch('/api/feedback/:id', ...applyLimiter(writeLimiter), authMiddleware, updateFeedback);
 app.delete('/api/feedback/:id', ...applyLimiter(writeLimiter), authMiddleware, deleteFeedback);
@@ -216,16 +228,16 @@ app.get('/api/report-blueprints', ...applyLimiter(getLimiter), authMiddleware, g
 app.post('/api/company/resolve', ...applyLimiter(writeLimiter), authMiddleware, resolveCompany);
 
 // ============================================================================
-// NEWS INTELLIGENCE API (No auth for MVP)
+// NEWS INTELLIGENCE API
 // ============================================================================
-app.use('/api/news/tags', newsTagsRouter);
-app.use('/api/news/companies', newsCompaniesRouter);
-app.use('/api/news/people', newsPeopleRouter);
-app.use('/api/news/revenue-owners', newsRevenueOwnersRouter);
-app.use('/api/news/articles', newsArticlesRouter);
-app.use('/api/news/refresh', newsRefreshRouter);
-app.use('/api/news/search', newsSearchRouter);
-app.use('/api/news/export', newsExportRouter);
+app.use('/api/news/tags', authMiddleware, newsTagsRouter);
+app.use('/api/news/companies', authMiddleware, newsCompaniesRouter);
+app.use('/api/news/people', authMiddleware, newsPeopleRouter);
+app.use('/api/news/revenue-owners', authMiddleware, newsRevenueOwnersRouter);
+app.use('/api/news/articles', authMiddleware, newsArticlesRouter);
+app.use('/api/news/refresh', authMiddleware, newsRefreshRouter);
+app.use('/api/news/search', authMiddleware, newsSearchRouter);
+app.use('/api/news/export', authMiddleware, newsExportRouter);
 
 // Dev-only auth echo to inspect forwarded headers
 app.get('/api/debug/auth', authMiddleware, (req, res) => {
