@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { UserEditModal } from '../components/UserEditModal';
 import { UserAddModal } from '../components/UserAddModal';
 import { applyUserDeletionToGroups } from '../utils/adminUsers';
+import { ConfirmDialog } from '../components/ConfirmDialog';
 
 type AdminUser = {
   id: string;
@@ -34,6 +35,13 @@ const fetchJson = async (path: string, options?: RequestInit) => {
 };
 
 export const AdminUsers: React.FC<{ isAdmin?: boolean; currentUserId?: string }> = ({ isAdmin, currentUserId }) => {
+  const [confirmState, setConfirmState] = useState<{
+    open: boolean;
+    title: string;
+    message: string;
+    onConfirm: () => void;
+    variant?: 'danger' | 'default';
+  } | null>(null);
   const [users, setUsers] = useState<AdminUser[]>([]);
   const [groups, setGroups] = useState<AdminGroup[]>([]);
   const [loading, setLoading] = useState(true);
@@ -257,9 +265,16 @@ export const AdminUsers: React.FC<{ isAdmin?: boolean; currentUserId?: string }>
               </div>
               <button
                 onClick={() => {
-                  if (confirm(`Delete group "${group.name}"? Members will be removed from this group.`)) {
-                    handleDeleteGroup(group.id);
-                  }
+                  setConfirmState({
+                    open: true,
+                    title: 'Delete Group',
+                    message: `Delete group "${group.name}"? Members will be removed from this group.`,
+                    variant: 'danger',
+                    onConfirm: () => {
+                      setConfirmState(null);
+                      handleDeleteGroup(group.id);
+                    },
+                  });
                 }}
                 disabled={deletingGroupId === group.id}
                 className="text-slate-400 hover:text-rose-600 p-1 disabled:opacity-50"
@@ -388,6 +403,17 @@ export const AdminUsers: React.FC<{ isAdmin?: boolean; currentUserId?: string }>
           groups={groups}
           onClose={() => setShowAddUser(false)}
           onSave={handleAddUser}
+        />
+      )}
+
+      {confirmState && (
+        <ConfirmDialog
+          open={confirmState.open}
+          title={confirmState.title}
+          message={confirmState.message}
+          variant={confirmState.variant}
+          onConfirm={confirmState.onConfirm}
+          onCancel={() => setConfirmState(null)}
         />
       )}
     </div>
