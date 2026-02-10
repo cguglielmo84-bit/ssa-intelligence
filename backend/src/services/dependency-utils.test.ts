@@ -1,18 +1,21 @@
-import assert from 'node:assert/strict';
+import { describe, it, expect } from 'vitest';
 import { collectBlockedStages } from './dependency-utils.js';
 
-const deps = {
-  foundation: [],
-  financial_snapshot: ['foundation'],
-  company_overview: ['foundation'],
-  exec_summary: ['foundation', 'financial_snapshot', 'company_overview']
-} as const;
+describe('dependency-utils', () => {
+  const deps = {
+    foundation: [],
+    financial_snapshot: ['foundation'],
+    company_overview: ['foundation'],
+    exec_summary: ['foundation', 'financial_snapshot', 'company_overview']
+  } as const;
 
-const subJobs = [
-  { stage: 'financial_snapshot', status: 'failed' },
-  { stage: 'exec_summary', status: 'pending' }
-];
+  const subJobs = [
+    { stage: 'financial_snapshot', status: 'failed' },
+    { stage: 'exec_summary', status: 'pending' }
+  ];
 
-const blocked = collectBlockedStages(['financial_snapshot'], subJobs, deps);
-assert.deepEqual(blocked, ['exec_summary']);
-console.log('dependency utils tests passed');
+  it('collects stages blocked by a failed dependency', () => {
+    const blocked = collectBlockedStages(['financial_snapshot'], subJobs, deps);
+    expect(blocked).toEqual(['exec_summary']);
+  });
+});

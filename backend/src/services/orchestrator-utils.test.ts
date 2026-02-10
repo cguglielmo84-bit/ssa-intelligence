@@ -1,32 +1,43 @@
-import assert from 'node:assert/strict';
+import { describe, it, expect } from 'vitest';
 import {
   computeFinalStatus,
   computeOverallConfidence,
   computeTerminalProgress
 } from '../services/orchestrator-utils.js';
 
-const subJobs = [
-  { status: 'completed' },
-  { status: 'failed' },
-  { status: 'cancelled' }
-];
+describe('orchestrator-utils', () => {
+  const subJobs = [
+    { status: 'completed' },
+    { status: 'failed' },
+    { status: 'cancelled' }
+  ];
 
-assert.equal(computeTerminalProgress(subJobs), 1);
-assert.equal(computeFinalStatus('running', subJobs), 'completed_with_errors');
+  it('computes terminal progress', () => {
+    expect(computeTerminalProgress(subJobs)).toBe(1);
+  });
 
-const confidenceWithFailure = computeOverallConfidence([
-  { status: 'completed', confidence: 'HIGH' },
-  { status: 'failed' }
-]);
-assert.equal(confidenceWithFailure.score, 0.6);
-assert.equal(confidenceWithFailure.label, 'MEDIUM');
+  it('computes final status with mixed results', () => {
+    expect(computeFinalStatus('running', subJobs)).toBe('completed_with_errors');
+  });
 
-const confidenceFailedOnly = computeOverallConfidence([{ status: 'failed' }]);
-assert.equal(confidenceFailedOnly.score, 0.3);
-assert.equal(confidenceFailedOnly.label, 'LOW');
+  it('computes overall confidence with failure', () => {
+    const result = computeOverallConfidence([
+      { status: 'completed', confidence: 'HIGH' },
+      { status: 'failed' }
+    ]);
+    expect(result.score).toBe(0.6);
+    expect(result.label).toBe('MEDIUM');
+  });
 
-const confidenceEmpty = computeOverallConfidence([]);
-assert.equal(confidenceEmpty.score, null);
-assert.equal(confidenceEmpty.label, null);
+  it('computes overall confidence for failed only', () => {
+    const result = computeOverallConfidence([{ status: 'failed' }]);
+    expect(result.score).toBe(0.3);
+    expect(result.label).toBe('LOW');
+  });
 
-console.log('orchestrator utils tests passed');
+  it('computes overall confidence for empty array', () => {
+    const result = computeOverallConfidence([]);
+    expect(result.score).toBe(null);
+    expect(result.label).toBe(null);
+  });
+});

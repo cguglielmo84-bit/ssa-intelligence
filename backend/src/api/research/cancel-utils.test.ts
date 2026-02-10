@@ -1,10 +1,12 @@
-import assert from 'node:assert/strict';
+import { describe, it, expect } from 'vitest';
 import { buildCancelResponse } from './cancel-utils.js';
 
-assert.deepEqual(buildCancelResponse('job-123'), {
-  success: true,
-  jobId: 'job-123',
-  status: 'cancelled'
+describe('cancel-utils', () => {
+  it('builds a cancel response', () => {
+    expect(buildCancelResponse('job-123')).toEqual({
+      success: true,
+      jobId: 'job-123',
+      status: 'cancelled'
+    });
+  });
 });
-
-console.log('cancel utils tests passed');
