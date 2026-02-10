@@ -27,7 +27,7 @@ export default function App() {
     if (fallback) {
       setLogoToken(fallback);
     }
-    fetch(`${apiBase}/config`)
+    fetch(`${apiBase}/config`, { credentials: 'include' })
       .then((res) => (res.ok ? res.json() : null))
       .then((data) => {
         const token = data?.logoToken;
