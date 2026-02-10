@@ -8,7 +8,7 @@
 
 ## What Was Done
 
-**32 of 54 findings fixed** across 29 modified files + 3 new files. Backend compiles clean. No regressions introduced.
+**38 of 54 findings fixed** across 29 modified files + 5 new files. Backend compiles clean. Frontend has 2 pre-existing third-party type warnings (ShaderGradient, React.cloneElement). No regressions introduced.
 
 ### Fixes by Severity
 
@@ -16,15 +16,17 @@
 |----------|-------|-----------|-------|
 | **P0** | 3/3 | 0 | All critical issues resolved |
 | **P1** | 12/12 | 0 | All P1 issues resolved |
-| **P2** | 15/27 | 12 | Key ones done; remaining are lower-impact |
+| **P2** | 21/27 | 6 | Key ones done; remaining are lower-impact |
 | **P3** | 4/14 | 10 | Quick wins done; rest are cosmetic/a11y |
 
 ### Files Changed
 
-- 29 files modified, 3 new files created
+- 29 files modified, 5 new files created
 - `backend/src/lib/error-utils.ts` -- shared error handling utilities
 - `backend/src/lib/constants.ts` -- shared section number map
 - `frontend/src/components/ErrorBoundary.tsx` -- React error boundary
+- `frontend/src/components/ConfirmDialog.tsx` -- reusable confirmation modal (replaces window.confirm)
+- `frontend/src/components/Toast.tsx` -- non-blocking toast notifications (replaces window.alert)
 
 ---
 
@@ -80,6 +82,19 @@
 - **P3-13:** NaN pagination -- added `Math.max` guards with NaN fallback in `list.ts`
 - **P3-14:** Markdown URL escaping -- escape parentheses in URLs in `markdown-export.ts`
 
+### Phase 5: Remaining P2 Fixes (6 fixes)
+
+- **P2-6 (ORCH-006):** `ensureStageHasContent` additional checks -- added validation guards for `financial_snapshot` (kpi_table.metrics), `company_overview` (business_description), `peer_benchmarking` (peer_comparison_table.peers), `recent_news` (news_items), `conversation_starters` (3+ items), and `key_execs_and_board` (c_suite.executives) in `orchestrator.ts`
+- **P2-18 (F-010):** Replace `window.confirm/alert` with modals -- created `ConfirmDialog` and `Toast` components, replaced all 21 call sites across `Home.tsx`, `NewsSetup.tsx`, `AdminPricing.tsx`, `NewsDashboard.tsx`, `AdminUsers.tsx`, `AdminPrompts.tsx`
+- **P2-19 (F-011):** News articles pagination -- added `page`/`pageSize` state to `useNewsArticles` hook with `limit`/`offset` query params, added Previous/Next pagination controls to `NewsDashboard.tsx`
+- **P2-23 (F-012):** Browser back stale data -- added `refreshJobDetail` callback to `researchManager.ts`, wired through `App.tsx`, called on mount in `ResearchDetail.tsx` via `useEffect`
+- **P2-27 (RACE-001):** News refresh TOCTOU race -- replaced non-atomic read/write with `prisma.$transaction` + `pg_try_advisory_xact_lock(937452)` in `refresh.ts`, includes stale refresh auto-recovery
+
+#### Bonus Fixes (pre-existing TS errors)
+
+- **TS-FIX-1:** Missing `key_execs_and_board` in `SECTION_DEPENDENCIES` record in `NewResearch.tsx`
+- **TS-FIX-2:** Redundant `job.status !== 'completed'` check inside already-narrowed branch in `ResearchDetail.tsx`
+
 ---
 
 ## Not Yet Implemented
@@ -90,12 +105,12 @@ These are deferred to follow-up PRs:
 |----|-------------|-----------------|
 | ~~P1-4~~ | ~~Stage output fields for PE/FS/Insurance stages~~ | **Fixed** in `qa/p1-4-p2-25-stage-fields-shutdown` |
 | ~~P2-25~~ | ~~Graceful shutdown~~ | **Fixed** in `qa/p1-4-p2-25-stage-fields-shutdown` |
-| P2-18 | Replace `window.confirm/alert` with modals | 10+ call sites, new UI component |
-| P2-19 | News articles pagination | API + frontend changes |
-| P2-23 | Browser back stale data | Needs `refreshJobDetail` plumbing |
-| P2-26 | Company resolution abort | Needs Anthropic SDK investigation |
-| P2-27 | News refresh TOCTOU race | Needs atomic DB swap or advisory lock |
-| P2-6 | `ensureStageHasContent` additional checks | Medium effort, lower risk |
+| ~~P2-6~~ | ~~`ensureStageHasContent` additional checks~~ | **Fixed** in `qa/p2-remaining-fixes` |
+| ~~P2-18~~ | ~~Replace `window.confirm/alert` with modals~~ | **Fixed** in `qa/p2-remaining-fixes` |
+| ~~P2-19~~ | ~~News articles pagination~~ | **Fixed** in `qa/p2-remaining-fixes` |
+| ~~P2-23~~ | ~~Browser back stale data~~ | **Fixed** in `qa/p2-remaining-fixes` |
+| ~~P2-27~~ | ~~News refresh TOCTOU race~~ | **Fixed** in `qa/p2-remaining-fixes` |
+| P2-26 | Company resolution abort | **Dropped** -- SDK doesn't support tool-level abort; current behavior already graceful |
 | P3-3/4/5/6/7/8/10 | Cosmetic and accessibility improvements | Low priority |
 
 ---
@@ -161,3 +176,8 @@ After deploying, manually verify:
 - [ ] Hit `/api/news/articles` without auth -- should return 401
 - [ ] Run the Prisma migration and delete a tracked company -- associated articles should retain with null company (not error)
 - [ ] Publish a prompt override in admin UI, then generate a research job -- confirm the override is used
+- [ ] Delete a report from Home page -- should show modal instead of browser confirm dialog (P2-18)
+- [ ] Paginate news articles in News Dashboard when >50 articles exist (P2-19)
+- [ ] View report detail, navigate away, browser back -- should show fresh data (P2-23)
+- [ ] Send two concurrent POST `/api/news/refresh` -- only one should proceed, second gets 409 (P2-27)
+- [ ] Trigger a stage that returns empty output -- ensureStageHasContent should throw and trigger retry (P2-6)

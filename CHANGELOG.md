@@ -5,6 +5,13 @@ All notable changes to this repository will be documented in this file.
 The format is based on Keep a Changelog and this project adheres to Semantic Versioning.
 
 ## [Unreleased]
+- Fix: (P2-6) add content validation guards for 6 additional stages in `ensureStageHasContent` (financial_snapshot, company_overview, peer_benchmarking, recent_news, conversation_starters, key_execs_and_board).
+- Fix: (P2-18) replace all 21 `window.confirm`/`window.alert` calls with `ConfirmDialog` and `Toast` components across 6 pages.
+- Fix: (P2-19) add pagination to news articles — `useNewsArticles` hook now supports page/pageSize with limit/offset query params; Previous/Next controls in News Dashboard.
+- Fix: (P2-23) fix browser back showing stale data — `ResearchDetail` now calls `refreshJobDetail` on mount to fetch fresh data.
+- Fix: (P2-27) fix news refresh TOCTOU race — use PG advisory lock (`pg_try_advisory_xact_lock`) for atomic check-and-set in refresh POST handler.
+- Fix: add missing `key_execs_and_board` to `SECTION_DEPENDENCIES` in NewResearch.
+- Fix: remove redundant `status !== 'completed'` check in narrowed branch in ResearchDetail.
 - Fix: (P1-4) add 9 stage output columns to ResearchJob for PE/FS/Insurance report types so outputs are saved on the parent job and available as context for downstream stages.
 - Fix: (P2-25) graceful shutdown — SIGTERM/SIGINT now wait for in-progress jobs to finish (up to 60s), close HTTP server, and disconnect DB before exiting.
 - Fix: (P0) XSS escape all interpolated fields in news email HTML template.
