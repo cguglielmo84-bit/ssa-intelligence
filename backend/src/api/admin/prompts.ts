@@ -17,6 +17,7 @@ import {
   type SectionId,
   type ReportTypeId
 } from '../../services/prompt-resolver.js';
+import { safeErrorMessage } from '../../lib/error-utils.js';
 
 // ============================================================================
 // LIST PROMPTS
@@ -49,7 +50,7 @@ export const listPrompts: RequestHandler = async (req, res) => {
     console.error('Error listing prompts:', error);
     return res.status(500).json({
       error: 'Failed to list prompts',
-      message: error instanceof Error ? error.message : 'Unknown error'
+      message: safeErrorMessage(error)
     });
   }
 };
@@ -92,7 +93,7 @@ export const getPrompt: RequestHandler = async (req, res) => {
     console.error('Error getting prompt:', error);
     return res.status(500).json({
       error: 'Failed to get prompt',
-      message: error instanceof Error ? error.message : 'Unknown error'
+      message: safeErrorMessage(error)
     });
   }
 };
@@ -160,7 +161,7 @@ export const createPrompt: RequestHandler = async (req, res) => {
     console.error('Error creating prompt:', error);
     return res.status(500).json({
       error: 'Failed to create prompt',
-      message: error instanceof Error ? error.message : 'Unknown error'
+      message: safeErrorMessage(error)
     });
   }
 };
@@ -249,7 +250,7 @@ export const updatePrompt: RequestHandler = async (req, res) => {
     console.error('Error updating prompt:', error);
     return res.status(500).json({
       error: 'Failed to update prompt',
-      message: error instanceof Error ? error.message : 'Unknown error'
+      message: safeErrorMessage(error)
     });
   }
 };
@@ -285,7 +286,7 @@ export const deletePrompt: RequestHandler = async (req, res) => {
     console.error('Error deleting prompt:', error);
     return res.status(500).json({
       error: 'Failed to delete prompt',
-      message: error instanceof Error ? error.message : 'Unknown error'
+      message: safeErrorMessage(error)
     });
   }
 };
@@ -345,7 +346,7 @@ export const publishPrompt: RequestHandler = async (req, res) => {
     console.error('Error publishing prompt:', error);
     return res.status(500).json({
       error: 'Failed to publish prompt',
-      message: error instanceof Error ? error.message : 'Unknown error'
+      message: safeErrorMessage(error)
     });
   }
 };
@@ -440,7 +441,7 @@ export const revertPrompt: RequestHandler = async (req, res) => {
     console.error('Error reverting prompt:', error);
     return res.status(500).json({
       error: 'Failed to revert prompt',
-      message: error instanceof Error ? error.message : 'Unknown error'
+      message: safeErrorMessage(error)
     });
   }
 };
@@ -469,7 +470,7 @@ export const listVersions: RequestHandler = async (req, res) => {
     console.error('Error listing versions:', error);
     return res.status(500).json({
       error: 'Failed to list versions',
-      message: error instanceof Error ? error.message : 'Unknown error'
+      message: safeErrorMessage(error)
     });
   }
 };
@@ -526,7 +527,7 @@ export const testPrompt: RequestHandler = async (req, res) => {
     console.error('Error starting test:', error);
     return res.status(500).json({
       error: 'Failed to start test',
-      message: error instanceof Error ? error.message : 'Unknown error'
+      message: safeErrorMessage(error)
     });
   }
 };
@@ -552,7 +553,7 @@ export const getTestRun: RequestHandler = async (req, res) => {
     console.error('Error getting test run:', error);
     return res.status(500).json({
       error: 'Failed to get test run',
-      message: error instanceof Error ? error.message : 'Unknown error'
+      message: safeErrorMessage(error)
     });
   }
 };

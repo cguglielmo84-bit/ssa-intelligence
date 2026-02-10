@@ -5,6 +5,41 @@ All notable changes to this repository will be documented in this file.
 The format is based on Keep a Changelog and this project adheres to Semantic Versioning.
 
 ## [Unreleased]
+- Fix: (P0) XSS escape all interpolated fields in news email HTML template.
+- Fix: (P0) cancel button now soft-cancels jobs instead of hard-deleting, preserving audit trail.
+- Fix: (P0) cancel no longer removes jobs from UI state immediately.
+- Fix: add authMiddleware to all news API routes (previously unauthenticated).
+- Fix: wire prompt resolver into orchestrator so published DB overrides take effect.
+- Fix: cost tracking failures no longer crash research stages.
+- Fix: eliminate double cost calculation in orchestrator.
+- Fix: add DATABASE_URL startup guard.
+- Fix: add `credentials: 'include'` to all frontend fetch calls for cross-origin auth.
+- Fix: add AbortController cleanup for polling loops in researchManager and AdminPrompts.
+- Fix: add onCancel prop to fallback route.
+- Fix: duplicate detection now includes 'completed_with_errors' status.
+- Fix: add onDelete SetNull to NewsArticle company/person/tag FKs.
+- Fix: wrap Playwright browser in try/finally with 30s timeouts to prevent leaks.
+- Fix: prompt injection boundary framing around user-supplied prompt context.
+- Fix: stricter rate limit (5/15min) for anonymous feedback endpoint.
+- Fix: support comma-separated CORS_ORIGIN for multi-origin deployments.
+- Fix: sanitize PDF export filenames (strip special characters).
+- Fix: auto-expand missing section dependencies instead of rejecting.
+- Fix: add secondary stale check for running sub-jobs.
+- Fix: remove redundant per-stage overallConfidence overwrite.
+- Fix: generic single-element array unwrapping before schema validation.
+- Fix: cap KPI metrics at 50 to prevent unbounded output.
+- Fix: negative pricing rate validation.
+- Fix: NaN pagination guards with fallback defaults.
+- Fix: Unicode company name support (regex \\p{L}\\p{N}).
+- Fix: escape parentheses in markdown export URLs.
+- Fix: remove redundant setCurrentPath in navigate function.
+- UI: add ErrorBoundary component wrapping main content.
+- UI: add default style/icon/label for unknown status values in StatusPill.
+- UI: pass jobId prop to ResearchDetail instead of hash parsing.
+- UI: wrap fetchMetrics in useCallback with proper dependencies.
+- Refactor: extract shared SECTION_NUMBER_MAP constant and safeErrorMessage/isPrismaNotFound utilities.
+- Refactor: standardize error handling across all 12 API route handlers.
+- Docs: add 5-domain QA audit findings and remediation summary.
 - Refactor: remove string character limits from validation schemas (analyst quotes, conversation starters, distribution analysis).
 - Feat: add `key_execs_and_board` core section with Board of Directors, C-Suite, and business unit leaders.
 - Refactor: slim down `company_overview.key_leadership` to avoid duplication with new key_execs_and_board section.

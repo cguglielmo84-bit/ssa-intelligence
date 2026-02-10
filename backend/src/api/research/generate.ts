@@ -9,6 +9,7 @@ import { prisma } from '../../lib/prisma.js';
 import { getResearchOrchestrator } from '../../services/orchestrator.js';
 import { ensureDomainForJob } from '../../services/domain-infer.js';
 import { getReportBlueprint } from '../../services/report-blueprints.js';
+import { safeErrorMessage } from '../../lib/error-utils.js';
 
 interface GenerateRequestBody {
   companyName: string;
@@ -44,7 +45,7 @@ const toTitleLike = (value: string) => {
     .join(' ');
 };
 
-const hasMeaningfulChars = (value: string) => /[A-Za-z0-9]/.test(value);
+const hasMeaningfulChars = (value: string) => /[\p{L}\p{N}]/u.test(value);
 
 const normalizeForKey = (value: string) => value.trim().replace(/\s+/g, ' ').toLowerCase();
 const normalizeDomain = (value: string | undefined | null) => {
@@ -126,7 +127,7 @@ export async function generateResearch(req: Request, res: Response) {
 
     const allowedSections = new Set(blueprint.sections.map((section) => section.id));
     const rawSelected = Array.isArray(body.selectedSections) ? body.selectedSections : [];
-    const selectedSections = Array.from(
+    let selectedSections = Array.from(
       new Set(
         rawSelected
           .map((s) => (typeof s === 'string' ? s.trim() : ''))
@@ -141,16 +142,21 @@ export async function generateResearch(req: Request, res: Response) {
     const dependencyMap = new Map(
       blueprint.sections.map((section) => [section.id, section.dependencies || []])
     );
-    const missingDependencies = selectedSections.flatMap((sectionId) => {
-      const deps = dependencyMap.get(sectionId) || [];
-      return deps.filter((dep) => !selectedSections.includes(dep));
-    });
-    if (missingDependencies.length) {
-      const uniqueMissing = Array.from(new Set(missingDependencies));
-      return res.status(400).json({
-        error: `Missing required dependencies: ${uniqueMissing.join(', ')}`
-      });
+    // Auto-expand missing dependencies (including transitive) instead of rejecting
+    const selected = new Set(selectedSections);
+    let changed = true;
+    while (changed) {
+      changed = false;
+      for (const sectionId of Array.from(selected)) {
+        for (const dep of dependencyMap.get(sectionId) || []) {
+          if (!selected.has(dep)) {
+            selected.add(dep);
+            changed = true;
+          }
+        }
+      }
     }
+    selectedSections = Array.from(selected);
 
     const visibilityScope = (body.visibilityScope || 'PRIVATE').toUpperCase() as VisibilityScope;
     const allowedScopes = new Set<VisibilityScope>(['PRIVATE', 'GROUP', 'GENERAL']);
@@ -209,37 +215,38 @@ export async function generateResearch(req: Request, res: Response) {
             industry: industry || null
           }
         ],
-        status: { in: ['queued', 'running', 'completed'] }
+        status: { in: ['queued', 'running', 'completed', 'completed_with_errors'] }
       },
       select: { id: true, status: true }
     });
 
     const force = Boolean(body.force);
     if (existing) {
-      // Only allow force when existing is completed; block queued/running
-      if (!force && existing.status !== 'completed') {
+      const isTerminal = existing.status === 'completed' || existing.status === 'completed_with_errors';
+      // Only allow force when existing is in a terminal state; block queued/running
+      if (!force && !isTerminal) {
         return res.status(409).json({
           error: 'Research already exists for this company/geography/industry.',
           status: existing.status,
           jobId: existing.id
         });
       }
-      if (force && existing.status !== 'completed') {
+      if (force && !isTerminal) {
         return res.status(409).json({
           error: 'An active job exists for this company/geography/industry.',
           status: existing.status,
           jobId: existing.id
         });
       }
-      if (!force && existing.status === 'completed') {
+      if (!force && isTerminal) {
         return res.status(409).json({
           error: 'Research already exists for this company/geography/industry.',
           status: existing.status,
           jobId: existing.id
         });
       }
-      // force + completed: allow
-      console.log('[duplicate] Forcing new research for existing completed job', existing.id);
+      // force + terminal: allow
+      console.log('[duplicate] Forcing new research for existing terminal job', existing.id);
     }
 
     // Create orchestrator
@@ -290,7 +297,7 @@ export async function generateResearch(req: Request, res: Response) {
     
     return res.status(500).json({
       error: 'Failed to create research job',
-      message: error instanceof Error ? error.message : 'Unknown error'
+      message: safeErrorMessage(error)
     });
   }
 }

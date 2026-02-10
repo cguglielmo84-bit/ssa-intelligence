@@ -32,6 +32,7 @@ Thumbs.db
 .worktrees/
 .claude/settings.local.json
 .claude/rules/
+.serena/
 
 # Scratch/debug notes
 SCRATCH.md

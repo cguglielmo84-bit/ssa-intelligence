@@ -128,8 +128,9 @@ export interface RefreshStatus {
 const fetchJson = async (path: string, options?: RequestInit) => {
   const url = `${API_BASE.replace(/\/$/, '')}${path}`;
   const res = await fetch(url, {
-    headers: { 'Content-Type': 'application/json', ...(options?.headers || {}) },
+    credentials: 'include',
     ...options,
+    headers: { 'Content-Type': 'application/json', ...(options?.headers || {}) },
   });
   if (!res.ok) {
     const text = await res.text();

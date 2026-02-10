@@ -120,6 +120,7 @@ const MarkdownText = ({ content }: { content: string }) => {
 
 interface ResearchDetailProps {
   jobs: ResearchJob[];
+  jobId?: string;
   reportBlueprints?: ReportBlueprint[];
   onNavigate: (path: string) => void;
   onRerun?: (jobId: string, sections: SectionId[]) => Promise<void>;
@@ -127,13 +128,13 @@ interface ResearchDetailProps {
 
 export const ResearchDetail: React.FC<ResearchDetailProps> = ({
   jobs,
+  jobId: jobIdProp,
   reportBlueprints = [],
   onNavigate,
   onRerun
 }) => {
-  // Extract ID from URL hash manually since we are using a custom hash router
-  const hash = window.location.hash;
-  const id = hash.split('/research/')[1];
+  // Use prop if provided, otherwise fall back to hash extraction
+  const id = jobIdProp || window.location.hash.split('/research/')[1];
   
   const job = jobs.find(j => j.id === id);
   const reportBlueprint = useMemo(

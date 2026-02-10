@@ -6,6 +6,7 @@
 import type { RequestHandler } from 'express';
 import { prisma } from '../../lib/prisma.js';
 import { getCostTrackingService } from '../../services/cost-tracking.js';
+import { safeErrorMessage, isPrismaNotFound } from '../../lib/error-utils.js';
 
 /**
  * GET /api/admin/pricing
@@ -26,7 +27,7 @@ export const listPricingRates: RequestHandler = async (req, res) => {
     console.error('Error fetching pricing rates:', error);
     return res.status(500).json({
       error: 'Failed to fetch pricing rates',
-      message: error instanceof Error ? error.message : 'Unknown error',
+      message: safeErrorMessage(error),
     });
   }
 };
@@ -100,7 +101,7 @@ export const createPricingRate: RequestHandler = async (req, res) => {
     console.error('Error creating pricing rate:', error);
     return res.status(500).json({
       error: 'Failed to create pricing rate',
-      message: error instanceof Error ? error.message : 'Unknown error',
+      message: safeErrorMessage(error),
     });
   }
 };
@@ -128,6 +129,13 @@ export const updatePricingRate: RequestHandler = async (req, res) => {
       return res.status(400).json({
         error: 'Cannot update inactive pricing rate. Create a new rate instead.',
       });
+    }
+
+    // Validate no negative rates
+    for (const [name, value] of Object.entries({ inputRate, outputRate, cacheReadRate, cacheWriteRate })) {
+      if (typeof value === 'number' && value < 0) {
+        return res.status(400).json({ error: `${name} must be a non-negative number` });
+      }
     }
 
     // Build update data
@@ -163,7 +171,7 @@ export const updatePricingRate: RequestHandler = async (req, res) => {
     console.error('Error updating pricing rate:', error);
     return res.status(500).json({
       error: 'Failed to update pricing rate',
-      message: error instanceof Error ? error.message : 'Unknown error',
+      message: safeErrorMessage(error),
     });
   }
 };
@@ -196,10 +204,13 @@ export const deletePricingRate: RequestHandler = async (req, res) => {
 
     return res.status(204).send();
   } catch (error) {
+    if (isPrismaNotFound(error)) {
+      return res.status(404).json({ error: 'Pricing rate not found' });
+    }
     console.error('Error deleting pricing rate:', error);
     return res.status(500).json({
       error: 'Failed to delete pricing rate',
-      message: error instanceof Error ? error.message : 'Unknown error',
+      message: safeErrorMessage(error),
     });
   }
 };

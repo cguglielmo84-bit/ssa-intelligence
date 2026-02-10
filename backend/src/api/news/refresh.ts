@@ -8,6 +8,7 @@ import { Router, Request, Response } from 'express';
 import { prisma } from '../../lib/prisma.js';
 import { fetchNewsHybrid, CallDietInput } from '../../services/news-fetcher.js';
 import { ArticleStatus, MatchType, FetchLayer } from '@prisma/client';
+import { safeErrorMessage } from '../../lib/error-utils.js';
 
 const router = Router();
 
@@ -367,7 +368,7 @@ router.post('/', async (req: Request, res: Response) => {
     console.error('[refresh] Error:', error);
 
     refreshState.isRefreshing = false;
-    refreshState.lastError = error instanceof Error ? error.message : 'Unknown error';
+    refreshState.lastError = safeErrorMessage(error);
     refreshState.progress = 0;
     refreshState.progressMessage = 'Failed';
     // Mark any in_progress steps as error so spinners don't get stuck
