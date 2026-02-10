@@ -346,9 +346,21 @@ async function gracefulShutdown(signal: string) {
 
   console.log(`${signal} received, initiating graceful shutdown...`);
 
-  // Stop accepting new HTTP connections
-  await new Promise<void>((resolve, reject) => {
-    server.close((err) => (err ? reject(err) : resolve()));
+  // Stop accepting new connections; enforce a hard 10s timeout so
+  // lingering keep-alive connections don't block shutdown indefinitely.
+  await new Promise<void>((resolve) => {
+    const timeout = setTimeout(() => {
+      console.warn('server.close timed out after 10s, forcing connections closed');
+      if (typeof (server as any).closeAllConnections === 'function') {
+        (server as any).closeAllConnections();
+      }
+      resolve();
+    }, 10_000);
+
+    server.close(() => {
+      clearTimeout(timeout);
+      resolve();
+    });
   });
 
   // Stop the orchestrator from picking up new jobs
