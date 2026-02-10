@@ -232,15 +232,23 @@ export const ResearchDetail: React.FC<ResearchDetailProps> = ({
   // Show progress/error view while running or failed
   if (job.status !== 'completed' && job.status !== 'completed_with_errors') {
     const isFailed = job.status === 'failed';
+    const isCancelled = job.status === 'cancelled';
     const isQueued = job.status === 'queued';
     return (
       <div className="max-w-5xl mx-auto h-[calc(100vh-140px)] flex flex-col md:flex-row gap-8 mt-6">
         <div className="w-full md:w-1/3 space-y-6">
           <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
             <h3 className="font-bold text-slate-800 mb-4 flex items-center gap-2">
-              {isFailed ? <AlertTriangle className="text-rose-500" size={18} /> : <Loader2 className="animate-spin text-brand-500" size={18} />}
-              {isFailed ? 'Analysis Failed' : isQueued ? 'Queued for processing' : 'Researching...'}
+              {isFailed || isCancelled
+                ? <AlertTriangle className={isCancelled ? 'text-amber-500' : 'text-rose-500'} size={18} />
+                : <Loader2 className="animate-spin text-brand-500" size={18} />}
+              {isFailed ? 'Analysis Failed' : isCancelled ? 'Analysis Cancelled' : isQueued ? 'Queued for processing' : 'Researching...'}
             </h3>
+            {isCancelled && (
+              <div className="text-sm text-amber-700 bg-amber-50 border border-amber-200 rounded-lg p-3 mb-3">
+                This analysis was cancelled before it could finish. You can start a new analysis from the dashboard.
+              </div>
+            )}
             {isQueued && (
               <div className="text-sm text-amber-700 bg-amber-50 border border-amber-200 rounded-lg p-3 mb-3">
                 {job.currentAction || 'Another job is currently running. This analysis will start automatically.'}
@@ -294,7 +302,7 @@ export const ResearchDetail: React.FC<ResearchDetailProps> = ({
               <div className="text-emerald-400">
                 &gt; Initializing session for: <span className="text-white font-bold">{job.companyName}</span>
               </div>
-              {job.currentAction && (
+              {job.currentAction && !isCancelled && (
                 <div className="flex items-start gap-2 text-blue-300 animate-pulse">
                   <span>&gt;</span>
                   <span>{job.currentAction}</span>
@@ -311,6 +319,11 @@ export const ResearchDetail: React.FC<ResearchDetailProps> = ({
               {isFailed && (
                 <div className="text-rose-400 font-bold mt-4">
                   &gt; JOB FAILED. Please retry or start a new analysis.
+                </div>
+              )}
+              {isCancelled && (
+                <div className="text-amber-400 font-bold mt-4">
+                  &gt; ANALYSIS CANCELLED.
                 </div>
               )}
             </div>
