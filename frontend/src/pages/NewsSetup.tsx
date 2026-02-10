@@ -106,6 +106,20 @@ export const NewsSetup: React.FC<NewsSetupProps> = ({ onNavigate }) => {
   const [editCompanyId, setEditCompanyId] = useState<string>('');
   const [savingEdit, setSavingEdit] = useState(false);
 
+  // Close edit modals on Escape key
+  useEffect(() => {
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        if (editingPerson) setEditingPerson(null);
+        if (editingCompany) setEditingCompany(null);
+      }
+    };
+    if (editingCompany || editingPerson) {
+      document.addEventListener('keydown', handleEscape);
+      return () => document.removeEventListener('keydown', handleEscape);
+    }
+  }, [editingCompany, editingPerson]);
+
   // Load owner details when selected
   useEffect(() => {
     if (selectedOwner) {
