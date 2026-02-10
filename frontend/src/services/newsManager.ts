@@ -433,8 +433,16 @@ export const useNewsArticles = (filters?: ArticleFilters) => {
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [page, setPage] = useState(0);
+  const [pageSize] = useState(50);
 
-  const fetchArticles = useCallback(async () => {
+  // Reset page when filters change
+  const filtersKey = JSON.stringify(filters);
+  useEffect(() => {
+    setPage(0);
+  }, [filtersKey]);
+
+  const fetchArticles = useCallback(async (overridePage?: number) => {
     try {
       setLoading(true);
       const params = new URLSearchParams();
@@ -444,6 +452,10 @@ export const useNewsArticles = (filters?: ArticleFilters) => {
       if (filters?.tagId) params.set('tagId', filters.tagId);
       if (filters?.isSent !== undefined) params.set('isSent', String(filters.isSent));
       if (filters?.isArchived !== undefined) params.set('isArchived', String(filters.isArchived));
+
+      const currentPage = overridePage ?? page;
+      params.set('limit', String(pageSize));
+      params.set('offset', String(currentPage * pageSize));
 
       const queryString = params.toString();
       const data = await fetchJson(`/news/articles${queryString ? `?${queryString}` : ''}`);
@@ -455,13 +467,15 @@ export const useNewsArticles = (filters?: ArticleFilters) => {
     } finally {
       setLoading(false);
     }
-  }, [filters?.revenueOwnerId, filters?.companyId, filters?.personId, filters?.tagId, filters?.isSent, filters?.isArchived]);
+  }, [filters?.revenueOwnerId, filters?.companyId, filters?.personId, filters?.tagId, filters?.isSent, filters?.isArchived, page, pageSize]);
 
   useEffect(() => {
     fetchArticles();
   }, [fetchArticles]);
 
-  return { articles, total, loading, error, fetchArticles };
+  const totalPages = Math.ceil(total / pageSize);
+
+  return { articles, total, loading, error, fetchArticles, page, pageSize, setPage, totalPages };
 };
 
 // ============================================================================
