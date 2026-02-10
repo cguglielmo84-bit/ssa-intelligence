@@ -311,7 +311,7 @@ app.use((err: Error, req: express.Request, res: express.Response, next: express.
 // START SERVER
 // ============================================================================
 
-app.listen(PORT, () => {
+const server = app.listen(PORT, () => {
   const env = process.env.NODE_ENV || 'development';
   const baseUrl = process.env.RENDER_EXTERNAL_URL || process.env.CORS_ORIGIN || `http://localhost:${PORT}`;
   console.log(`
@@ -338,14 +338,43 @@ app.listen(PORT, () => {
 });
 
 // Graceful shutdown
-process.on('SIGTERM', () => {
-  console.log('SIGTERM received, shutting down gracefully...');
-  process.exit(0);
-});
+let isShuttingDown = false;
 
-process.on('SIGINT', () => {
-  console.log('SIGINT received, shutting down gracefully...');
+async function gracefulShutdown(signal: string) {
+  if (isShuttingDown) return;
+  isShuttingDown = true;
+
+  console.log(`${signal} received, initiating graceful shutdown...`);
+
+  // Stop accepting new HTTP connections
+  server.close();
+
+  // Stop the orchestrator from picking up new jobs
+  const orch = getResearchOrchestrator(prisma);
+  orch.stop();
+
+  // Wait for current job to finish (up to 60s)
+  const idled = await orch.waitForIdle(60000);
+  if (!idled) {
+    console.warn('Graceful shutdown timeout — some jobs may be incomplete');
+  }
+
+  // Disconnect database
+  await prisma.$disconnect();
   process.exit(0);
+}
+
+process.on('SIGTERM', () => {
+  gracefulShutdown('SIGTERM').catch((err) => {
+    console.error('Graceful shutdown failed:', err);
+    process.exit(1);
+  });
+});
+process.on('SIGINT', () => {
+  gracefulShutdown('SIGINT').catch((err) => {
+    console.error('Graceful shutdown failed:', err);
+    process.exit(1);
+  });
 });
 
 // Resume queue processing for any queued jobs on startup

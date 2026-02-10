@@ -106,15 +106,15 @@ export const STAGE_OUTPUT_FIELDS: Record<StageId, string | undefined> = {
   financial_snapshot: 'financialSnapshot',
   company_overview: 'companyOverview',
   key_execs_and_board: 'keyExecsAndBoard',
-  investment_strategy: undefined,
-  portfolio_snapshot: undefined,
-  deal_activity: undefined,
-  deal_team: undefined,
-  portfolio_maturity: undefined,
-  leadership_and_governance: undefined,
-  strategic_priorities: undefined,
-  operating_capabilities: undefined,
-  distribution_analysis: undefined,
+  investment_strategy: 'investmentStrategy',
+  portfolio_snapshot: 'portfolioSnapshot',
+  deal_activity: 'dealActivity',
+  deal_team: 'dealTeam',
+  portfolio_maturity: 'portfolioMaturity',
+  leadership_and_governance: 'leadershipAndGovernance',
+  strategic_priorities: 'strategicPriorities',
+  operating_capabilities: 'operatingCapabilities',
+  distribution_analysis: 'distributionAnalysis',
   segment_analysis: 'segmentAnalysis',
   trends: 'trends',
   peer_benchmarking: 'peerBenchmarking',
@@ -376,12 +376,39 @@ export class ResearchOrchestrator {
   private queueLockId = BigInt(937451); // arbitrary global lock id
   private queueLoopRunning = false;
   private queueWatchdogStarted = false;
+  private shuttingDown = false;
+  private queueWatchdogTimer: ReturnType<typeof setInterval> | null = null;
 
   constructor(prisma: PrismaClient) {
     this.prisma = prisma;
     this.claudeClient = getClaudeClient();
     this.costTrackingService = getCostTrackingService(prisma);
     this.startQueueWatchdog();
+  }
+
+  /**
+   * Signal the orchestrator to stop accepting new jobs.
+   * Clears the watchdog timer. Does NOT abort in-progress jobs.
+   */
+  stop(): void {
+    this.shuttingDown = true;
+    if (this.queueWatchdogTimer) {
+      clearInterval(this.queueWatchdogTimer);
+      this.queueWatchdogTimer = null;
+    }
+  }
+
+  /**
+   * Wait until the queue loop is no longer running (current job finishes).
+   * Returns true if idle within timeoutMs, false if timed out.
+   */
+  async waitForIdle(timeoutMs = 30000): Promise<boolean> {
+    const start = Date.now();
+    while (this.queueLoopRunning) {
+      if (Date.now() - start > timeoutMs) return false;
+      await this.delay(500);
+    }
+    return true;
   }
 
   /**
@@ -509,6 +536,11 @@ export class ResearchOrchestrator {
 
     try {
       while (true) {
+        if (this.shuttingDown) {
+          console.log('[queue] Shutdown requested, exiting queue loop');
+          break;
+        }
+
         const queueResult = await this.prisma.$transaction(async (tx) => {
           let lockHeld = false;
           try {
@@ -898,6 +930,15 @@ export class ResearchOrchestrator {
     if (job.peerBenchmarking) input.section6 = job.peerBenchmarking;
     if (job.skuOpportunities) input.section7 = job.skuOpportunities;
     if (job.recentNews) input.section8 = job.recentNews;
+    if (job.investmentStrategy) input.investmentStrategy = job.investmentStrategy;
+    if (job.portfolioSnapshot) input.portfolioSnapshot = job.portfolioSnapshot;
+    if (job.dealActivity) input.dealActivity = job.dealActivity;
+    if (job.dealTeam) input.dealTeam = job.dealTeam;
+    if (job.portfolioMaturity) input.portfolioMaturity = job.portfolioMaturity;
+    if (job.leadershipAndGovernance) input.leadershipAndGovernance = job.leadershipAndGovernance;
+    if (job.strategicPriorities) input.strategicPriorities = job.strategicPriorities;
+    if (job.operatingCapabilities) input.operatingCapabilities = job.operatingCapabilities;
+    if (job.distributionAnalysis) input.distributionAnalysis = job.distributionAnalysis;
 
     // Check for published DB prompt override before falling back to code-based prompt
     const reportType = (job.reportType as ReportTypeId) || 'GENERIC';
@@ -1995,8 +2036,9 @@ export class ResearchOrchestrator {
     if (this.queueWatchdogStarted) return;
     this.queueWatchdogStarted = true;
 
-    const timer = setInterval(async () => {
+    this.queueWatchdogTimer = setInterval(async () => {
       try {
+        if (this.shuttingDown) return;
         if (this.queueLoopRunning) return;
         const queuedCount = await this.prisma.researchJob.count({
           where: { status: 'queued' }
@@ -2008,7 +2050,7 @@ export class ResearchOrchestrator {
         console.error('Queue watchdog error:', err);
       }
     }, 10000); // every 10s
-    timer.unref?.();
+    this.queueWatchdogTimer.unref?.();
   }
 }
 

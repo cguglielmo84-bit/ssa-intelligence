@@ -42,6 +42,15 @@ model ResearchJob {
   financialSnapshot     Json?  // Section2Output
   companyOverview       Json?  // Section3Output
   keyExecsAndBoard      Json?  // KeyExecsAndBoardOutput
+  investmentStrategy    Json?  // PE: InvestmentStrategyOutput
+  portfolioSnapshot     Json?  // PE: PortfolioSnapshotOutput
+  dealActivity          Json?  // PE: DealActivityOutput
+  dealTeam              Json?  // PE: DealTeamOutput
+  portfolioMaturity     Json?  // PE: PortfolioMaturityOutput
+  leadershipAndGovernance Json? // FS/Insurance: LeadershipAndGovernanceOutput
+  strategicPriorities   Json?  // FS/Insurance: StrategicPrioritiesOutput
+  operatingCapabilities Json?  // FS/Insurance: OperatingCapabilitiesOutput
+  distributionAnalysis  Json?  // Insurance: DistributionAnalysisOutput
   segmentAnalysis       Json?  // Section4Output
   trends                Json?  // Section5Output
   peerBenchmarking      Json?  // Section6Output

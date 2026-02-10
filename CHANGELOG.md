@@ -5,6 +5,8 @@ All notable changes to this repository will be documented in this file.
 The format is based on Keep a Changelog and this project adheres to Semantic Versioning.
 
 ## [Unreleased]
+- Fix: (P1-4) add 9 stage output columns to ResearchJob for PE/FS/Insurance report types so outputs are saved on the parent job and available as context for downstream stages.
+- Fix: (P2-25) graceful shutdown — SIGTERM/SIGINT now wait for in-progress jobs to finish (up to 60s), close HTTP server, and disconnect DB before exiting.
 - Fix: (P0) XSS escape all interpolated fields in news email HTML template.
 - Fix: (P0) cancel button now soft-cancels jobs instead of hard-deleting, preserving audit trail.
 - Fix: (P0) cancel no longer removes jobs from UI state immediately.
