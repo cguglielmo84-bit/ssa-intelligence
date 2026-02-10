@@ -16,11 +16,19 @@ function noop(..._args: unknown[]) {
   // intentionally empty
 }
 
+/** Replace Error objects with their message to avoid leaking stack traces */
+const stripStacks = (args: unknown[]): unknown[] =>
+  args.map((arg) => (arg instanceof Error ? arg.message : arg));
+
 export const logger = {
   /** Always logged — actionable errors that need investigation */
-  error: isDev ? console.error.bind(console) : console.error.bind(console),
+  error: isDev
+    ? console.error.bind(console)
+    : (...args: unknown[]) => console.error(...stripStacks(args)),
   /** Logged in all environments — potential issues */
-  warn: isDev ? console.warn.bind(console) : console.warn.bind(console),
+  warn: isDev
+    ? console.warn.bind(console)
+    : (...args: unknown[]) => console.warn(...stripStacks(args)),
   /** Logged only in development */
   info: isDev ? console.info.bind(console) : noop,
   /** Logged only in development */
