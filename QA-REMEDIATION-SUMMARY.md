@@ -8,7 +8,7 @@
 
 ## What Was Done
 
-**38 of 54 findings fixed** across 29 modified files + 5 new files. Backend compiles clean. Frontend has 2 pre-existing third-party type warnings (ShaderGradient, React.cloneElement). No regressions introduced.
+**45 of 54 findings fixed** across 29 modified files + 6 new files. Backend compiles clean. Frontend has 2 pre-existing third-party type warnings (ShaderGradient, React.cloneElement). No regressions introduced.
 
 ### Fixes by Severity
 
@@ -17,7 +17,7 @@
 | **P0** | 3/3 | 0 | All critical issues resolved |
 | **P1** | 12/12 | 0 | All P1 issues resolved |
 | **P2** | 21/27 | 6 | Key ones done; remaining are lower-impact |
-| **P3** | 4/14 | 10 | Quick wins done; rest are cosmetic/a11y |
+| **P3** | 11/14 | 3 | Cosmetic, a11y, and logger work done |
 
 ### Files Changed
 
@@ -95,6 +95,16 @@
 - **TS-FIX-1:** Missing `key_execs_and_board` in `SECTION_DEPENDENCIES` record in `NewResearch.tsx`
 - **TS-FIX-2:** Redundant `job.status !== 'completed'` check inside already-narrowed branch in `ResearchDetail.tsx`
 
+### Phase 6: P3 Cosmetic & Accessibility Fixes (7 fixes)
+
+- **P3-3 (F-020):** Home page logo token fetched on every mount -- lifted config fetch to `App.tsx`, passed `logoToken` prop to `Home.tsx`, removed per-mount fetch
+- **P3-4 (F-021):** Modal backdrop click doesn't close modals in NewsSetup -- added `onClick` close handlers to backdrop divs and `stopPropagation` on modal content for both Edit Company and Edit Person modals
+- **P3-5 (F-022):** UserEditModal backdrop click -- added `onClick={onClose}` to backdrop div (existing `stopPropagation` on content now serves its intended purpose)
+- **P3-6 (F-023):** console.error calls in production code -- created `frontend/src/utils/logger.ts` utility with environment-aware logging, replaced all 24 `console.error` calls across 9 files with `logger.error`/`logger.warn`
+- **P3-7 (F-024):** No keyboard accessibility for custom checkboxes -- added `role="checkbox"`, `aria-checked`, and `aria-label` to all company/person selection checkboxes in `NewsSetup.tsx` (6 button elements)
+- **P3-8 (F-025):** Topic toggle uses div click -- added `role="checkbox"`, `tabIndex={0}`, `aria-checked`, `aria-label`, and `onKeyDown` handler (Space/Enter) to topic toggle rows in `NewsSetup.tsx`
+- **P3-10 (F-026):** AdminMetrics Tooltip formatter type assertion -- added `typeof value === 'number'` runtime guard before calling `.toFixed()` in `AdminMetrics.tsx`
+
 ---
 
 ## Not Yet Implemented
@@ -111,7 +121,8 @@ These are deferred to follow-up PRs:
 | ~~P2-23~~ | ~~Browser back stale data~~ | **Fixed** in `qa/p2-remaining-fixes` |
 | ~~P2-27~~ | ~~News refresh TOCTOU race~~ | **Fixed** in `qa/p2-remaining-fixes` |
 | P2-26 | Company resolution abort | **Dropped** -- SDK doesn't support tool-level abort; current behavior already graceful |
-| P3-3/4/5/6/7/8/10 | Cosmetic and accessibility improvements | Low priority |
+| ~~P3-3/4/5/6/7/8/10~~ | ~~Cosmetic and accessibility improvements~~ | **Fixed** in `qa/p3-cosmetic-a11y-fixes` |
+| P3-9 | Additional cosmetic polish | Low priority, diminishing returns |
 
 ---
 

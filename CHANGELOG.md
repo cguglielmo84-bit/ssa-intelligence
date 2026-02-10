@@ -5,6 +5,13 @@ All notable changes to this repository will be documented in this file.
 The format is based on Keep a Changelog and this project adheres to Semantic Versioning.
 
 ## [Unreleased]
+- Fix: (P3-3) lift logo token config fetch from Home to App level to avoid redundant API call on every mount.
+- Fix: (P3-4) add backdrop click-to-close on Edit Company and Edit Person modals in NewsSetup.
+- Fix: (P3-5) add backdrop click-to-close on UserEditModal.
+- Fix: (P3-6) replace all `console.error` calls with structured `logger` utility across 9 frontend files.
+- Fix: (P3-7) add ARIA checkbox roles, `aria-checked`, and `aria-label` to custom checkboxes in NewsSetup for screen reader accessibility.
+- Fix: (P3-8) add keyboard accessibility (tabIndex, Space/Enter handler) to topic toggle rows in NewsSetup.
+- Fix: (P3-10) add runtime type guard to AdminMetrics Tooltip formatter to handle non-numeric values.
 - Fix: (P2-6) add content validation guards for 6 additional stages in `ensureStageHasContent` (financial_snapshot, company_overview, peer_benchmarking, recent_news, conversation_starters, key_execs_and_board).
 - Fix: (P2-18) replace all 21 `window.confirm`/`window.alert` calls with `ConfirmDialog` and `Toast` components across 6 pages.
 - Fix: (P2-19) add pagination to news articles — `useNewsArticles` hook now supports page/pageSize with limit/offset query params; Previous/Next controls in News Dashboard.

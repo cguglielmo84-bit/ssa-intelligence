@@ -18,6 +18,25 @@ export default function App() {
   const { jobs, createJob, runJob, rerunJob, cancelJob, deleteJob, refreshJobDetail } = useResearchManager();
   const userContext = useUserContext();
   const reportBlueprints = useReportBlueprints();
+  const [logoToken, setLogoToken] = useState<string | null>(null);
+
+  // Fetch logo token once at app level (not on every Home mount)
+  useEffect(() => {
+    const apiBase = ((import.meta as any).env?.VITE_API_BASE_URL || '/api').replace(/\/$/, '');
+    const fallback = (import.meta as any).env?.VITE_LOGO_DEV_TOKEN as string | undefined;
+    if (fallback) {
+      setLogoToken(fallback);
+    }
+    fetch(`${apiBase}/config`)
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        const token = data?.logoToken;
+        if (typeof token === 'string' && token.trim()) {
+          setLogoToken(token.trim());
+        }
+      })
+      .catch(() => {});
+  }, []);
 
   // Simple Hash Router Implementation
   useEffect(() => {
@@ -47,6 +66,7 @@ export default function App() {
           onNavigate={navigate}
           onCancel={cancelJob}
           onDelete={deleteJob}
+          logoToken={logoToken}
         />
       );
     }
@@ -94,7 +114,7 @@ export default function App() {
         />
       );
     }
-    return <Home jobs={jobs} reportBlueprints={reportBlueprints.blueprints} onNavigate={navigate} onCancel={cancelJob} onDelete={deleteJob} />;
+    return <Home jobs={jobs} reportBlueprints={reportBlueprints.blueprints} onNavigate={navigate} onCancel={cancelJob} onDelete={deleteJob} logoToken={logoToken} />;
   };
 
   return (

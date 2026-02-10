@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Home, FileText, PanelLeftClose, PanelLeftOpen, Newspaper, Settings, BarChart3, DollarSign, Users } from 'lucide-react';
 import { BugTrackerModal } from './BugTrackerModal';
+import { logger } from '../utils/logger';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -35,7 +36,7 @@ export const Layout: React.FC<LayoutProps> = ({ children, onNavigate, activePath
         else setHealthStatus('degraded');
         setHealthModel(model);
       } catch (err) {
-        console.error('Health check error', err);
+        logger.warn('Health check error', err);
         setHealthStatus('down');
       }
     };

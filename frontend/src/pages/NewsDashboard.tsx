@@ -45,6 +45,7 @@ import {
 } from '../services/newsManager';
 import { resolveCompanyApi, CompanySuggestion } from '../services/researchManager';
 import { useToast } from '../components/Toast';
+import { logger } from '../utils/logger';
 
 /** Escape HTML special characters to prevent XSS in raw HTML templates */
 const escapeHtml = (str: string): string =>
@@ -322,7 +323,7 @@ export const NewsDashboard: React.FC<NewsDashboardProps> = ({ onNavigate }) => {
         setSelectedArticle({ ...selectedArticle, isSent: true });
       }
     } catch (err) {
-      console.error('Failed to update article:', err);
+      logger.error('Failed to update article:', err);
     }
   };
 
@@ -335,7 +336,7 @@ export const NewsDashboard: React.FC<NewsDashboardProps> = ({ onNavigate }) => {
         setSelectedArticle({ ...selectedArticle, isArchived: true });
       }
     } catch (err) {
-      console.error('Failed to archive article:', err);
+      logger.error('Failed to archive article:', err);
     }
   };
 
@@ -361,7 +362,7 @@ export const NewsDashboard: React.FC<NewsDashboardProps> = ({ onNavigate }) => {
       setSelectedArticleIds(new Set());
       await fetchArticles();
     } catch (err) {
-      console.error('Failed to bulk archive articles:', err);
+      logger.error('Failed to bulk archive articles:', err);
     }
   };
 
@@ -378,7 +379,7 @@ export const NewsDashboard: React.FC<NewsDashboardProps> = ({ onNavigate }) => {
       });
       await fetchArticles();
     } catch (err) {
-      console.error('Failed to bulk archive articles:', err);
+      logger.error('Failed to bulk archive articles:', err);
     }
   };
 
@@ -451,7 +452,7 @@ export const NewsDashboard: React.FC<NewsDashboardProps> = ({ onNavigate }) => {
       setSelectedArticleIds(new Set());
       await fetchArticles();
     } catch (err) {
-      console.error('Failed to bulk send articles:', err);
+      logger.error('Failed to bulk send articles:', err);
     }
   };
 
@@ -529,7 +530,7 @@ export const NewsDashboard: React.FC<NewsDashboardProps> = ({ onNavigate }) => {
       });
       await fetchArticles();
     } catch (err) {
-      console.error('Failed to bulk send articles:', err);
+      logger.error('Failed to bulk send articles:', err);
     }
   };
 
