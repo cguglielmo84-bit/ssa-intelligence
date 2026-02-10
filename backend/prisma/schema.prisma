@@ -400,11 +400,11 @@ model NewsArticle {
   contentScraped Boolean   @default(false) @map("content_scraped")
   scrapedAt      DateTime? @map("scraped_at")
 
-  company      TrackedCompany?  @relation(fields: [companyId], references: [id])
+  company      TrackedCompany?  @relation(fields: [companyId], references: [id], onDelete: SetNull)
   companyId    String?          @map("company_id")
-  person       TrackedPerson?   @relation(fields: [personId], references: [id])
+  person       TrackedPerson?   @relation(fields: [personId], references: [id], onDelete: SetNull)
   personId     String?          @map("person_id")
-  tag          NewsTag?         @relation(fields: [tagId], references: [id])
+  tag          NewsTag?         @relation(fields: [tagId], references: [id], onDelete: SetNull)
   tagId        String?          @map("tag_id")
 
   revenueOwners ArticleRevenueOwner[]
