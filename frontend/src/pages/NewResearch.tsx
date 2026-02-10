@@ -3,6 +3,7 @@ import { Loader2, Sparkles, CheckCircle2, Circle, ArrowRight, BrainCircuit } fro
 import { BlueprintInput, BlueprintSection, ReportBlueprint, ReportType, SectionId, SECTIONS_CONFIG, VisibilityScope } from '../types';
 import { enforceLockedSections, isSectionLocked } from '../utils/sections';
 import { resolveCompanyApi, CompanyResolveResponse } from '../services/researchManager';
+import { logger } from '../utils/logger';
 import { CompanyResolveModal } from '../components/CompanyResolveModal';
 
 // Generate a simple UUID for draft tracking
@@ -527,7 +528,7 @@ export const NewResearch: React.FC<NewResearchProps> = ({
       setStep('processing');
       
       // Start the process, passing the company name explicitly to avoid stale state issues
-      runJob(id, normalized.company).catch(console.error);
+      runJob(id, normalized.company).catch((err) => logger.error('runJob failed', err));
       onNavigate(`/research/${id}`);
     } catch (err: any) {
       if (err?.duplicate) {

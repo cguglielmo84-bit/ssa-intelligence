@@ -341,7 +341,7 @@ export const AdminMetrics: React.FC<AdminMetricsProps> = ({ isAdmin }) => {
                   border: '1px solid #e2e8f0',
                   borderRadius: '8px',
                 }}
-                formatter={(value: number) => [`${value.toFixed(1)}%`, 'Success Rate']}
+                formatter={(value: number | string) => [`${typeof value === 'number' ? value.toFixed(1) : value}%`, 'Success Rate']}
               />
               <Line
                 type="monotone"

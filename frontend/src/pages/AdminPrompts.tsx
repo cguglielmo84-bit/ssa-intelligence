@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { FileText, Edit2, ChevronDown, ChevronRight, X, Save, Play, History, RotateCcw, Check, AlertCircle, Clock, Loader2, Info, Maximize2, Minimize2 } from 'lucide-react';
 import { ConfirmDialog } from '../components/ConfirmDialog';
+import { logger } from '../utils/logger';
 
 interface AdminPromptsProps {
   isAdmin?: boolean;
@@ -224,7 +225,7 @@ export const AdminPrompts: React.FC<AdminPromptsProps> = ({ isAdmin }) => {
       const data = await res.json();
       setVersions(data.versions || []);
     } catch (err) {
-      console.error('Error fetching versions:', err);
+      logger.error('Error fetching versions:', err);
     } finally {
       setLoadingVersions(false);
     }
@@ -422,7 +423,7 @@ export const AdminPrompts: React.FC<AdminPromptsProps> = ({ isAdmin }) => {
           setRunningTest(false);
         }
       } catch (err) {
-        console.error('Error polling test run:', err);
+        logger.error('Error polling test run:', err);
         setRunningTest(false);
       }
     };

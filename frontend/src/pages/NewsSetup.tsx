@@ -19,6 +19,7 @@ import {
 } from '../services/newsManager';
 import { resolveCompanyApi, CompanySuggestion } from '../services/researchManager';
 import { CompanyResolveModal } from '../components/CompanyResolveModal';
+import { logger } from '../utils/logger';
 
 interface NewsSetupProps {
   onNavigate: (path: string) => void;
@@ -231,7 +232,7 @@ export const NewsSetup: React.FC<NewsSetupProps> = ({ onNavigate }) => {
         return name;
       }
     } catch (err) {
-      console.error('Failed to resolve company:', err);
+      logger.warn('Failed to resolve company:', err);
       return name; // Use as entered on error
     }
   };
@@ -791,6 +792,9 @@ export const NewsSetup: React.FC<NewsSetupProps> = ({ onNavigate }) => {
                             <div className="flex items-center gap-3">
                               <button
                                 onClick={toggleAllCompanies}
+                                role="checkbox"
+                                aria-checked={selectedCompanyIds.size === ownerDetails?.companies?.length && selectedCompanyIds.size > 0 ? true : selectedCompanyIds.size > 0 ? 'mixed' : false}
+                                aria-label="Select all companies"
                                 className={`w-5 h-5 rounded border-2 flex items-center justify-center transition-all ${
                                   selectedCompanyIds.size === ownerDetails?.companies?.length && selectedCompanyIds.size > 0
                                     ? 'bg-gradient-to-r from-blue-500 to-cyan-500 border-blue-500'
@@ -840,6 +844,9 @@ export const NewsSetup: React.FC<NewsSetupProps> = ({ onNavigate }) => {
                                 <div className="flex items-center gap-3">
                                   <button
                                     onClick={() => toggleCompanySelection(company.id)}
+                                    role="checkbox"
+                                    aria-checked={selectedCompanyIds.has(company.id)}
+                                    aria-label={`Select ${company.name}`}
                                     className={`w-5 h-5 rounded border-2 flex items-center justify-center transition-all ${
                                       selectedCompanyIds.has(company.id)
                                         ? 'bg-gradient-to-r from-blue-500 to-cyan-500 border-blue-500'
@@ -975,6 +982,9 @@ export const NewsSetup: React.FC<NewsSetupProps> = ({ onNavigate }) => {
                             <div className="flex items-center gap-3 flex-1">
                               <button
                                 onClick={toggleAllPeople}
+                                role="checkbox"
+                                aria-checked={selectedPeopleIds.size === ownerDetails?.people?.length && selectedPeopleIds.size > 0 ? true : selectedPeopleIds.size > 0 ? 'mixed' : false}
+                                aria-label="Select all people"
                                 className={`w-5 h-5 rounded border-2 flex items-center justify-center transition-all ${
                                   selectedPeopleIds.size === ownerDetails?.people?.length && selectedPeopleIds.size > 0
                                     ? 'bg-gradient-to-r from-pink-500 to-rose-500 border-pink-500'
@@ -1050,6 +1060,9 @@ export const NewsSetup: React.FC<NewsSetupProps> = ({ onNavigate }) => {
                               >
                                 <button
                                   onClick={() => togglePersonSelection(person.id)}
+                                  role="checkbox"
+                                  aria-checked={selectedPeopleIds.has(person.id)}
+                                  aria-label={`Select ${person.name}`}
                                   className={`w-5 h-5 rounded border-2 flex items-center justify-center transition-all ${
                                     selectedPeopleIds.has(person.id)
                                       ? 'bg-gradient-to-r from-pink-500 to-rose-500 border-pink-500'
@@ -1156,8 +1169,18 @@ export const NewsSetup: React.FC<NewsSetupProps> = ({ onNavigate }) => {
                               return (
                                 <div
                                   key={tag.id}
+                                  role="checkbox"
+                                  aria-checked={!!isSelected}
+                                  aria-label={`Toggle topic ${tag.name}`}
+                                  tabIndex={0}
                                   className="grid grid-cols-[1fr,auto,40px] items-center px-4 py-2.5 hover:bg-green-50/50 transition-colors cursor-pointer"
                                   onClick={() => handleToggleTag(tag.id)}
+                                  onKeyDown={(e) => {
+                                    if (e.key === ' ' || e.key === 'Enter') {
+                                      e.preventDefault();
+                                      handleToggleTag(tag.id);
+                                    }
+                                  }}
                                 >
                                   <span className="text-slate-700 font-medium">{tag.name}</span>
                                   <span className="text-slate-500 text-sm px-2 py-0.5 bg-slate-100 rounded text-xs">
@@ -1229,8 +1252,8 @@ export const NewsSetup: React.FC<NewsSetupProps> = ({ onNavigate }) => {
 
       {/* Edit Company Modal */}
       {editingCompany && (
-        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-md flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full overflow-hidden">
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-md flex items-center justify-center p-4 z-50" onClick={() => setEditingCompany(null)}>
+          <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full overflow-hidden" onClick={(e) => e.stopPropagation()}>
             <div className="px-6 py-4 bg-gradient-to-r from-blue-500 to-cyan-500">
               <div className="flex items-center justify-between">
                 <h3 className="text-lg font-bold text-white flex items-center gap-2">
@@ -1293,8 +1316,8 @@ export const NewsSetup: React.FC<NewsSetupProps> = ({ onNavigate }) => {
 
       {/* Edit Person Modal */}
       {editingPerson && (
-        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-md flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full overflow-hidden">
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-md flex items-center justify-center p-4 z-50" onClick={() => setEditingPerson(null)}>
+          <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full overflow-hidden" onClick={(e) => e.stopPropagation()}>
             <div className="px-6 py-4 bg-gradient-to-r from-pink-500 to-rose-500">
               <div className="flex items-center justify-between">
                 <h3 className="text-lg font-bold text-white flex items-center gap-2">

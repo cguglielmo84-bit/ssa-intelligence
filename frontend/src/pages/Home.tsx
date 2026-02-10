@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { ReportBlueprint, ResearchJob, SECTIONS_CONFIG } from '../types';
 import { StatusPill } from '../components/StatusPill';
@@ -6,6 +6,7 @@ import { ArrowRight, Search, TrendingUp, Building2, MapPin, MoreHorizontal, Load
 import { ShaderGradientCanvas, ShaderGradient } from '@shadergradient/react';
 import { ConfirmDialog } from '../components/ConfirmDialog';
 import { useToast } from '../components/Toast';
+import { logger } from '../utils/logger';
 
 interface HomeProps {
   jobs: ResearchJob[];
@@ -13,9 +14,10 @@ interface HomeProps {
   onNavigate: (path: string) => void;
   onCancel?: (id: string) => Promise<void>;
   onDelete?: (id: string) => Promise<void>;
+  logoToken?: string | null;
 }
 
-export const Home: React.FC<HomeProps> = ({ jobs, reportBlueprints = [], onNavigate, onCancel, onDelete }) => {
+export const Home: React.FC<HomeProps> = ({ jobs, reportBlueprints = [], onNavigate, onCancel, onDelete, logoToken: logoTokenProp }) => {
   const { showToast, ToastContainer } = useToast();
   const [confirmState, setConfirmState] = useState<{ open: boolean; jobId: string } | null>(null);
   const completedJobs = [...jobs.filter(j =>
@@ -33,9 +35,7 @@ export const Home: React.FC<HomeProps> = ({ jobs, reportBlueprints = [], onNavig
   const [selectedCompany, setSelectedCompany] = useState<string | null>(null);
   const [contextJob, setContextJob] = useState<ResearchJob | null>(null);
   const API_BASE = ((import.meta as any).env?.VITE_API_BASE_URL || '/api').replace(/\/$/, '');
-  const [runtimeLogoToken, setRuntimeLogoToken] = useState<string | null>(null);
-  const fallbackLogoToken = (import.meta as any).env?.VITE_LOGO_DEV_TOKEN as string | undefined;
-  const logoToken = runtimeLogoToken || fallbackLogoToken;
+  const logoToken = logoTokenProp;
   const activeJobs = jobs
     .filter(j => j.status === 'running' || j.status === 'queued' || j.status === 'idle')
     .sort((a, b) => {
@@ -45,23 +45,6 @@ export const Home: React.FC<HomeProps> = ({ jobs, reportBlueprints = [], onNavig
       if (pa !== pb) return pa - pb;
       return (a.createdAt || 0) - (b.createdAt || 0);
     });
-  useEffect(() => {
-    let isMounted = true;
-    fetch(`${API_BASE}/config`)
-      .then((res) => (res.ok ? res.json() : null))
-      .then((data) => {
-        if (!isMounted) return;
-        const token = data?.logoToken;
-        if (typeof token === 'string' && token.trim()) {
-          setRuntimeLogoToken(token.trim());
-        }
-      })
-      .catch(() => {});
-    return () => {
-      isMounted = false;
-    };
-  }, [API_BASE]);
-
   useEffect(() => {
     if (!openMenuId) return;
     const closeMenu = () => setOpenMenuId(null);
@@ -163,7 +146,7 @@ export const Home: React.FC<HomeProps> = ({ jobs, reportBlueprints = [], onNavig
       a.remove();
       window.URL.revokeObjectURL(url);
     } catch (err) {
-      console.error(err);
+      logger.error('PDF export failed', err);
       showToast('Failed to export PDF. Please try again.', 'error');
     } finally {
       setExportingId(null);

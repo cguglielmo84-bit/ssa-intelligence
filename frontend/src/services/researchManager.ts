@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { JobStatus, ReportBlueprint, ResearchJob, ResearchSection, ResearchSource, ReportType, SectionId, SectionStatus, SECTIONS_CONFIG, VisibilityScope } from '../types';
+import { logger } from '../utils/logger';
 
 const API_BASE = (import.meta as any).env?.VITE_API_BASE_URL || '/api';
 
@@ -1233,11 +1234,11 @@ export const useResearchManager = () => {
               return [merged, ...prev.filter((j) => j.id !== item.id)];
             });
           } catch (err) {
-            console.error(err);
+            logger.error(err);
           }
         }
       })
-      .catch((err) => console.error(err));
+      .catch((err) => logger.error(err));
   }, []);
 
   // Abort all polling loops on unmount to prevent orphaned requests
@@ -1350,7 +1351,7 @@ export const useResearchManager = () => {
           return [merged, ...prev.filter((j) => j.id !== jobId)];
         });
       } catch (error) {
-        console.error(error);
+        logger.error(error);
         if (error instanceof Error && error.message.includes('Job not found')) {
           setJobs((prev) => prev.filter((j) => j.id !== jobId));
           return;
@@ -1433,7 +1434,7 @@ export const useResearchManager = () => {
         )
       );
     } catch (error) {
-      console.error('Failed to cancel job', error);
+      logger.error('Failed to cancel job', error);
       throw error;
     }
   }, []);
@@ -1454,7 +1455,7 @@ export const useResearchManager = () => {
         return prev.map((j) => (j.id === jobId ? merged : j));
       });
     } catch (err) {
-      console.error('[refreshJobDetail]', err);
+      logger.error('[refreshJobDetail]', err);
     }
   }, []);
 
@@ -1474,7 +1475,7 @@ export const useUserContext = () => {
         setUser(me);
         setGroups(availableGroups);
       })
-      .catch((err) => console.error(err))
+      .catch((err) => logger.error(err))
       .finally(() => {
         if (!mounted) return;
         setLoading(false);
@@ -1501,7 +1502,7 @@ export const useReportBlueprints = () => {
         setBlueprints(data.results || []);
         setVersion(data.version || null);
       })
-      .catch((err) => console.error(err))
+      .catch((err) => logger.error(err))
       .finally(() => {
         if (!mounted) return;
         setLoading(false);
