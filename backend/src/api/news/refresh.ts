@@ -159,23 +159,24 @@ router.post('/', async (req: Request, res: Response) => {
   let refreshState = await getRefreshState();
 
   try {
-    // Get all revenue owners with their call diets
-    const revenueOwners = await prisma.revenueOwner.findMany({
+    // Get all users with call diets configured
+    const usersWithCallDiets = await prisma.user.findMany({
+      where: {
+        OR: [
+          { callDietCompanies: { some: {} } },
+          { callDietPeople: { some: {} } },
+          { callDietTags: { some: {} } },
+        ],
+      },
       include: {
-        companies: {
-          include: { company: true },
-        },
-        people: {
-          include: { person: true },
-        },
-        tags: {
-          include: { tag: true },
-        },
+        callDietCompanies: { include: { company: true } },
+        callDietPeople: { include: { person: true } },
+        callDietTags: { include: { tag: true } },
       },
     });
 
-    // If no revenue owners, nothing to fetch
-    if (revenueOwners.length === 0) {
+    // If no users with call diets, nothing to fetch
+    if (usersWithCallDiets.length === 0) {
       refreshState.isRefreshing = false;
       refreshState.lastRefreshedAt = new Date().toISOString();
       refreshState.articlesFound = 0;
@@ -188,32 +189,32 @@ router.post('/', async (req: Request, res: Response) => {
         success: true,
         articlesFound: 0,
         coverageGaps: [],
-        message: 'No revenue owners configured. Add revenue owners with companies/people to track.',
+        message: 'No users with call diets configured. Add companies/people to user call diets to track.',
       });
       return;
     }
 
     // Format call diets for the hybrid fetcher
-    const callDiets: CallDietInput[] = revenueOwners.map(ro => ({
-      revenueOwnerId: ro.id,
-      revenueOwnerName: ro.name,
-      companies: ro.companies.map(c => ({
+    const callDiets: CallDietInput[] = usersWithCallDiets.map(user => ({
+      userId: user.id,
+      userName: user.name || user.email,
+      companies: user.callDietCompanies.map(c => ({
         name: c.company.name,
         ticker: c.company.ticker || undefined,
       })),
-      people: ro.people.map(p => ({
+      people: user.callDietPeople.map(p => ({
         name: p.person.name,
         title: p.person.title || undefined,
       })),
-      topics: ro.tags.map(t => t.tag.name),
+      topics: user.callDietTags.map(t => t.tag.name),
     }));
 
-    // Mark revenue owners step complete
+    // Mark users step complete
     refreshState.steps[0].status = 'completed';
-    refreshState.steps[0].detail = `${revenueOwners.length} owner(s), ${callDiets.reduce((sum, cd) => sum + cd.companies.length, 0)} companies`;
+    refreshState.steps[0].detail = `${usersWithCallDiets.length} user(s), ${callDiets.reduce((sum, cd) => sum + cd.companies.length, 0)} companies`;
     await setRefreshState(refreshState);
 
-    console.log('[refresh] Starting hybrid news fetch for', callDiets.length, 'revenue owners');
+    console.log('[refresh] Starting hybrid news fetch for', callDiets.length, 'users');
 
     // Progress callback with step tracking - saves to database
     const onProgress = async (progress: number, message: string, stepUpdate?: { index: number; status: 'in_progress' | 'completed' | 'error'; detail?: string }) => {
@@ -336,22 +337,22 @@ router.post('/', async (req: Request, res: Response) => {
           }
         }
 
-        // Link to revenue owners
-        for (const ownerName of article.revenueOwners) {
-          const owner = revenueOwners.find(
-            ro => ro.name.toLowerCase() === ownerName.toLowerCase()
+        // Link to users
+        for (const userName of article.userNames) {
+          const user = usersWithCallDiets.find(
+            u => (u.name || u.email).toLowerCase() === userName.toLowerCase()
           );
-          if (owner) {
-            await prisma.articleRevenueOwner.upsert({
+          if (user) {
+            await prisma.articleUser.upsert({
               where: {
-                articleId_revenueOwnerId: {
+                articleId_userId: {
                   articleId: savedArticle.id,
-                  revenueOwnerId: owner.id,
+                  userId: user.id,
                 },
               },
               create: {
                 articleId: savedArticle.id,
-                revenueOwnerId: owner.id,
+                userId: user.id,
               },
               update: {},
             });

@@ -13,12 +13,14 @@ export const testPrisma = new PrismaClient();
  */
 export async function truncateAll() {
   await testPrisma.$transaction([
-    // Junction tables first
-    testPrisma.articleRevenueOwner.deleteMany(),
+    // Junction / leaf tables first
+    testPrisma.userPinnedArticle.deleteMany(),
+    testPrisma.userActivity.deleteMany(),
+    testPrisma.articleUser.deleteMany(),
     testPrisma.articleSource.deleteMany(),
-    testPrisma.callDietCompany.deleteMany(),
-    testPrisma.callDietPerson.deleteMany(),
-    testPrisma.callDietTag.deleteMany(),
+    testPrisma.userCallDietCompany.deleteMany(),
+    testPrisma.userCallDietPerson.deleteMany(),
+    testPrisma.userCallDietTag.deleteMany(),
     testPrisma.researchJobGroup.deleteMany(),
     testPrisma.groupMembership.deleteMany(),
     // Children
@@ -35,7 +37,6 @@ export async function truncateAll() {
     testPrisma.trackedPerson.deleteMany(),
     testPrisma.trackedCompany.deleteMany(),
     testPrisma.newsTag.deleteMany(),
-    testPrisma.revenueOwner.deleteMany(),
     testPrisma.pricingRate.deleteMany(),
     testPrisma.feedback.deleteMany(),
     testPrisma.apiKey.deleteMany(),

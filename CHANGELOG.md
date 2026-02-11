@@ -14,6 +14,24 @@ The format is based on Keep a Changelog and this project adheres to Semantic Ver
 - Refactor: extract shared domain-validation helpers to `backend/src/lib/domain-validation.ts`.
 - Fix: frontend loading-state gate prevents app shell flash for pending users.
 
+### Added
+- News Intelligence module: multi-layer news fetching (RSS/API + AI search), article pinning, bulk archive, PDF/Markdown export, deep dive search with company name resolution.
+- Admin activity dashboard with engagement metrics, filters, and analytics.
+- User activity tracking (article opens, link clicks, page views, exports).
+- User call diet configuration replacing revenue-owner model.
+
+### Fixed
+- Security: non-admin users can no longer view other users' articles via `?userId=` query param.
+- Security: batch PDF/Markdown export endpoints now verify article access for non-admin users (403 on unauthorized IDs).
+- Duplicate pins router mount that shadowed other `/api/news/*` routes.
+- Initial unscoped fetch in NewsDashboard for non-admin users.
+- PDF export: corrupt logo, empty all-articles export, text overlap issues.
+- Integration test `db-helpers.ts` updated for renamed/removed Prisma models.
+
+### Changed
+- `clear-news-data.sql` updated with current table references and wrapped in transaction.
+- Activity tracker fetch fallback now includes `credentials: 'include'` and logs 401 errors.
+
 ## [1.0.0] - 2026-02-10
 - Fix: reorder GENERIC report blueprint sections to match standard INDUSTRIALS ordering — Appendix and Sources now appears last instead of 4th from last.
 - Test: add integration tests for 8 API route handlers (~59 tests) using supertest against a real PostgreSQL test database; extract Express app from server startup for testability; add separate CI job with PostgreSQL service container.

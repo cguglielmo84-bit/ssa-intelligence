@@ -94,8 +94,8 @@ const resolveAuthContext = async (req: Request): Promise<AuthContext> => {
   let user = existing;
 
   if (user) {
-    // Promote to admin if in ADMIN_EMAILS and ensure ACTIVE status
-    if (isAdmin && (user.role !== 'ADMIN' || user.status !== 'ACTIVE')) {
+    // Promote to admin if in ADMIN_EMAILS (or dev fallback) and ensure ACTIVE status
+    if ((isAdmin || isDevFallback) && (user.role !== 'ADMIN' || user.status !== 'ACTIVE')) {
       user = await prisma.user.update({
         where: { id: user.id },
         data: {

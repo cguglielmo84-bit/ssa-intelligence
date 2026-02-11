@@ -22,12 +22,21 @@ const anthropic = new Anthropic();
 const layer2CircuitBreaker = new CircuitBreaker('layer2', 3, 5 * 60 * 1000);
 
 export interface CallDietInput {
-  revenueOwnerId: string;
-  revenueOwnerName: string;
+  userId: string;
+  userName: string;
   companies: Array<{ name: string; ticker?: string }>;
   people: Array<{ name: string; title?: string }>;
   topics: string[]; // Kept for backward compatibility but not used in search
 }
+
+/** @deprecated Use CallDietInput with userId/userName instead */
+export type LegacyCallDietInput = {
+  revenueOwnerId: string;
+  revenueOwnerName: string;
+  companies: Array<{ name: string; ticker?: string }>;
+  people: Array<{ name: string; title?: string }>;
+  topics: string[];
+};
 
 export interface ArticleSourceInfo {
   sourceUrl: string;
@@ -51,12 +60,12 @@ export interface ProcessedArticle {
   status: 'new_article' | 'update';
   matchType: 'exact' | 'contextual';
   fetchLayer: 'layer1_rss' | 'layer1_api' | 'layer2_llm';
-  revenueOwners: string[];
+  userNames: string[];
 }
 
 export interface CoverageGap {
   company: string;
-  revenueOwner?: string;
+  userName?: string;
   note: string;
 }
 
@@ -468,12 +477,12 @@ ${companies.join(', ')}
 ## People Being Tracked
 ${people.join(', ')}
 
-## Revenue Owner Mapping
-${callDiets.map((cd) => `- ${cd.revenueOwnerName}: tracks ${cd.companies.map((c) => c.name).concat(cd.people.map((p) => p.name)).join(', ')}`).join('\n')}
+## User Mapping
+${callDiets.map((cd) => `- ${cd.userName}: tracks ${cd.companies.map((c) => c.name).concat(cd.people.map((p) => p.name)).join(', ')}`).join('\n')}
 
 ## Instructions
 
-1. **STRICTLY filter out** (when in doubt, EXCLUDE the article):
+1. **STRICTLY filter out** (when in doubt, EXCLUDE the article — be aggressive about filtering):
    - Articles where the tracked entity is mentioned only tangentially or for context
    - Articles about a different entity with a similar name
    - General industry news without specific entity focus
@@ -482,27 +491,28 @@ ${callDiets.map((cd) => `- ${cd.revenueOwnerName}: tracks ${cd.companies.map((c)
    - Event sponsorship or award/recognition announcements
    - Minor personnel changes (non-executive level)
    - Rehashed information from prior announcements
-   - Promotional content disguised as news
    - Opinion pieces without new factual information
    - Historical references without current relevance
    - Speculation without substantive basis
    - **IMPORTANT: Analyst ratings, upgrades, or downgrades where the tracked company is the ANALYST (not the subject)** - e.g., if tracking "Morgan Stanley" and they downgrade another company's stock, EXCLUDE this because Morgan Stanley is just the analyst, not the subject of the news
    - Articles where the tracked company is providing analysis, ratings, or commentary about OTHER companies
-   - Marketing campaign announcements, advertising initiatives, or brand promotion activities
+   - **ALL marketing, advertising, promotional, and brand content** — this includes but is not limited to: marketing campaign launches, advertising initiatives, brand promotion activities, product launch announcements that are purely promotional, sponsorship deals, influencer partnerships, social media campaigns, brand awareness initiatives, promotional partnerships, customer engagement programs, loyalty programs, seasonal promotions, and any article that reads like an advertisement or press release promoting products/services rather than reporting substantive business news
+   - **ALL content that is promotional in tone or purpose** — if the article's primary intent is to promote, market, or advertise a product, service, event, or brand rather than report on material business developments, EXCLUDE it regardless of the specific category
    - Price target changes, analyst price target updates, or stock rating changes for the company's shares
-   - Share purchases, stock buybacks, or insider trading activity UNLESS it represents a controlling share acquisition, takeover attempt, or significant ownership change (>10% stake)
-   - **Announcements of UPCOMING quarterly earnings** (e.g., "Company X to report Q3 earnings on DATE", "Company X scheduled to release earnings") - only include ACTUAL earnings results
+   - **ALL earnings date announcements and scheduling notices** — EXCLUDE any article about UPCOMING quarterly/annual earnings (e.g., "Company X to report Q3 earnings on DATE", "Company X scheduled to release earnings", "earnings call scheduled for", "reports earnings next week"). Only include articles that contain ACTUAL published earnings results with specific financial figures
+   - **ALL routine share transactions** — EXCLUDE share purchases, stock buybacks, insider trading/selling, secondary offerings, block trades, share repurchase programs, and insider ownership changes UNLESS the transaction represents a complete sale of a business/division, a controlling share acquisition (>50% stake), a hostile or friendly takeover attempt, or a significant activist stake (>10%) with stated intent to influence corporate strategy
    - News about banks being underwriters or bookrunners for IPOs where the tracked entity is the underwriter, not the company going public
    - Analyst recommendations, "buy/sell/hold" ratings, or stock picks where the tracked company's stock is being rated (not actionable business news)
 
    **KEEP only articles that are definitively ABOUT a tracked company/person as the main subject and cover:**
    - Mergers, acquisitions, divestitures, strategic partnerships
    - C-suite appointments/departures, board changes
-   - Earnings releases, significant revenue/profit changes
+   - Earnings releases with actual financial results, significant revenue/profit changes
    - Major contract wins/losses, facility changes
    - PE/VC investments, debt refinancing, IPOs
    - Market share changes, competitive threats
    - Technology implementations, workforce restructuring
+   - Complete business/division sales, controlling share acquisitions or takeovers
 
 2. **For each relevant article**:
    - Match to tracked company/person
@@ -539,7 +549,7 @@ Return ONLY valid JSON:
       "status": "new_article",
       "matchType": "exact|contextual",
       "fetchLayer": "layer from input",
-      "revenueOwners": ["Owner Name 1"]
+      "userNames": ["User Name 1"]
     }
   ],
   "coverageGaps": [
@@ -588,7 +598,7 @@ Return ALL relevant articles, sorted by recency (most recent first).`;
           status: 'new_article' as const,
           matchType: 'contextual' as const,
           fetchLayer: a.fetchLayer,
-          revenueOwners: callDiets.map((cd) => cd.revenueOwnerName),
+          userNames: callDiets.map((cd) => cd.userName),
         })),
         coverageGaps: [],
       };
@@ -669,7 +679,7 @@ Return ALL relevant articles, sorted by recency (most recent first).`;
         status: a.status || 'new_article',
         matchType: a.matchType || 'contextual',
         fetchLayer: a.fetchLayer || original?.fetchLayer || 'layer2_llm',
-        revenueOwners: a.revenueOwners || [],
+        userNames: a.revenueOwners || a.userNames || [],
       };
     });
 
@@ -698,7 +708,7 @@ Return ALL relevant articles, sorted by recency (most recent first).`;
         status: 'new_article' as const,
         matchType: 'contextual' as const,
         fetchLayer: a.fetchLayer,
-        revenueOwners: callDiets.map((cd) => cd.revenueOwnerName),
+        userNames: callDiets.map((cd) => cd.userName),
       })),
       coverageGaps: [],
     };
@@ -1009,7 +1019,7 @@ export async function searchNews(params: {
 ${company ? `Company: ${company}` : ''}
 ${person ? `Person: ${person}` : ''}
 
-## STRICT Filtering Rules - EXCLUDE these types of articles:
+## STRICT Filtering Rules - EXCLUDE these types of articles (when in doubt, EXCLUDE — be aggressive about filtering):
 - Articles where ${entityName} is mentioned only tangentially or for context
 - Articles about a different entity with a similar name
 - General industry news without specific focus on ${entityName}
@@ -1018,27 +1028,28 @@ ${person ? `Person: ${person}` : ''}
 - Event sponsorship or award/recognition announcements
 - Minor personnel changes (non-executive level)
 - Rehashed information from prior announcements
-- Promotional content disguised as news
 - Opinion pieces without new factual information
 - Historical references without current relevance
 - Speculation without substantive basis
 ${company ? `- **CRITICAL: Analyst ratings, upgrades, or downgrades where ${company} is the ANALYST (not the subject)** - e.g., if ${company} downgrades another company's stock, EXCLUDE this because ${company} is just the analyst providing the rating, not the subject of the news
 - Articles where ${company} is providing analysis, ratings, commentary, or research about OTHER companies` : ''}
-- Marketing campaign announcements, advertising initiatives, or brand promotion activities
+- **ALL marketing, advertising, promotional, and brand content** — this includes but is not limited to: marketing campaign launches, advertising initiatives, brand promotion activities, product launch announcements that are purely promotional, sponsorship deals, influencer partnerships, social media campaigns, brand awareness initiatives, promotional partnerships, customer engagement programs, loyalty programs, seasonal promotions, and any article that reads like an advertisement or press release promoting products/services rather than reporting substantive business news
+- **ALL content that is promotional in tone or purpose** — if the article's primary intent is to promote, market, or advertise a product, service, event, or brand rather than report on material business developments, EXCLUDE it regardless of the specific category
 - Price target changes, analyst price target updates, or stock rating changes for the ${entityType}'s shares
-- Share purchases, stock buybacks, or insider trading activity UNLESS it represents a controlling share acquisition, takeover attempt, or significant ownership change (>10% stake)
-- **Announcements of UPCOMING quarterly earnings** (e.g., "${entityName} to report Q3 earnings on DATE", "${entityName} scheduled to release earnings") - only include ACTUAL earnings results
+- **ALL earnings date announcements and scheduling notices** — EXCLUDE any article about UPCOMING quarterly/annual earnings (e.g., "${entityName} to report Q3 earnings on DATE", "${entityName} scheduled to release earnings", "earnings call scheduled for", "reports earnings next week"). Only include articles that contain ACTUAL published earnings results with specific financial figures
+- **ALL routine share transactions** — EXCLUDE share purchases, stock buybacks, insider trading/selling, secondary offerings, block trades, share repurchase programs, and insider ownership changes UNLESS the transaction represents a complete sale of a business/division, a controlling share acquisition (>50% stake), a hostile or friendly takeover attempt, or a significant activist stake (>10%) with stated intent to influence corporate strategy
 ${company ? `- News about ${company} being an underwriter or bookrunner for IPOs where ${company} is the underwriter, not the company going public` : ''}
 - Analyst recommendations, "buy/sell/hold" ratings, or stock picks where ${entityName}'s stock is being rated (not actionable business news)
 
 ## KEEP only articles that are definitively ABOUT ${entityName} as the main subject and cover:
 - Mergers, acquisitions, divestitures, strategic partnerships
 - C-suite appointments/departures, board changes
-- Earnings releases, significant revenue/profit changes
+- Earnings releases with actual financial results, significant revenue/profit changes
 - Major contract wins/losses, facility changes
 - PE/VC investments, debt refinancing, IPOs
 - Market share changes, competitive threats
 - Technology implementations, workforce restructuring
+- Complete business/division sales, controlling share acquisitions or takeovers
 
 ## Instructions
 1. Search comprehensively but filter strictly - when in doubt, EXCLUDE
@@ -1065,7 +1076,7 @@ Return ONLY valid JSON (no markdown, no backticks):
       "status": "new_article",
       "matchType": "exact",
       "fetchLayer": "layer2_llm",
-      "revenueOwners": []
+      "userNames": []
     }
   ],
   "coverageGaps": []

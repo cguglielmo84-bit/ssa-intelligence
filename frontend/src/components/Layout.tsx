@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Home, FileText, PanelLeftClose, PanelLeftOpen, Newspaper, Settings, BarChart3, DollarSign, Users } from 'lucide-react';
+import { Home, FileText, PanelLeftClose, PanelLeftOpen, Newspaper, BarChart3, DollarSign, Users, Activity } from 'lucide-react';
 import { BugTrackerModal } from './BugTrackerModal';
 import { logger } from '../utils/logger';
 
@@ -185,15 +185,6 @@ export const Layout: React.FC<LayoutProps> = ({ children, onNavigate, activePath
             <Newspaper size={18} className="flex-shrink-0" />
             {!isCollapsed && <span className="whitespace-nowrap">News Feed</span>}
           </button>
-          <button
-            onClick={() => onNavigate('/news/setup')}
-            className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-colors ${activePath === '/news/setup' ? 'bg-brand-50 text-brand-700' : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'} ${isCollapsed ? 'justify-center px-2' : ''}`}
-            title={isCollapsed ? "News Setup" : undefined}
-          >
-            <Settings size={18} className="flex-shrink-0" />
-            {!isCollapsed && <span className="whitespace-nowrap">News Setup</span>}
-          </button>
-
           {isAdmin && (
             <>
               {!isCollapsed && (
@@ -234,6 +225,14 @@ export const Layout: React.FC<LayoutProps> = ({ children, onNavigate, activePath
               >
                 <FileText size={18} className="flex-shrink-0" />
                 {!isCollapsed && <span className="whitespace-nowrap">Prompt Library</span>}
+              </button>
+              <button
+                onClick={() => onNavigate('/admin/news-activity')}
+                className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-colors ${activePath === '/admin/news-activity' ? 'bg-brand-50 text-brand-700' : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'} ${isCollapsed ? 'justify-center px-2' : ''}`}
+                title={isCollapsed ? "News Activity" : undefined}
+              >
+                <Activity size={18} className="flex-shrink-0" />
+                {!isCollapsed && <span className="whitespace-nowrap">News Activity</span>}
               </button>
             </>
           )}
@@ -278,7 +277,7 @@ export const Layout: React.FC<LayoutProps> = ({ children, onNavigate, activePath
               {activePath === '/admin/pricing' && 'Pricing Management'}
               {activePath === '/admin/prompts' && 'Prompt Library'}
               {activePath === '/news' && 'News Intelligence'}
-              {activePath === '/news/setup' && 'News Setup'}
+              {activePath === '/admin/news-activity' && 'News Activity'}
             </h1>
          </header>
          <div className="p-6 max-w-7xl mx-auto">

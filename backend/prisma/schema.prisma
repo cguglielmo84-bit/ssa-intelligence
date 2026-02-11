@@ -149,6 +149,14 @@ model User {
   invitesCreated Invite[] @relation("InviteCreatedBy")
   invitesUsed    Invite[] @relation("InviteUsedBy")
 
+  // News Intelligence relations
+  callDietCompanies UserCallDietCompany[]
+  callDietPeople    UserCallDietPerson[]
+  callDietTags      UserCallDietTag[]
+  articleUsers      ArticleUser[]
+  pinnedArticles    UserPinnedArticle[]
+  activities        UserActivity[]
+
   // Timestamps
   createdAt DateTime      @default(now())
   updatedAt DateTime      @updatedAt
@@ -313,22 +321,6 @@ enum FetchLayer {
   layer2_llm
 }
 
-// Revenue Owner - person who tracks companies/people for news
-model RevenueOwner {
-  id        String   @id @default(cuid())
-  name      String
-  email     String?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  companies CallDietCompany[]
-  people    CallDietPerson[]
-  tags      CallDietTag[]
-  articles  ArticleRevenueOwner[]
-
-  @@map("revenue_owners")
-}
-
 // Companies being tracked for news
 model TrackedCompany {
   id        String   @id @default(cuid())
@@ -337,9 +329,9 @@ model TrackedCompany {
   cik       String?  // SEC Central Index Key for EDGAR filings
   createdAt DateTime @default(now())
 
-  callDiets CallDietCompany[]
-  articles  NewsArticle[]
-  people    TrackedPerson[]   // People affiliated with this company
+  userCallDiets UserCallDietCompany[]
+  articles      NewsArticle[]
+  people        TrackedPerson[]   // People affiliated with this company
 
   @@map("tracked_companies")
 }
@@ -353,9 +345,9 @@ model TrackedPerson {
   companyId          String?  @map("company_id")            // FK to TrackedCompany
   createdAt          DateTime @default(now())
 
-  company   TrackedCompany?  @relation(fields: [companyId], references: [id], onDelete: SetNull)
-  callDiets CallDietPerson[]
-  articles  NewsArticle[]
+  company       TrackedCompany?  @relation(fields: [companyId], references: [id], onDelete: SetNull)
+  userCallDiets UserCallDietPerson[]
+  articles      NewsArticle[]
 
   @@index([companyId])
   @@map("tracked_people")
@@ -368,43 +360,10 @@ model NewsTag {
   category  TagCategory
   createdAt DateTime    @default(now())
 
-  callDiets CallDietTag[]
-  articles  NewsArticle[]
+  userCallDiets UserCallDietTag[]
+  articles      NewsArticle[]
 
   @@map("news_tags")
-}
-
-// Junction: Revenue Owner <-> Company
-model CallDietCompany {
-  revenueOwner   RevenueOwner   @relation(fields: [revenueOwnerId], references: [id], onDelete: Cascade)
-  revenueOwnerId String
-  company        TrackedCompany @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  companyId      String
-
-  @@id([revenueOwnerId, companyId])
-  @@map("call_diet_companies")
-}
-
-// Junction: Revenue Owner <-> Person
-model CallDietPerson {
-  revenueOwner   RevenueOwner  @relation(fields: [revenueOwnerId], references: [id], onDelete: Cascade)
-  revenueOwnerId String
-  person         TrackedPerson @relation(fields: [personId], references: [id], onDelete: Cascade)
-  personId       String
-
-  @@id([revenueOwnerId, personId])
-  @@map("call_diet_people")
-}
-
-// Junction: Revenue Owner <-> Tag
-model CallDietTag {
-  revenueOwner   RevenueOwner @relation(fields: [revenueOwnerId], references: [id], onDelete: Cascade)
-  revenueOwnerId String
-  tag            NewsTag      @relation(fields: [tagId], references: [id], onDelete: Cascade)
-  tagId          String
-
-  @@id([revenueOwnerId, tagId])
-  @@map("call_diet_tags")
 }
 
 // News Articles fetched via hybrid Layer 1/Layer 2 approach
@@ -440,7 +399,8 @@ model NewsArticle {
   tag          NewsTag?         @relation(fields: [tagId], references: [id], onDelete: SetNull)
   tagId        String?          @map("tag_id")
 
-  revenueOwners ArticleRevenueOwner[]
+  articleUsers  ArticleUser[]
+  pinnedBy      UserPinnedArticle[]
   sources       ArticleSource[]  // Multiple sources for merged stories
 
   @@index([publishedAt(sort: Desc)])
@@ -466,15 +426,101 @@ model ArticleSource {
   @@map("article_sources")
 }
 
-// Junction: Article <-> Revenue Owner (many-to-many)
-model ArticleRevenueOwner {
-  article        NewsArticle  @relation(fields: [articleId], references: [id], onDelete: Cascade)
-  articleId      String       @map("article_id")
-  revenueOwner   RevenueOwner @relation(fields: [revenueOwnerId], references: [id], onDelete: Cascade)
-  revenueOwnerId String       @map("revenue_owner_id")
+// ============================================================================
+// USER-BASED NEWS RELATIONS
+// ============================================================================
 
-  @@id([articleId, revenueOwnerId])
-  @@map("article_revenue_owners")
+// Junction: User <-> Company (call diet)
+model UserCallDietCompany {
+  user      User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId    String
+  company   TrackedCompany @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  companyId String
+
+  @@id([userId, companyId])
+  @@map("user_call_diet_companies")
+}
+
+// Junction: User <-> Person (call diet)
+model UserCallDietPerson {
+  user     User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId   String
+  person   TrackedPerson @relation(fields: [personId], references: [id], onDelete: Cascade)
+  personId String
+
+  @@id([userId, personId])
+  @@map("user_call_diet_people")
+}
+
+// Junction: User <-> Tag (call diet)
+model UserCallDietTag {
+  user   User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId String
+  tag    NewsTag @relation(fields: [tagId], references: [id], onDelete: Cascade)
+  tagId  String
+
+  @@id([userId, tagId])
+  @@map("user_call_diet_tags")
+}
+
+// Junction: Article <-> User (many-to-many, replaces ArticleRevenueOwner)
+model ArticleUser {
+  article   NewsArticle @relation(fields: [articleId], references: [id], onDelete: Cascade)
+  articleId String      @map("article_id")
+  user      User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId    String      @map("user_id")
+
+  @@id([articleId, userId])
+  @@map("article_users")
+}
+
+// Per-user pinned articles (prevents auto-archive)
+model UserPinnedArticle {
+  user      User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId    String      @map("user_id")
+  article   NewsArticle @relation(fields: [articleId], references: [id], onDelete: Cascade)
+  articleId String      @map("article_id")
+  pinnedAt  DateTime    @default(now()) @map("pinned_at")
+
+  @@id([userId, articleId])
+  @@map("user_pinned_articles")
+}
+
+// ============================================================================
+// USER ACTIVITY TRACKING
+// ============================================================================
+
+enum ActivityType {
+  article_open
+  article_close
+  article_link_click
+  page_view
+  page_leave
+  pin
+  unpin
+  export_pdf
+  export_markdown
+  search
+  filter_change
+}
+
+model UserActivity {
+  id         String       @id @default(cuid())
+  userId     String       @map("user_id")
+  type       ActivityType
+  articleId  String?      @map("article_id")
+  pagePath   String?      @map("page_path")
+  durationMs Int?         @map("duration_ms")
+  metadata   Json         @default("{}")
+  createdAt  DateTime     @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([type])
+  @@index([createdAt])
+  @@index([articleId])
+  @@map("user_activities")
 }
 
 // URL deduplication tracking
