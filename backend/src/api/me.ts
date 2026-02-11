@@ -29,8 +29,6 @@ export async function getMe(req: Request, res: Response) {
       return res.status(404).json({ error: 'User not found' });
     }
 
-    const superAdminEmail = (process.env.SUPER_ADMIN_EMAIL || '').trim().toLowerCase();
-
     return res.json({
       id: user.id,
       email: user.email,
@@ -39,8 +37,7 @@ export async function getMe(req: Request, res: Response) {
       isAdmin: user.role === 'ADMIN',
       isSuperAdmin: req.auth.isSuperAdmin,
       status: user.status,
-      groups: user.memberships.map((m) => m.group),
-      supportContact: superAdminEmail || null
+      groups: user.memberships.map((m) => m.group)
     });
   } catch (error) {
     console.error('Failed to fetch current user:', error);

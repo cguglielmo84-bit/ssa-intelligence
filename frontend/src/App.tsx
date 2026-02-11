@@ -85,7 +85,7 @@ export default function App() {
   if (userContext.user?.status === 'PENDING') {
     return (
       <ErrorBoundary key="pending">
-        <PendingActivation email={userContext.user.email} supportContact={userContext.user.supportContact} />
+        <PendingActivation email={userContext.user.email} />
       </ErrorBoundary>
     );
   }
