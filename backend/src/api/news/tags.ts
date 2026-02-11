@@ -18,7 +18,7 @@ router.get('/', async (req: Request, res: Response) => {
       orderBy: [{ category: 'asc' }, { name: 'asc' }],
       include: {
         _count: {
-          select: { callDiets: true, articles: true },
+          select: { userCallDiets: true, articles: true },
         },
       },
     });
@@ -79,7 +79,7 @@ router.delete('/:id', async (req: Request, res: Response) => {
       where: { id },
       include: {
         _count: {
-          select: { callDiets: true, articles: true },
+          select: { userCallDiets: true, articles: true },
         },
       },
     });
@@ -90,7 +90,7 @@ router.delete('/:id', async (req: Request, res: Response) => {
     }
 
     // Warn if in use (but still allow deletion due to cascade)
-    const inUseCount = tag._count.callDiets + tag._count.articles;
+    const inUseCount = tag._count.userCallDiets + tag._count.articles;
 
     await prisma.newsTag.delete({
       where: { id },

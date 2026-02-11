@@ -13,7 +13,7 @@ const router = Router();
 router.get('/', async (req: Request, res: Response) => {
   try {
     const {
-      revenueOwnerId,
+      userId,
       companyId,
       personId,
       tagId,
@@ -26,10 +26,17 @@ router.get('/', async (req: Request, res: Response) => {
     // Build where clause
     const where: any = {};
 
-    // Filter by revenue owner
-    if (revenueOwnerId) {
-      where.revenueOwners = {
-        some: { revenueOwnerId: revenueOwnerId as string },
+    // Filter by user
+    if (userId) {
+      where.articleUsers = {
+        some: { userId: userId as string },
+      };
+    }
+
+    // Auto-filter for non-admin authenticated users
+    if (req.auth && !req.auth.isAdmin && !userId) {
+      where.articleUsers = {
+        some: { userId: req.auth.userId },
       };
     }
 
@@ -76,10 +83,10 @@ router.get('/', async (req: Request, res: Response) => {
           company: true,
           person: true,
           tag: true,
-          sources: true, // Include all sources for merged stories
-          revenueOwners: {
+          sources: true,
+          articleUsers: {
             include: {
-              revenueOwner: {
+              user: {
                 select: { id: true, name: true, email: true },
               },
             },
@@ -99,7 +106,7 @@ router.get('/', async (req: Request, res: Response) => {
       whyItMatters: article.whyItMatters,
       sourceUrl: article.sourceUrl,
       sourceName: article.sourceName,
-      sources: article.sources, // All sources for merged stories
+      sources: article.sources,
       publishedAt: article.publishedAt,
       fetchedAt: article.fetchedAt,
       status: article.status,
@@ -108,7 +115,7 @@ router.get('/', async (req: Request, res: Response) => {
       company: article.company,
       person: article.person,
       tag: article.tag,
-      revenueOwners: article.revenueOwners.map(ro => ro.revenueOwner),
+      users: article.articleUsers.map(au => au.user),
     }));
 
     res.json({
@@ -134,9 +141,9 @@ router.get('/:id', async (req: Request, res: Response) => {
         company: true,
         person: true,
         tag: true,
-        revenueOwners: {
+        articleUsers: {
           include: {
-            revenueOwner: {
+            user: {
               select: { id: true, name: true, email: true },
             },
           },
@@ -151,7 +158,7 @@ router.get('/:id', async (req: Request, res: Response) => {
 
     res.json({
       ...article,
-      revenueOwners: article.revenueOwners.map(ro => ro.revenueOwner),
+      users: article.articleUsers.map(au => au.user),
     });
   } catch (error) {
     console.error('Error fetching article:', error);

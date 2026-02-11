@@ -8,8 +8,9 @@ import { AdminMetrics } from './pages/AdminMetrics';
 import { AdminPricing } from './pages/AdminPricing';
 import { AdminPrompts } from './pages/AdminPrompts';
 import { NewsDashboard } from './pages/NewsDashboard';
-import { NewsSetup } from './pages/NewsSetup';
+import { AdminNewsActivity } from './pages/AdminNewsActivity';
 import { useReportBlueprints, useResearchManager, useUserContext } from './services/researchManager';
+import { useActivityTracker } from './services/activityTracker';
 
 export default function App() {
   const [currentPath, setCurrentPath] = useState(window.location.hash.slice(1) || '/');
@@ -17,6 +18,9 @@ export default function App() {
   const { jobs, createJob, runJob, rerunJob, cancelJob, deleteJob } = useResearchManager();
   const userContext = useUserContext();
   const reportBlueprints = useReportBlueprints();
+
+  // Activity tracking (page views, unload events)
+  useActivityTracker();
 
   // Simple Hash Router Implementation
   useEffect(() => {
@@ -76,10 +80,10 @@ export default function App() {
       return <AdminPrompts isAdmin={userContext.user?.isAdmin} />;
     }
     if (currentPath === '/news') {
-      return <NewsDashboard onNavigate={navigate} />;
+      return <NewsDashboard onNavigate={navigate} isAdmin={!!userContext.user?.isAdmin} currentUserId={userContext.user?.id || ''} />;
     }
-    if (currentPath === '/news/setup') {
-      return <NewsSetup onNavigate={navigate} />;
+    if (currentPath === '/admin/news-activity') {
+      return <AdminNewsActivity isAdmin={userContext.user?.isAdmin} />;
     }
     if (currentPath.startsWith('/research/')) {
       return (

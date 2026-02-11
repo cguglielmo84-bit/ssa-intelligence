@@ -16,7 +16,7 @@ router.get('/', async (req: Request, res: Response) => {
       orderBy: { name: 'asc' },
       include: {
         _count: {
-          select: { callDiets: true, articles: true, people: true },
+          select: { userCallDiets: true, articles: true, people: true },
         },
       },
     });

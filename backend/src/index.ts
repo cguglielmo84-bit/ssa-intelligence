@@ -42,11 +42,14 @@ import { resolveCompany } from './api/company/resolve.js';
 import newsTagsRouter from './api/news/tags.js';
 import newsCompaniesRouter from './api/news/companies.js';
 import newsPeopleRouter from './api/news/people.js';
-import newsRevenueOwnersRouter from './api/news/revenue-owners.js';
+import newsUserCallDietRouter from './api/news/user-call-diet.js';
 import newsArticlesRouter from './api/news/articles.js';
 import newsRefreshRouter from './api/news/refresh.js';
 import newsSearchRouter from './api/news/search.js';
 import newsExportRouter from './api/news/export.js';
+import newsPinsRouter from './api/news/pins.js';
+import newsActivityRouter from './api/news/activity.js';
+import adminNewsActivityRouter from './api/admin/news-activity.js';
 import { initNewsScheduler } from './services/news-scheduler.js';
 
 // ============================================================================
@@ -216,16 +219,20 @@ app.get('/api/report-blueprints', ...applyLimiter(getLimiter), authMiddleware, g
 app.post('/api/company/resolve', ...applyLimiter(writeLimiter), authMiddleware, resolveCompany);
 
 // ============================================================================
-// NEWS INTELLIGENCE API (No auth for MVP)
+// NEWS INTELLIGENCE API
 // ============================================================================
-app.use('/api/news/tags', newsTagsRouter);
-app.use('/api/news/companies', newsCompaniesRouter);
-app.use('/api/news/people', newsPeopleRouter);
-app.use('/api/news/revenue-owners', newsRevenueOwnersRouter);
-app.use('/api/news/articles', newsArticlesRouter);
-app.use('/api/news/refresh', newsRefreshRouter);
-app.use('/api/news/search', newsSearchRouter);
-app.use('/api/news/export', newsExportRouter);
+app.use('/api/news/articles', authMiddleware, newsArticlesRouter);
+app.use('/api/news/search', authMiddleware, newsSearchRouter);
+app.use('/api/news/export', authMiddleware, newsExportRouter);
+app.use('/api/news/refresh', authMiddleware, requireAdmin, newsRefreshRouter);
+app.use('/api/news/tags', authMiddleware, requireAdmin, newsTagsRouter);
+app.use('/api/news/companies', authMiddleware, requireAdmin, newsCompaniesRouter);
+app.use('/api/news/people', authMiddleware, requireAdmin, newsPeopleRouter);
+app.use('/api/news/users', authMiddleware, newsUserCallDietRouter);
+app.use('/api/news/pins', authMiddleware, newsPinsRouter);
+app.use('/api/news', authMiddleware, newsPinsRouter); // Mount pin routes under /api/news/articles/:id/pin
+app.use('/api/news/activity', authMiddleware, newsActivityRouter);
+app.use('/api/admin/news/activity', authMiddleware, requireAdmin, adminNewsActivityRouter);
 
 // Dev-only auth echo to inspect forwarded headers
 app.get('/api/debug/auth', authMiddleware, (req, res) => {

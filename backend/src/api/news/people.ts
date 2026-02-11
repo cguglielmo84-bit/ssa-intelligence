@@ -19,7 +19,7 @@ router.get('/', async (req: Request, res: Response) => {
           select: { id: true, name: true, ticker: true },
         },
         _count: {
-          select: { callDiets: true, articles: true },
+          select: { userCallDiets: true, articles: true },
         },
       },
     });

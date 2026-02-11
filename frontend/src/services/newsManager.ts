@@ -52,22 +52,6 @@ export interface TrackedPerson {
   };
 }
 
-export interface RevenueOwner {
-  id: string;
-  name: string;
-  email?: string | null;
-  createdAt: string;
-  updatedAt: string;
-  companies?: TrackedCompany[];
-  people?: TrackedPerson[];
-  tags?: NewsTag[];
-  _count?: {
-    companies: number;
-    people: number;
-    tags: number;
-  };
-}
-
 export interface ArticleSource {
   id: string;
   sourceUrl: string;
@@ -79,24 +63,24 @@ export interface ArticleSource {
 export interface NewsArticle {
   id: string;
   headline: string;
-  shortSummary: string | null;  // 1-2 sentences for card preview
-  longSummary: string | null;   // 3-5 sentences for expanded view
-  summary: string | null;       // Legacy field
+  shortSummary: string | null;
+  longSummary: string | null;
+  summary: string | null;
   whyItMatters: string | null;
   sourceUrl: string;
   sourceName: string | null;
-  sources: ArticleSource[];     // All sources for merged stories
+  sources: ArticleSource[];
   publishedAt: string | null;
   fetchedAt: string;
   status: 'new_article' | 'update' | null;
-  isSent: boolean;              // Sent to client status
-  isArchived: boolean;          // Archived status
+  isSent: boolean;
+  isArchived: boolean;
   matchType: 'exact' | 'contextual' | null;
   fetchLayer: 'layer1_rss' | 'layer1_api' | 'layer2_llm' | null;
   company: TrackedCompany | null;
   person: TrackedPerson | null;
   tag: NewsTag | null;
-  revenueOwners: { id: string; name: string; email: string | null }[];
+  users: { id: string; name: string | null; email: string }[];
 }
 
 export interface RefreshStep {
@@ -289,137 +273,12 @@ export const useTrackedPeople = () => {
 // Revenue Owners Hook
 // ============================================================================
 
-export const useRevenueOwners = () => {
-  const [owners, setOwners] = useState<RevenueOwner[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  const fetchOwners = useCallback(async () => {
-    try {
-      setLoading(true);
-      const data = await fetchJson('/news/revenue-owners');
-      setOwners(data);
-      setError(null);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to fetch revenue owners');
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    fetchOwners();
-  }, [fetchOwners]);
-
-  const getOwnerDetails = useCallback(async (id: string): Promise<RevenueOwner> => {
-    return fetchJson(`/news/revenue-owners/${id}`);
-  }, []);
-
-  const createOwner = async (name: string) => {
-    const owner = await fetchJson('/news/revenue-owners', {
-      method: 'POST',
-      body: JSON.stringify({ name }),
-    });
-    setOwners(prev => [...prev, owner]);
-    return owner;
-  };
-
-  const updateOwner = async (id: string, data: { name?: string; email?: string | null }) => {
-    const owner = await fetchJson(`/news/revenue-owners/${id}`, {
-      method: 'PUT',
-      body: JSON.stringify(data),
-    });
-    setOwners(prev => prev.map(o => (o.id === id ? { ...o, ...owner } : o)));
-    return owner;
-  };
-
-  const deleteOwner = async (id: string) => {
-    await fetchJson(`/news/revenue-owners/${id}`, { method: 'DELETE' });
-    setOwners(prev => prev.filter(o => o.id !== id));
-  };
-
-  // Call Diet management
-  const addCompanyToOwner = async (ownerId: string, companyName: string, ticker?: string) => {
-    await fetchJson(`/news/revenue-owners/${ownerId}/companies`, {
-      method: 'POST',
-      body: JSON.stringify({ name: companyName, ticker }),
-    });
-  };
-
-  const removeCompanyFromOwner = async (ownerId: string, companyId: string) => {
-    await fetchJson(`/news/revenue-owners/${ownerId}/companies/${companyId}`, {
-      method: 'DELETE',
-    });
-  };
-
-  const bulkRemoveCompaniesFromOwner = async (ownerId: string, companyIds: string[]) => {
-    const data = await fetchJson(`/news/revenue-owners/${ownerId}/companies/bulk-delete`, {
-      method: 'POST',
-      body: JSON.stringify({ companyIds }),
-    });
-    return data.count;
-  };
-
-  const addPersonToOwner = async (ownerId: string, personName: string, companyAffiliation?: string) => {
-    await fetchJson(`/news/revenue-owners/${ownerId}/people`, {
-      method: 'POST',
-      body: JSON.stringify({ name: personName, companyAffiliation }),
-    });
-  };
-
-  const removePersonFromOwner = async (ownerId: string, personId: string) => {
-    await fetchJson(`/news/revenue-owners/${ownerId}/people/${personId}`, {
-      method: 'DELETE',
-    });
-  };
-
-  const bulkRemovePeopleFromOwner = async (ownerId: string, personIds: string[]) => {
-    const data = await fetchJson(`/news/revenue-owners/${ownerId}/people/bulk-delete`, {
-      method: 'POST',
-      body: JSON.stringify({ personIds }),
-    });
-    return data.count;
-  };
-
-  const addTagToOwner = async (ownerId: string, tagId: string) => {
-    await fetchJson(`/news/revenue-owners/${ownerId}/tags`, {
-      method: 'POST',
-      body: JSON.stringify({ tagId }),
-    });
-  };
-
-  const removeTagFromOwner = async (ownerId: string, tagId: string) => {
-    await fetchJson(`/news/revenue-owners/${ownerId}/tags/${tagId}`, {
-      method: 'DELETE',
-    });
-  };
-
-  return {
-    owners,
-    loading,
-    error,
-    fetchOwners,
-    getOwnerDetails,
-    createOwner,
-    updateOwner,
-    deleteOwner,
-    addCompanyToOwner,
-    removeCompanyFromOwner,
-    bulkRemoveCompaniesFromOwner,
-    addPersonToOwner,
-    removePersonFromOwner,
-    bulkRemovePeopleFromOwner,
-    addTagToOwner,
-    removeTagFromOwner,
-  };
-};
-
 // ============================================================================
 // Articles Hook
 // ============================================================================
 
 export interface ArticleFilters {
-  revenueOwnerId?: string;
+  userId?: string;
   companyId?: string;
   personId?: string;
   tagId?: string;
@@ -437,7 +296,7 @@ export const useNewsArticles = (filters?: ArticleFilters) => {
     try {
       setLoading(true);
       const params = new URLSearchParams();
-      if (filters?.revenueOwnerId) params.set('revenueOwnerId', filters.revenueOwnerId);
+      if (filters?.userId) params.set('userId', filters.userId);
       if (filters?.companyId) params.set('companyId', filters.companyId);
       if (filters?.personId) params.set('personId', filters.personId);
       if (filters?.tagId) params.set('tagId', filters.tagId);
@@ -454,7 +313,7 @@ export const useNewsArticles = (filters?: ArticleFilters) => {
     } finally {
       setLoading(false);
     }
-  }, [filters?.revenueOwnerId, filters?.companyId, filters?.personId, filters?.tagId, filters?.isSent, filters?.isArchived]);
+  }, [filters?.userId, filters?.companyId, filters?.personId, filters?.tagId, filters?.isSent, filters?.isArchived]);
 
   useEffect(() => {
     fetchArticles();
@@ -596,4 +455,199 @@ export const bulkSendArticles = async (articleIds: string[]): Promise<number> =>
     body: JSON.stringify({ articleIds }),
   });
   return data.count;
+};
+
+// ============================================================================
+// User Call Diet Hook
+// ============================================================================
+
+export interface UserCallDiet {
+  userId: string;
+  name: string | null;
+  email: string;
+  companies: TrackedCompany[];
+  people: TrackedPerson[];
+  tags: NewsTag[];
+}
+
+export const useUserCallDiet = (userId: string | null) => {
+  const [callDiet, setCallDiet] = useState<UserCallDiet | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const fetchCallDiet = useCallback(async () => {
+    if (!userId) return;
+    try {
+      setLoading(true);
+      const data = await fetchJson(`/news/users/${userId}/call-diet`);
+      setCallDiet(data);
+      setError(null);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to fetch call diet');
+    } finally {
+      setLoading(false);
+    }
+  }, [userId]);
+
+  useEffect(() => {
+    fetchCallDiet();
+  }, [fetchCallDiet]);
+
+  const addCompany = async (companyName: string, ticker?: string) => {
+    if (!userId) return;
+    await fetchJson(`/news/users/${userId}/call-diet/companies`, {
+      method: 'POST',
+      body: JSON.stringify({ name: companyName, ticker }),
+    });
+    await fetchCallDiet();
+  };
+
+  const removeCompany = async (companyId: string) => {
+    if (!userId) return;
+    await fetchJson(`/news/users/${userId}/call-diet/companies/${companyId}`, {
+      method: 'DELETE',
+    });
+    await fetchCallDiet();
+  };
+
+  const bulkRemoveCompanies = async (companyIds: string[]) => {
+    if (!userId) return;
+    await fetchJson(`/news/users/${userId}/call-diet/companies/bulk-delete`, {
+      method: 'POST',
+      body: JSON.stringify({ companyIds }),
+    });
+    await fetchCallDiet();
+  };
+
+  const addPerson = async (personName: string, companyAffiliation?: string) => {
+    if (!userId) return;
+    await fetchJson(`/news/users/${userId}/call-diet/people`, {
+      method: 'POST',
+      body: JSON.stringify({ name: personName, companyAffiliation }),
+    });
+    await fetchCallDiet();
+  };
+
+  const removePerson = async (personId: string) => {
+    if (!userId) return;
+    await fetchJson(`/news/users/${userId}/call-diet/people/${personId}`, {
+      method: 'DELETE',
+    });
+    await fetchCallDiet();
+  };
+
+  const bulkRemovePeople = async (personIds: string[]) => {
+    if (!userId) return;
+    await fetchJson(`/news/users/${userId}/call-diet/people/bulk-delete`, {
+      method: 'POST',
+      body: JSON.stringify({ personIds }),
+    });
+    await fetchCallDiet();
+  };
+
+  const addTag = async (tagId: string) => {
+    if (!userId) return;
+    await fetchJson(`/news/users/${userId}/call-diet/tags`, {
+      method: 'POST',
+      body: JSON.stringify({ tagId }),
+    });
+    await fetchCallDiet();
+  };
+
+  const removeTag = async (tagId: string) => {
+    if (!userId) return;
+    await fetchJson(`/news/users/${userId}/call-diet/tags/${tagId}`, {
+      method: 'DELETE',
+    });
+    await fetchCallDiet();
+  };
+
+  return {
+    callDiet,
+    loading,
+    error,
+    fetchCallDiet,
+    addCompany,
+    removeCompany,
+    bulkRemoveCompanies,
+    addPerson,
+    removePerson,
+    bulkRemovePeople,
+    addTag,
+    removeTag,
+  };
+};
+
+// ============================================================================
+// User Pinned Articles Hook
+// ============================================================================
+
+export const useUserPins = () => {
+  const [pinnedIds, setPinnedIds] = useState<Set<string>>(new Set());
+  const [loading, setLoading] = useState(true);
+
+  const fetchPins = useCallback(async () => {
+    try {
+      setLoading(true);
+      const data = await fetchJson('/news/pins');
+      setPinnedIds(new Set(data.articleIds || []));
+    } catch {
+      // Ignore pin fetch errors
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchPins();
+  }, [fetchPins]);
+
+  const pinArticle = async (articleId: string) => {
+    await fetchJson(`/news/articles/${articleId}/pin`, { method: 'POST' });
+    setPinnedIds(prev => new Set([...prev, articleId]));
+  };
+
+  const unpinArticle = async (articleId: string) => {
+    await fetchJson(`/news/articles/${articleId}/pin`, { method: 'DELETE' });
+    setPinnedIds(prev => {
+      const next = new Set(prev);
+      next.delete(articleId);
+      return next;
+    });
+  };
+
+  const isPinned = (articleId: string) => pinnedIds.has(articleId);
+
+  return { pinnedIds, loading, fetchPins, pinArticle, unpinArticle, isPinned };
+};
+
+// ============================================================================
+// Export Articles
+// ============================================================================
+
+export const exportArticles = async (format: 'pdf' | 'markdown', articleIds: string[], userId?: string) => {
+  const API_BASE_URL = (import.meta as any).env?.VITE_API_BASE_URL || '/api';
+  const base = API_BASE_URL.replace(/\/$/, '');
+
+  let url: string;
+  if (articleIds.length > 0) {
+    // Export specific selected articles
+    url = `${base}/news/export/${format}?articleIds=${articleIds.join(',')}`;
+  } else if (userId) {
+    // Fallback: export all user articles
+    url = `${base}/news/export/${format}/${userId}`;
+  } else {
+    throw new Error('No articles selected');
+  }
+
+  const res = await fetch(url);
+  if (!res.ok) throw new Error('Export failed');
+  const blob = await res.blob();
+  const ext = format === 'pdf' ? 'pdf' : 'md';
+  const filename = `news-digest-${new Date().toISOString().split('T')[0]}.${ext}`;
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = filename;
+  a.click();
+  URL.revokeObjectURL(a.href);
 };

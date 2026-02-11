@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { UserEditModal } from '../components/UserEditModal';
 import { UserAddModal } from '../components/UserAddModal';
+import { UserCallDietSection } from '../components/UserCallDietSection';
 import { applyUserDeletionToGroups } from '../utils/adminUsers';
 
 type AdminUser = {
@@ -45,6 +46,7 @@ export const AdminUsers: React.FC<{ isAdmin?: boolean; currentUserId?: string }>
   const [editingUser, setEditingUser] = useState<AdminUser | null>(null);
   const [showAddUser, setShowAddUser] = useState(false);
   const [deletingGroupId, setDeletingGroupId] = useState<string | null>(null);
+  const [expandedCallDietUserId, setExpandedCallDietUserId] = useState<string | null>(null);
 
   const groupMap = useMemo(() => new Map(groups.map((g) => [g.id, g])), [groups]);
 
@@ -358,6 +360,20 @@ export const AdminUsers: React.FC<{ isAdmin?: boolean; currentUserId?: string }>
                 </div>
                 {groups.length === 0 && (
                   <div className="text-xs text-slate-400">Create a group to assign memberships.</div>
+                )}
+              </div>
+              {/* Call Diet Toggle */}
+              <div className="mt-3 pt-3 border-t border-slate-100">
+                <button
+                  onClick={() => setExpandedCallDietUserId(expandedCallDietUserId === user.id ? null : user.id)}
+                  className="text-xs font-semibold text-brand-600 hover:text-brand-700 transition-colors"
+                >
+                  {expandedCallDietUserId === user.id ? 'Hide Call Diet' : 'Manage Call Diet'}
+                </button>
+                {expandedCallDietUserId === user.id && (
+                  <div className="mt-3">
+                    <UserCallDietSection userId={user.id} />
+                  </div>
                 )}
               </div>
             </div>

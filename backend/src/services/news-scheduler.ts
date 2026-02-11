@@ -29,6 +29,7 @@ async function runAutoArchive(): Promise<void> {
         fetchedAt: { lt: cutoffDate },
         isSent: false,
         isArchived: false,
+        pinnedBy: { none: {} },
       },
       data: {
         isArchived: true,
@@ -53,42 +54,43 @@ async function runNewsRefresh(): Promise<void> {
   const startTime = Date.now();
 
   try {
-    // Get all revenue owners with their call diets
-    const revenueOwners = await prisma.revenueOwner.findMany({
+    // Get all users with call diets configured
+    const usersWithCallDiets = await prisma.user.findMany({
+      where: {
+        OR: [
+          { callDietCompanies: { some: {} } },
+          { callDietPeople: { some: {} } },
+          { callDietTags: { some: {} } },
+        ],
+      },
       include: {
-        companies: {
-          include: { company: true },
-        },
-        people: {
-          include: { person: true },
-        },
-        tags: {
-          include: { tag: true },
-        },
+        callDietCompanies: { include: { company: true } },
+        callDietPeople: { include: { person: true } },
+        callDietTags: { include: { tag: true } },
       },
     });
 
-    if (revenueOwners.length === 0) {
-      console.log('[scheduler] No revenue owners configured, skipping refresh');
+    if (usersWithCallDiets.length === 0) {
+      console.log('[scheduler] No users with call diets configured, skipping refresh');
       return;
     }
 
     // Format call diets for the hybrid fetcher
-    const callDiets: CallDietInput[] = revenueOwners.map(ro => ({
-      revenueOwnerId: ro.id,
-      revenueOwnerName: ro.name,
-      companies: ro.companies.map(c => ({
+    const callDiets: CallDietInput[] = usersWithCallDiets.map(user => ({
+      userId: user.id,
+      userName: user.name || user.email,
+      companies: user.callDietCompanies.map(c => ({
         name: c.company.name,
         ticker: c.company.ticker || undefined,
       })),
-      people: ro.people.map(p => ({
+      people: user.callDietPeople.map(p => ({
         name: p.person.name,
         title: p.person.title || undefined,
       })),
-      topics: ro.tags.map(t => t.tag.name),
+      topics: user.callDietTags.map(t => t.tag.name),
     }));
 
-    console.log(`[scheduler] Fetching news for ${callDiets.length} revenue owners`);
+    console.log(`[scheduler] Fetching news for ${callDiets.length} users`);
 
     // Fetch news via hybrid approach
     const result = await fetchNewsHybrid(callDiets);
@@ -192,22 +194,22 @@ async function runNewsRefresh(): Promise<void> {
           }
         }
 
-        // Link to revenue owners
-        for (const ownerName of article.revenueOwners) {
-          const owner = revenueOwners.find(
-            ro => ro.name.toLowerCase() === ownerName.toLowerCase()
+        // Link to users
+        for (const userName of article.userNames) {
+          const user = usersWithCallDiets.find(
+            u => (u.name || u.email).toLowerCase() === userName.toLowerCase()
           );
-          if (owner) {
-            await prisma.articleRevenueOwner.upsert({
+          if (user) {
+            await prisma.articleUser.upsert({
               where: {
-                articleId_revenueOwnerId: {
+                articleId_userId: {
                   articleId: savedArticle.id,
-                  revenueOwnerId: owner.id,
+                  userId: user.id,
                 },
               },
               create: {
                 articleId: savedArticle.id,
-                revenueOwnerId: owner.id,
+                userId: user.id,
               },
               update: {},
             });
@@ -236,7 +238,7 @@ async function runNewsRefresh(): Promise<void> {
       progressMessage: 'Complete (scheduled)',
       currentStep: 'done',
       steps: [
-        { step: 'Loading revenue owners', status: 'completed' as const, detail: `${revenueOwners.length} owner(s)` },
+        { step: 'Loading users', status: 'completed' as const, detail: `${usersWithCallDiets.length} user(s)` },
         { step: 'Layer 1: RSS feeds & APIs', status: 'completed' as const },
         { step: 'Layer 2: AI web search', status: 'completed' as const },
         { step: 'Combining & deduplicating', status: 'completed' as const },

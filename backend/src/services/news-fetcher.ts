@@ -22,12 +22,21 @@ const anthropic = new Anthropic();
 const layer2CircuitBreaker = new CircuitBreaker('layer2', 3, 5 * 60 * 1000);
 
 export interface CallDietInput {
-  revenueOwnerId: string;
-  revenueOwnerName: string;
+  userId: string;
+  userName: string;
   companies: Array<{ name: string; ticker?: string }>;
   people: Array<{ name: string; title?: string }>;
   topics: string[]; // Kept for backward compatibility but not used in search
 }
+
+/** @deprecated Use CallDietInput with userId/userName instead */
+export type LegacyCallDietInput = {
+  revenueOwnerId: string;
+  revenueOwnerName: string;
+  companies: Array<{ name: string; ticker?: string }>;
+  people: Array<{ name: string; title?: string }>;
+  topics: string[];
+};
 
 export interface ArticleSourceInfo {
   sourceUrl: string;
@@ -51,12 +60,12 @@ export interface ProcessedArticle {
   status: 'new_article' | 'update';
   matchType: 'exact' | 'contextual';
   fetchLayer: 'layer1_rss' | 'layer1_api' | 'layer2_llm';
-  revenueOwners: string[];
+  userNames: string[];
 }
 
 export interface CoverageGap {
   company: string;
-  revenueOwner?: string;
+  userName?: string;
   note: string;
 }
 
@@ -468,8 +477,8 @@ ${companies.join(', ')}
 ## People Being Tracked
 ${people.join(', ')}
 
-## Revenue Owner Mapping
-${callDiets.map((cd) => `- ${cd.revenueOwnerName}: tracks ${cd.companies.map((c) => c.name).concat(cd.people.map((p) => p.name)).join(', ')}`).join('\n')}
+## User Mapping
+${callDiets.map((cd) => `- ${cd.userName}: tracks ${cd.companies.map((c) => c.name).concat(cd.people.map((p) => p.name)).join(', ')}`).join('\n')}
 
 ## Instructions
 
@@ -539,7 +548,7 @@ Return ONLY valid JSON:
       "status": "new_article",
       "matchType": "exact|contextual",
       "fetchLayer": "layer from input",
-      "revenueOwners": ["Owner Name 1"]
+      "userNames": ["User Name 1"]
     }
   ],
   "coverageGaps": [
@@ -588,7 +597,7 @@ Return ALL relevant articles, sorted by recency (most recent first).`;
           status: 'new_article' as const,
           matchType: 'contextual' as const,
           fetchLayer: a.fetchLayer,
-          revenueOwners: callDiets.map((cd) => cd.revenueOwnerName),
+          userNames: callDiets.map((cd) => cd.userName),
         })),
         coverageGaps: [],
       };
@@ -669,7 +678,7 @@ Return ALL relevant articles, sorted by recency (most recent first).`;
         status: a.status || 'new_article',
         matchType: a.matchType || 'contextual',
         fetchLayer: a.fetchLayer || original?.fetchLayer || 'layer2_llm',
-        revenueOwners: a.revenueOwners || [],
+        userNames: a.revenueOwners || a.userNames || [],
       };
     });
 
@@ -698,7 +707,7 @@ Return ALL relevant articles, sorted by recency (most recent first).`;
         status: 'new_article' as const,
         matchType: 'contextual' as const,
         fetchLayer: a.fetchLayer,
-        revenueOwners: callDiets.map((cd) => cd.revenueOwnerName),
+        userNames: callDiets.map((cd) => cd.userName),
       })),
       coverageGaps: [],
     };
@@ -1065,7 +1074,7 @@ Return ONLY valid JSON (no markdown, no backticks):
       "status": "new_article",
       "matchType": "exact",
       "fetchLayer": "layer2_llm",
-      "revenueOwners": []
+      "userNames": []
     }
   ],
   "coverageGaps": []
