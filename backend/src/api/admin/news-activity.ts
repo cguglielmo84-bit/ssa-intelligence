@@ -559,6 +559,10 @@ router.get('/:userId', async (req: Request, res: Response) => {
       weeklyTrend,
       companyBreakdownRaw,
       callDietCompanies,
+      linkClickCount,
+      uniqueArticlesResult,
+      searchCount,
+      articlesByCompanyRaw,
     ] = await Promise.all([
       // Activity counts
       prisma.$queryRaw<[{
@@ -593,7 +597,7 @@ router.get('/:userId', async (req: Request, res: Response) => {
           AND ao.created_at >= ${since}
       `,
 
-      // Avg read time
+      // Avg + total read time
       prisma.userActivity.aggregate({
         where: {
           userId,
@@ -602,6 +606,7 @@ router.get('/:userId', async (req: Request, res: Response) => {
           createdAt: { gte: since },
         },
         _avg: { durationMs: true },
+        _sum: { durationMs: true },
       }),
 
       // Weekly trend
@@ -649,6 +654,59 @@ router.get('/:userId', async (req: Request, res: Response) => {
         where: { userId },
         include: { company: { select: { id: true, name: true, ticker: true } } },
       }),
+
+      // Link click count
+      prisma.userActivity.count({
+        where: { userId, type: 'article_link_click', createdAt: { gte: since } },
+      }),
+
+      // Unique articles read
+      prisma.$queryRaw<[{ count: bigint }]>`
+        SELECT COUNT(DISTINCT article_id) AS count
+        FROM user_activities
+        WHERE user_id = ${userId}
+          AND type = 'article_open'
+          AND created_at >= ${since}
+      `,
+
+      // Search count
+      prisma.userActivity.count({
+        where: { userId, type: 'search', createdAt: { gte: since } },
+      }),
+
+      // Articles by company (with per-article stats)
+      prisma.$queryRaw<Array<{
+        article_id: string;
+        headline: string;
+        source_name: string | null;
+        company_id: string;
+        company_name: string;
+        ticker: string | null;
+        read_count: bigint;
+        total_read_time_ms: bigint;
+        last_read_at: Date;
+        link_clicks: bigint;
+      }>>`
+        SELECT
+          na.id AS article_id,
+          na.headline,
+          na.source_name,
+          tc.id AS company_id,
+          tc.name AS company_name,
+          tc.ticker,
+          COUNT(*) FILTER (WHERE ua.type = 'article_open') AS read_count,
+          COALESCE(SUM(ua.duration_ms) FILTER (WHERE ua.type = 'article_close'), 0) AS total_read_time_ms,
+          MAX(ua.created_at) AS last_read_at,
+          COUNT(*) FILTER (WHERE ua.type = 'article_link_click') AS link_clicks
+        FROM user_activities ua
+        JOIN news_articles na ON na.id = ua.article_id
+        JOIN tracked_companies tc ON tc.id = na.company_id
+        WHERE ua.user_id = ${userId}
+          AND ua.type IN ('article_open', 'article_close', 'article_link_click')
+          AND ua.created_at >= ${since}
+        GROUP BY na.id, na.headline, na.source_name, tc.id, tc.name, tc.ticker
+        ORDER BY tc.name ASC, read_count DESC
+      `,
     ]);
 
     const counts = activityCounts[0];
@@ -665,6 +723,10 @@ router.get('/:userId', async (req: Request, res: Response) => {
     const avgReadTimeSec = avgReadTimeResult._avg.durationMs
       ? Math.round(avgReadTimeResult._avg.durationMs / 1000)
       : 0;
+    const totalReadTimeSec = avgReadTimeResult._sum.durationMs
+      ? Math.round(avgReadTimeResult._sum.durationMs / 1000)
+      : 0;
+    const uniqueArticlesRead = Number(uniqueArticlesResult[0]?.count ?? 0);
 
     // Build company breakdown with call diet flag
     const dietCompanyIds = new Set(callDietCompanies.map(c => c.companyId));
@@ -699,6 +761,50 @@ router.get('/:userId', async (req: Request, res: Response) => {
       ? Math.round((companiesWithReads / totalCallDietCompanies) * 100)
       : 0;
 
+    // Build articlesByCompany nested structure
+    const articlesByCompanyMap = new Map<string, {
+      companyId: string; companyName: string; ticker: string | null; isInCallDiet: boolean;
+      articles: Array<{ articleId: string; headline: string; sourceName: string | null; readCount: number; totalReadTimeSec: number; lastReadAt: string; linkClicks: number }>;
+    }>();
+    for (const row of articlesByCompanyRaw) {
+      if (!articlesByCompanyMap.has(row.company_id)) {
+        articlesByCompanyMap.set(row.company_id, {
+          companyId: row.company_id,
+          companyName: row.company_name,
+          ticker: row.ticker,
+          isInCallDiet: dietCompanyIds.has(row.company_id),
+          articles: [],
+        });
+      }
+      articlesByCompanyMap.get(row.company_id)!.articles.push({
+        articleId: row.article_id,
+        headline: row.headline,
+        sourceName: row.source_name,
+        readCount: Number(row.read_count),
+        totalReadTimeSec: Math.round(Number(row.total_read_time_ms) / 1000),
+        lastReadAt: row.last_read_at.toISOString(),
+        linkClicks: Number(row.link_clicks),
+      });
+    }
+    // Add call diet companies with no articles
+    for (const cd of callDietCompanies) {
+      if (!articlesByCompanyMap.has(cd.companyId)) {
+        articlesByCompanyMap.set(cd.companyId, {
+          companyId: cd.company.id,
+          companyName: cd.company.name,
+          ticker: cd.company.ticker,
+          isInCallDiet: true,
+          articles: [],
+        });
+      }
+    }
+    const articlesByCompany = Array.from(articlesByCompanyMap.values())
+      .sort((a, b) => {
+        // Call diet companies first, then by article count desc
+        if (a.isInCallDiet !== b.isInCallDiet) return a.isInCallDiet ? -1 : 1;
+        return b.articles.length - a.articles.length;
+      });
+
     res.json({
       user,
       metrics: {
@@ -710,8 +816,13 @@ router.get('/:userId', async (req: Request, res: Response) => {
         exports,
         pins,
         callDietCoverage,
+        totalReadTimeSec,
+        linkClicks: linkClickCount,
+        uniqueArticlesRead,
+        searchCount,
       },
       companyBreakdown,
+      articlesByCompany,
       weeklyTrend: weeklyTrend.map(w => ({
         weekStart: w.week_start.toISOString().split('T')[0],
         reads: Number(w.reads),

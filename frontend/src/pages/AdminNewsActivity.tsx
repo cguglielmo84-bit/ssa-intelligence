@@ -36,6 +36,10 @@ import {
   X,
   Search,
   Check,
+  MousePointerClick,
+  FileText,
+  ShieldCheck,
+  Timer,
 } from 'lucide-react';
 
 const API_BASE = (import.meta as any).env?.VITE_API_BASE_URL || '/api';
@@ -140,6 +144,10 @@ interface UserDetailMetrics {
   exports: number;
   pins: number;
   callDietCoverage: number;
+  totalReadTimeSec: number;
+  linkClicks: number;
+  uniqueArticlesRead: number;
+  searchCount: number;
 }
 
 interface UserCompanyBreakdown {
@@ -157,10 +165,29 @@ interface UserWeeklyTrend {
   exports: number;
 }
 
+interface UserArticle {
+  articleId: string;
+  headline: string;
+  sourceName: string | null;
+  readCount: number;
+  totalReadTimeSec: number;
+  lastReadAt: string;
+  linkClicks: number;
+}
+
+interface UserArticlesByCompany {
+  companyId: string;
+  companyName: string;
+  ticker: string | null;
+  isInCallDiet: boolean;
+  articles: UserArticle[];
+}
+
 interface UserDetailData {
   user: { id: string; name: string | null; email: string; role: string };
   metrics: UserDetailMetrics;
   companyBreakdown: UserCompanyBreakdown[];
+  articlesByCompany: UserArticlesByCompany[];
   weeklyTrend: UserWeeklyTrend[];
   callDiet: {
     companies: Array<{ companyId: string; companyName: string; ticker: string | null }>;
@@ -196,6 +223,13 @@ function formatTime(seconds: number): string {
 
 function formatDate(dateStr: string): string {
   return new Date(dateStr).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+}
+
+function qualityIndicator(rate: number): { label: string; color: string } {
+  if (rate >= 75) return { label: 'Excellent', color: 'text-emerald-600' };
+  if (rate >= 50) return { label: 'Good', color: 'text-blue-600' };
+  if (rate >= 25) return { label: 'Fair', color: 'text-amber-600' };
+  return { label: 'Low', color: 'text-rose-600' };
 }
 
 type SortDir = 'asc' | 'desc';
@@ -1155,6 +1189,57 @@ const UsersTab: React.FC<{
 };
 
 // ============================================================================
+// Metric card for user drill-down
+// ============================================================================
+
+const METRIC_CARD_STYLES: Record<string, { bg: string; iconBg: string; iconColor: string; valueColor: string }> = {
+  purple: { bg: 'bg-gradient-to-br from-purple-50 to-violet-50 border-purple-100/60', iconBg: 'bg-purple-100', iconColor: 'text-purple-600', valueColor: 'text-purple-700' },
+  blue: { bg: 'bg-gradient-to-br from-blue-50 to-sky-50 border-blue-100/60', iconBg: 'bg-blue-100', iconColor: 'text-blue-600', valueColor: 'text-blue-700' },
+  emerald: { bg: 'bg-gradient-to-br from-emerald-50 to-teal-50 border-emerald-100/60', iconBg: 'bg-emerald-100', iconColor: 'text-emerald-600', valueColor: 'text-emerald-700' },
+  cyan: { bg: 'bg-gradient-to-br from-cyan-50 to-sky-50 border-cyan-100/60', iconBg: 'bg-cyan-100', iconColor: 'text-cyan-600', valueColor: 'text-cyan-700' },
+  amber: { bg: 'bg-gradient-to-br from-amber-50 to-orange-50 border-amber-100/60', iconBg: 'bg-amber-100', iconColor: 'text-amber-600', valueColor: 'text-amber-700' },
+  indigo: { bg: 'bg-gradient-to-br from-indigo-50 to-violet-50 border-indigo-100/60', iconBg: 'bg-indigo-100', iconColor: 'text-indigo-600', valueColor: 'text-indigo-700' },
+};
+
+const MetricCard: React.FC<{
+  icon: React.ReactNode;
+  value: string;
+  label: string;
+  sublabel?: string;
+  sublabelColor?: string;
+  color: string;
+  progress?: number;
+}> = ({ icon, value, label, sublabel, sublabelColor, color, progress }) => {
+  const style = METRIC_CARD_STYLES[color] || METRIC_CARD_STYLES.blue;
+  return (
+    <div className={`rounded-xl p-4 border ${style.bg} flex flex-col gap-2`}>
+      <div className="flex items-center gap-3">
+        <div className={`p-2 rounded-lg ${style.iconBg}`}>
+          <span className={style.iconColor}>{icon}</span>
+        </div>
+        <div className="min-w-0">
+          <div className={`text-xl font-extrabold tracking-tight ${style.valueColor}`}>{value}</div>
+          <div className="text-xs font-medium text-slate-500">{label}</div>
+        </div>
+      </div>
+      {sublabel && (
+        <div className={`text-[11px] font-semibold ${sublabelColor || 'text-slate-400'} ml-11`}>{sublabel}</div>
+      )}
+      {progress !== undefined && (
+        <div className="mt-1">
+          <div className="h-1.5 bg-black/5 rounded-full overflow-hidden">
+            <div
+              className="h-full rounded-full bg-gradient-to-r from-indigo-400 to-violet-500 transition-all duration-500"
+              style={{ width: `${Math.min(100, Math.max(0, progress))}%` }}
+            />
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+// ============================================================================
 // User Drill-Down
 // ============================================================================
 
@@ -1163,6 +1248,17 @@ const UserDrillDown: React.FC<{
   loading: boolean;
   onBack: () => void;
 }> = ({ detail, loading, onBack }) => {
+  const [expandedCompanies, setExpandedCompanies] = useState<Set<string>>(new Set());
+
+  const toggleCompany = useCallback((companyId: string) => {
+    setExpandedCompanies(prev => {
+      const next = new Set(prev);
+      if (next.has(companyId)) next.delete(companyId);
+      else next.add(companyId);
+      return next;
+    });
+  }, []);
+
   if (loading) {
     return (
       <div className="space-y-6">
@@ -1189,7 +1285,8 @@ const UserDrillDown: React.FC<{
     );
   }
 
-  const { user, metrics, companyBreakdown, weeklyTrend, callDiet } = detail;
+  const { user, metrics, articlesByCompany, weeklyTrend, callDiet } = detail;
+  const rtrQuality = qualityIndicator(metrics.readThroughRate);
 
   return (
     <div className="space-y-6">
@@ -1212,41 +1309,97 @@ const UserDrillDown: React.FC<{
           </div>
         </div>
 
-        {/* Metric cards */}
-        <div className="grid grid-cols-3 gap-3 p-5">
-          <MiniCard label="Avg Read Time" value={formatTime(metrics.avgReadTimeSec)} color="purple" />
-          <MiniCard label="Exports" value={String(metrics.exports)} color="amber" />
-          <MiniCard label="Call Diet Coverage" value={`${metrics.callDietCoverage}%`} color="blue" />
+        {/* Stats grid — 2×3 */}
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 p-5">
+          <MetricCard
+            icon={<Timer size={16} />}
+            value={formatTime(metrics.totalReadTimeSec)}
+            label="Total Read Time"
+            sublabel={`Avg ${formatTime(metrics.avgReadTimeSec)} per article`}
+            color="purple"
+          />
+          <MetricCard
+            icon={<BookOpen size={16} />}
+            value={String(metrics.uniqueArticlesRead)}
+            label="Articles Read"
+            sublabel={`${metrics.articleReads} total opens`}
+            color="blue"
+          />
+          <MetricCard
+            icon={<Check size={16} />}
+            value={`${metrics.readThroughRate}%`}
+            label="Read-Through Rate"
+            sublabel={rtrQuality.label}
+            sublabelColor={rtrQuality.color}
+            color="emerald"
+          />
+          <MetricCard
+            icon={<MousePointerClick size={16} />}
+            value={String(metrics.linkClicks)}
+            label="Link Clicks"
+            color="cyan"
+          />
+          <MetricCard
+            icon={<Download size={16} />}
+            value={String(metrics.exports)}
+            label="Exports"
+            color="amber"
+          />
+          <MetricCard
+            icon={<ShieldCheck size={16} />}
+            value={`${metrics.callDietCoverage}%`}
+            label="Call Diet Coverage"
+            sublabel={`${callDiet.companiesWithReads} of ${callDiet.totalCompanies} companies`}
+            color="indigo"
+            progress={metrics.callDietCoverage}
+          />
         </div>
       </div>
 
-      {/* Weekly trend sparkline */}
+      {/* Weekly activity chart */}
       {weeklyTrend.length > 1 && (
         <div className="bg-white border border-slate-200/80 rounded-2xl p-5 shadow-sm">
-          <h3 className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-3 flex items-center gap-2">
+          <h3 className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-4 flex items-center gap-2">
             <div className="w-1 h-3 bg-gradient-to-b from-violet-500 to-purple-600 rounded-full" />
-            Weekly Trend
+            Weekly Activity
           </h3>
-          <ResponsiveContainer width="100%" height={100}>
-            <AreaChart data={weeklyTrend}>
+          <ResponsiveContainer width="100%" height={220}>
+            <AreaChart data={weeklyTrend} margin={{ top: 5, right: 10, left: -10, bottom: 0 }}>
+              <defs>
+                <linearGradient id="userReadsGrad" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%" stopColor="#7c3aed" stopOpacity={0.15} />
+                  <stop offset="95%" stopColor="#7c3aed" stopOpacity={0} />
+                </linearGradient>
+              </defs>
+              <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
+              <XAxis dataKey="weekStart" tickFormatter={formatDate} tick={{ fontSize: 11, fill: '#94a3b8' }} axisLine={false} tickLine={false} />
+              <YAxis tick={{ fontSize: 11, fill: '#94a3b8' }} axisLine={false} tickLine={false} allowDecimals={false} />
+              <Tooltip
+                labelFormatter={(v: string) => `Week of ${formatDate(v)}`}
+                contentStyle={{ fontSize: '12px', border: '1px solid #e2e8f0', borderRadius: '10px', boxShadow: '0 4px 12px rgba(0,0,0,0.08)' }}
+              />
               <Area
                 type="monotone"
                 dataKey="reads"
+                name="Reads"
                 stroke="#7c3aed"
-                fill="#7c3aed"
-                fillOpacity={0.1}
+                fill="url(#userReadsGrad)"
                 strokeWidth={2}
               />
-              <Tooltip
-                labelFormatter={(v: string) => `Week of ${formatDate(v)}`}
-                contentStyle={{ fontSize: '12px', border: '1px solid #e2e8f0', borderRadius: '8px' }}
+              <Line
+                type="monotone"
+                dataKey="exports"
+                name="Exports"
+                stroke="#f59e0b"
+                strokeWidth={2}
+                dot={{ r: 3, fill: '#f59e0b' }}
               />
             </AreaChart>
           </ResponsiveContainer>
         </div>
       )}
 
-      {/* Company breakdown */}
+      {/* Company breakdown — collapsible rows */}
       <div className="bg-white border border-slate-200/80 rounded-2xl p-6 shadow-sm">
         <h3 className="text-sm font-bold text-slate-700 mb-1 flex items-center gap-2">
           <div className="p-1.5 bg-blue-50 rounded-lg">
@@ -1257,35 +1410,86 @@ const UserDrillDown: React.FC<{
         <p className="text-xs text-slate-400 mb-4 ml-9">
           Reading about <span className="font-semibold text-slate-500">{callDiet.companiesWithReads}</span> of <span className="font-semibold text-slate-500">{callDiet.totalCompanies}</span> call diet companies
         </p>
-        {companyBreakdown.length > 0 ? (
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b border-slate-100 text-left">
-                  <th className="py-3 px-2 text-xs font-semibold text-slate-400 uppercase tracking-wider">Company</th>
-                  <th className="py-3 px-2 text-xs font-semibold text-slate-400 uppercase tracking-wider text-right">Reads</th>
-                  <th className="py-3 px-2 text-xs font-semibold text-slate-400 uppercase tracking-wider text-center">In Call Diet?</th>
-                </tr>
-              </thead>
-              <tbody>
-                {companyBreakdown.map(c => (
-                  <tr key={c.companyId} className={`transition-colors border-b border-slate-50 last:border-b-0 ${c.isInCallDiet && c.reads === 0 ? 'bg-rose-50/60' : 'hover:bg-brand-50/30'}`}>
-                    <td className="py-3 pr-3">
-                      <span className="font-semibold text-slate-700">{c.companyName}</span>
-                      {c.ticker && <span className="text-[11px] text-slate-400 bg-slate-100 px-1.5 py-0.5 rounded font-mono ml-1.5">{c.ticker}</span>}
-                    </td>
-                    <td className={`py-3 text-right font-bold ${c.reads === 0 ? 'text-rose-500' : 'text-slate-700'}`}>{c.reads}</td>
-                    <td className="py-3 text-center">
-                      {c.isInCallDiet ? (
-                        <span className="inline-flex px-2.5 py-1 rounded-lg text-xs font-bold bg-emerald-100 text-emerald-700">Yes</span>
-                      ) : (
-                        <span className="text-slate-300">—</span>
+        {articlesByCompany.length > 0 ? (
+          <div className="space-y-1">
+            {articlesByCompany.map(company => {
+              const hasArticles = company.articles.length > 0;
+              const isExpanded = expandedCompanies.has(company.companyId);
+              const totalReads = company.articles.reduce((sum, a) => sum + a.readCount, 0);
+              return (
+                <div key={company.companyId}>
+                  {/* Company row */}
+                  <button
+                    onClick={() => hasArticles && toggleCompany(company.companyId)}
+                    className={`w-full flex items-center gap-3 px-3 py-3 rounded-lg text-left transition-colors ${
+                      company.isInCallDiet && !hasArticles
+                        ? 'bg-rose-50/60 hover:bg-rose-50'
+                        : isExpanded
+                        ? 'bg-brand-50/40'
+                        : 'hover:bg-slate-50'
+                    } ${hasArticles ? 'cursor-pointer' : 'cursor-default'}`}
+                  >
+                    {/* Chevron */}
+                    <div className="w-4 flex-shrink-0">
+                      {hasArticles && (
+                        <ChevronRight size={14} className={`text-slate-400 transition-transform duration-200 ${isExpanded ? 'rotate-90' : ''}`} />
                       )}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+                    </div>
+                    {/* Company name + ticker */}
+                    <div className="flex-1 min-w-0">
+                      <span className="font-semibold text-slate-700">{company.companyName}</span>
+                      {company.ticker && (
+                        <span className="text-[11px] text-slate-400 bg-slate-100 px-1.5 py-0.5 rounded font-mono ml-1.5">{company.ticker}</span>
+                      )}
+                    </div>
+                    {/* Reads badge */}
+                    <span className={`text-xs font-bold px-2 py-0.5 rounded-md ${
+                      totalReads === 0 ? 'bg-rose-100 text-rose-600' : 'bg-slate-100 text-slate-600'
+                    }`}>
+                      {totalReads} {totalReads === 1 ? 'read' : 'reads'}
+                    </span>
+                    {/* Diet badge */}
+                    {company.isInCallDiet && (
+                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-emerald-100 text-emerald-700 flex-shrink-0">
+                        Call Diet
+                      </span>
+                    )}
+                  </button>
+                  {/* Expanded articles */}
+                  {isExpanded && hasArticles && (
+                    <div className="ml-7 mr-2 mb-2 border-l-2 border-slate-100 pl-4 space-y-1">
+                      {company.articles.map(article => (
+                        <div key={article.articleId} className="flex items-center gap-3 py-2 px-2 rounded-md hover:bg-slate-50 text-sm">
+                          <FileText size={13} className="text-slate-300 flex-shrink-0" />
+                          <div className="flex-1 min-w-0">
+                            <div className="font-medium text-slate-700 truncate">{article.headline}</div>
+                            {article.sourceName && (
+                              <span className="text-[11px] text-slate-400">{article.sourceName}</span>
+                            )}
+                          </div>
+                          <div className="flex items-center gap-3 flex-shrink-0 text-xs text-slate-500">
+                            <span title="Times opened">
+                              <BookOpen size={11} className="inline mr-0.5 opacity-50" />{article.readCount}
+                            </span>
+                            <span title="Time spent reading">
+                              <Clock size={11} className="inline mr-0.5 opacity-50" />{formatTime(article.totalReadTimeSec)}
+                            </span>
+                            {article.linkClicks > 0 && (
+                              <span title="Link clicks">
+                                <ExternalLink size={11} className="inline mr-0.5 opacity-50" />{article.linkClicks}
+                              </span>
+                            )}
+                            <span className="text-slate-400" title="Last read">
+                              {formatDate(article.lastReadAt)}
+                            </span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
           </div>
         ) : (
           <p className="text-sm text-slate-400 text-center py-4">No article reads in this period.</p>
@@ -1294,20 +1498,3 @@ const UserDrillDown: React.FC<{
     </div>
   );
 };
-
-// ============================================================================
-// Mini metric card for user drill-down
-// ============================================================================
-
-const MINI_CARD_COLORS: Record<string, string> = {
-  purple: 'bg-gradient-to-br from-purple-50 to-violet-50 border-purple-100 text-purple-700',
-  amber: 'bg-gradient-to-br from-amber-50 to-orange-50 border-amber-100 text-amber-700',
-  blue: 'bg-gradient-to-br from-blue-50 to-cyan-50 border-blue-100 text-blue-700',
-};
-
-const MiniCard: React.FC<{ label: string; value: string; color: string }> = ({ label, value, color }) => (
-  <div className={`rounded-xl p-4 border ${MINI_CARD_COLORS[color] || 'bg-slate-50 border-slate-100 text-slate-700'}`}>
-    <div className="text-xl font-extrabold tracking-tight">{value}</div>
-    <div className="text-xs font-medium mt-1 opacity-70">{label}</div>
-  </div>
-);
