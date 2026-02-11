@@ -1,27 +1,31 @@
-import assert from 'node:assert/strict';
+import { describe, it, expect } from 'vitest';
 import { formatSectionContent } from './section-formatter.js';
 
-const investment = formatSectionContent('investment_strategy' as any, {
-  strategy_summary: 'Strategy summary',
-  focus_areas: ['Focus A'],
-});
-assert.ok(investment.includes('Strategy summary'));
-assert.ok(investment.includes('**Focus Areas**'));
+describe('section-formatter', () => {
+  it('formats investment strategy section', () => {
+    const investment = formatSectionContent('investment_strategy', {
+      strategy_summary: 'Strategy summary',
+      focus_areas: ['Focus A'],
+    });
+    expect(investment).toContain('Strategy summary');
+    expect(investment).toContain('**Focus Areas**');
+  });
 
-const portfolio = formatSectionContent('portfolio_snapshot' as any, {
-  summary: 'Portfolio summary',
-  portfolio_companies: [
-    {
-      name: 'Alpha',
-      sector: 'Tech',
-      platform_or_addon: 'Platform',
-      geography: 'NA',
-      notes: 'Note',
-      source: 'S1',
-    },
-  ],
+  it('formats portfolio snapshot section with table', () => {
+    const portfolio = formatSectionContent('portfolio_snapshot', {
+      summary: 'Portfolio summary',
+      portfolio_companies: [
+        {
+          name: 'Alpha',
+          sector: 'Tech',
+          platform_or_addon: 'Platform',
+          geography: 'NA',
+          notes: 'Note',
+          source: 'S1',
+        },
+      ],
+    });
+    expect(portfolio).toContain('**Portfolio Companies**');
+    expect(portfolio).toContain('| Name | Sector | Type | Geography | Notes | Source |');
+  });
 });
-assert.ok(portfolio.includes('**Portfolio Companies**'));
-assert.ok(portfolio.includes('| Name | Sector | Type | Geography | Notes | Source |'));
-
-console.log('section formatter tests passed');

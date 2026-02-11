@@ -1,11 +1,13 @@
-import assert from 'node:assert/strict';
+import { describe, it, expect } from 'vitest';
 import { getReportBlueprint } from './report-blueprints.js';
 
-const fsBlueprint = getReportBlueprint('FS');
-assert.ok(fsBlueprint, 'FS blueprint missing');
+describe('report-blueprints', () => {
+  it('returns FS blueprint with correct section order', () => {
+    const fsBlueprint = getReportBlueprint('FS');
+    expect(fsBlueprint).toBeTruthy();
 
-const sectionIds = fsBlueprint.sections.map((section) => section.id);
-assert.equal(sectionIds[0], 'exec_summary');
-assert.equal(sectionIds[1], 'financial_snapshot');
-
-console.log('report blueprints tests passed');
+    const sectionIds = fsBlueprint!.sections.map((section) => section.id);
+    expect(sectionIds[0]).toBe('exec_summary');
+    expect(sectionIds[1]).toBe('financial_snapshot');
+  });
+});

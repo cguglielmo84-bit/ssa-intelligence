@@ -1,17 +1,21 @@
-import assert from 'node:assert/strict';
+import { describe, it, expect } from 'vitest';
 import { ClaudeClient } from '../services/claude-client.js';
 
-const client = new ClaudeClient({ apiKey: 'test-key' });
+describe('ClaudeClient', () => {
+  const client = new ClaudeClient({ apiKey: 'test-key' });
 
-const invalidResponse = {
-  content: '{"foo":"bar",}',
-  stopReason: 'stop',
-  usage: { inputTokens: 0, outputTokens: 0 }
-};
+  const invalidResponse = {
+    content: '{"foo":"bar",}',
+    stopReason: 'stop',
+    usage: { inputTokens: 0, outputTokens: 0 }
+  };
 
-assert.throws(() => client.parseJSON(invalidResponse), /Invalid JSON response/);
+  it('throws on invalid JSON', () => {
+    expect(() => client.parseJSON(invalidResponse)).toThrow(/Invalid JSON response/);
+  });
 
-const repaired = client.parseJSON<{ foo: string }>(invalidResponse, { allowRepair: true });
-assert.equal(repaired.foo, 'bar');
-
-console.log('claude client tests passed');
+  it('repairs invalid JSON when allowRepair is true', () => {
+    const repaired = client.parseJSON<{ foo: string }>(invalidResponse, { allowRepair: true });
+    expect(repaired.foo).toBe('bar');
+  });
+});

@@ -5,6 +5,7 @@ All notable changes to this repository will be documented in this file.
 The format is based on Keep a Changelog and this project adheres to Semantic Versioning.
 
 ## [Unreleased]
+- Test: add Vitest testing framework to backend and frontend, migrate 12 existing test files, add CI workflow for automated test runs on PRs.
 - Fix: show "Analysis Cancelled" state on ResearchDetail instead of stuck "Researching..." spinner when a job is cancelled.
 - Feat: always show company resolve confirmation modal before starting research — exact matches get a green checkmark "Confirm company" prompt; multi-suggestion and corrected results keep existing disambiguation UI.
 - Docs: add project context, architecture, and coding standards to CLAUDE.md and AGENTS.md.
