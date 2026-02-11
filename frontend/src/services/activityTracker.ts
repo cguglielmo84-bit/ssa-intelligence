@@ -10,6 +10,7 @@ const API_BASE = (import.meta as any).env?.VITE_API_BASE_URL || '/api';
 export type ActivityEventType =
   | 'article_open'
   | 'article_close'
+  | 'article_link_click'
   | 'page_view'
   | 'page_leave'
   | 'pin'

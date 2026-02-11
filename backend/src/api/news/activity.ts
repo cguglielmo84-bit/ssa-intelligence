@@ -12,7 +12,7 @@ import { ActivityType } from '@prisma/client';
 const router = Router();
 
 const VALID_TYPES: ActivityType[] = [
-  'article_open', 'article_close', 'page_view', 'page_leave',
+  'article_open', 'article_close', 'article_link_click', 'page_view', 'page_leave',
   'pin', 'unpin', 'export_pdf', 'export_markdown', 'search', 'filter_change',
 ];
 
@@ -23,8 +23,9 @@ router.post('/', async (req: Request, res: Response) => {
     return;
   }
 
-  // Accept single event or batch
-  const events = Array.isArray(req.body) ? req.body : [req.body];
+  // Accept single event or batch ({ events: [...] } or [...] or single object)
+  const raw = req.body.events || req.body;
+  const events = Array.isArray(raw) ? raw : [raw];
 
   // Return immediately
   res.status(202).json({ accepted: events.length });

@@ -14,7 +14,7 @@ import {
   FileDown,
 } from 'lucide-react';
 import type { NewsArticle } from '../../services/newsManager';
-import { useArticleViewTracker } from '../../services/activityTracker';
+import { useArticleViewTracker, trackEvent } from '../../services/activityTracker';
 
 interface ArticleDetailModalProps {
   article: NewsArticle;
@@ -127,6 +127,7 @@ export const ArticleDetailModal: React.FC<ArticleDetailModalProps> = ({
                     href={source.sourceUrl}
                     target="_blank"
                     rel="noopener noreferrer"
+                    onClick={() => trackEvent({ type: 'article_link_click', articleId: article.id, metadata: { sourceName: source.sourceName } })}
                     className="flex items-center justify-between p-4 bg-gradient-to-r from-slate-50 to-white rounded-xl hover:from-brand-50 hover:to-white border border-slate-100 hover:border-brand-200 transition-all group"
                   >
                     <div className="flex items-center gap-3">
@@ -146,6 +147,7 @@ export const ArticleDetailModal: React.FC<ArticleDetailModalProps> = ({
                 href={article.sourceUrl}
                 target="_blank"
                 rel="noopener noreferrer"
+                onClick={() => trackEvent({ type: 'article_link_click', articleId: article.id })}
                 className="inline-flex items-center gap-2 px-5 py-3 bg-gradient-to-r from-brand-500 to-brand-600 text-white rounded-xl hover:from-brand-600 hover:to-brand-700 transition-all font-medium shadow-lg shadow-brand-500/30 hover:shadow-xl"
               >
                 Read Full Article

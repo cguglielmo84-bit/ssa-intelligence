@@ -460,6 +460,7 @@ model UserPinnedArticle {
 enum ActivityType {
   article_open
   article_close
+  article_link_click
   page_view
   page_leave
   pin
