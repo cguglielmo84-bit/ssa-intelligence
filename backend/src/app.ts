@@ -27,7 +27,7 @@ import { deleteResearchJob } from './api/research/delete.js';
 import { rerunResearchSections } from './api/research/rerun.js';
 import { submitFeedback, listFeedback, updateFeedback, deleteFeedback } from './api/feedback.js';
 import { exportResearchPdf } from './api/research/export-pdf.js';
-import { authMiddleware, requireAdmin } from './middleware/auth.js';
+import { authMiddleware, requireAdmin, requireActiveUser, requireSuperAdmin } from './middleware/auth.js';
 import { getMe } from './api/me.js';
 import { listGroups } from './api/groups/list.js';
 import { listUsers, getUser, updateUser, deleteUser, createUser } from './api/admin/users.js';
@@ -35,6 +35,7 @@ import { addGroupMember, createGroup, listAdminGroups, removeGroupMember, delete
 import { getMetrics } from './api/admin/metrics.js';
 import { listPricingRates, createPricingRate, updatePricingRate, deletePricingRate } from './api/admin/pricing.js';
 import * as promptsApi from './api/admin/prompts.js';
+import { createInvite, acceptInvite, listInvites, revokeInvite } from './api/admin/invites.js';
 import { getReportBlueprints } from './api/report-blueprints.js';
 import { resolveCompany } from './api/company/resolve.js';
 
@@ -178,64 +179,97 @@ app.get('/api/config', (req, res) => {
   });
 });
 
+// ============================================================================
+// AUTH ROUTES (no active-user check)
+// ============================================================================
+
+// /api/me returns user status so frontend can show appropriate UI
+app.get('/api/me', authMiddleware, getMe);
+
+// Invite acceptance — this is how pending users become active
+app.post('/api/invites/accept', ...applyLimiter(writeLimiter), authMiddleware, acceptInvite);
+
+// ============================================================================
+// PROTECTED ROUTES (require active user)
+// ============================================================================
+
 // Research API routes
-app.post('/api/research/generate', ...applyLimiter(generateLimiter), authMiddleware, generateResearch);
-app.get('/api/research/jobs/:id', ...applyLimiter(getLimiter), authMiddleware, getJobStatus);
-app.get('/api/research/:id', ...applyLimiter(getLimiter), authMiddleware, getResearchDetail);
-app.get('/api/research', ...applyLimiter(getLimiter), authMiddleware, listResearch);
-app.post('/api/research/:id/cancel', ...applyLimiter(writeLimiter), authMiddleware, cancelResearchJob);
-app.delete('/api/research/:id', ...applyLimiter(writeLimiter), authMiddleware, deleteResearchJob);
-app.get('/api/research/:id/export/pdf', ...applyLimiter(exportLimiter), authMiddleware, exportResearchPdf);
-app.post('/api/research/:id/rerun', ...applyLimiter(writeLimiter), authMiddleware, rerunResearchSections);
+app.post('/api/research/generate', ...applyLimiter(generateLimiter), authMiddleware, requireActiveUser, generateResearch);
+app.get('/api/research/jobs/:id', ...applyLimiter(getLimiter), authMiddleware, requireActiveUser, getJobStatus);
+app.get('/api/research/:id', ...applyLimiter(getLimiter), authMiddleware, requireActiveUser, getResearchDetail);
+app.get('/api/research', ...applyLimiter(getLimiter), authMiddleware, requireActiveUser, listResearch);
+app.post('/api/research/:id/cancel', ...applyLimiter(writeLimiter), authMiddleware, requireActiveUser, cancelResearchJob);
+app.delete('/api/research/:id', ...applyLimiter(writeLimiter), authMiddleware, requireActiveUser, deleteResearchJob);
+app.get('/api/research/:id/export/pdf', ...applyLimiter(exportLimiter), authMiddleware, requireActiveUser, exportResearchPdf);
+app.post('/api/research/:id/rerun', ...applyLimiter(writeLimiter), authMiddleware, requireActiveUser, rerunResearchSections);
+
 // Bug Tracker / Feedback routes
 app.post('/api/feedback', ...applyLimiter(feedbackLimiter), submitFeedback);
-app.get('/api/feedback', ...applyLimiter(getLimiter), authMiddleware, listFeedback);
-app.patch('/api/feedback/:id', ...applyLimiter(writeLimiter), authMiddleware, updateFeedback);
-app.delete('/api/feedback/:id', ...applyLimiter(writeLimiter), authMiddleware, deleteFeedback);
-app.get('/api/me', authMiddleware, getMe);
-app.get('/api/groups', authMiddleware, listGroups);
-app.get('/api/admin/users', authMiddleware, requireAdmin, listUsers);
-app.post('/api/admin/users', ...applyLimiter(writeLimiter), authMiddleware, requireAdmin, createUser);
-app.get('/api/admin/users/:id', authMiddleware, requireAdmin, getUser);
-app.patch('/api/admin/users/:id', ...applyLimiter(writeLimiter), authMiddleware, requireAdmin, updateUser);
-app.delete('/api/admin/users/:id', ...applyLimiter(writeLimiter), authMiddleware, requireAdmin, deleteUser);
-app.get('/api/admin/groups', authMiddleware, requireAdmin, listAdminGroups);
-app.post('/api/admin/groups', authMiddleware, requireAdmin, createGroup);
-app.delete('/api/admin/groups/:groupId', ...applyLimiter(writeLimiter), authMiddleware, requireAdmin, deleteGroup);
-app.post('/api/admin/groups/:groupId/members', authMiddleware, requireAdmin, addGroupMember);
-app.delete('/api/admin/groups/:groupId/members/:userId', authMiddleware, requireAdmin, removeGroupMember);
-app.get('/api/admin/metrics', ...applyLimiter(getLimiter), authMiddleware, requireAdmin, getMetrics);
-app.get('/api/admin/pricing', ...applyLimiter(getLimiter), authMiddleware, requireAdmin, listPricingRates);
-app.post('/api/admin/pricing', ...applyLimiter(writeLimiter), authMiddleware, requireAdmin, createPricingRate);
-app.patch('/api/admin/pricing/:id', ...applyLimiter(writeLimiter), authMiddleware, requireAdmin, updatePricingRate);
-app.delete('/api/admin/pricing/:id', ...applyLimiter(writeLimiter), authMiddleware, requireAdmin, deletePricingRate);
+app.get('/api/feedback', ...applyLimiter(getLimiter), authMiddleware, requireActiveUser, listFeedback);
+app.patch('/api/feedback/:id', ...applyLimiter(writeLimiter), authMiddleware, requireActiveUser, updateFeedback);
+app.delete('/api/feedback/:id', ...applyLimiter(writeLimiter), authMiddleware, requireActiveUser, deleteFeedback);
+
+app.get('/api/groups', authMiddleware, requireActiveUser, listGroups);
+
+// ============================================================================
+// ADMIN: USER & GROUP MANAGEMENT (super-admin only)
+// ============================================================================
+
+app.get('/api/admin/users', authMiddleware, requireActiveUser, requireSuperAdmin, listUsers);
+app.post('/api/admin/users', ...applyLimiter(writeLimiter), authMiddleware, requireActiveUser, requireSuperAdmin, createUser);
+app.get('/api/admin/users/:id', authMiddleware, requireActiveUser, requireSuperAdmin, getUser);
+app.patch('/api/admin/users/:id', ...applyLimiter(writeLimiter), authMiddleware, requireActiveUser, requireSuperAdmin, updateUser);
+app.delete('/api/admin/users/:id', ...applyLimiter(writeLimiter), authMiddleware, requireActiveUser, requireSuperAdmin, deleteUser);
+app.get('/api/admin/groups', authMiddleware, requireActiveUser, requireSuperAdmin, listAdminGroups);
+app.post('/api/admin/groups', authMiddleware, requireActiveUser, requireSuperAdmin, createGroup);
+app.delete('/api/admin/groups/:groupId', ...applyLimiter(writeLimiter), authMiddleware, requireActiveUser, requireSuperAdmin, deleteGroup);
+app.post('/api/admin/groups/:groupId/members', authMiddleware, requireActiveUser, requireSuperAdmin, addGroupMember);
+app.delete('/api/admin/groups/:groupId/members/:userId', authMiddleware, requireActiveUser, requireSuperAdmin, removeGroupMember);
+
+// ============================================================================
+// ADMIN: INVITE MANAGEMENT (super-admin only)
+// ============================================================================
+
+app.get('/api/admin/invites', authMiddleware, requireActiveUser, requireSuperAdmin, listInvites);
+app.post('/api/admin/invites', ...applyLimiter(writeLimiter), authMiddleware, requireActiveUser, requireSuperAdmin, createInvite);
+app.delete('/api/admin/invites/:id', ...applyLimiter(writeLimiter), authMiddleware, requireActiveUser, requireSuperAdmin, revokeInvite);
+
+// ============================================================================
+// ADMIN: METRICS, PRICING, PROMPTS (admin only, not super-admin restricted)
+// ============================================================================
+
+app.get('/api/admin/metrics', ...applyLimiter(getLimiter), authMiddleware, requireActiveUser, requireAdmin, getMetrics);
+app.get('/api/admin/pricing', ...applyLimiter(getLimiter), authMiddleware, requireActiveUser, requireAdmin, listPricingRates);
+app.post('/api/admin/pricing', ...applyLimiter(writeLimiter), authMiddleware, requireActiveUser, requireAdmin, createPricingRate);
+app.patch('/api/admin/pricing/:id', ...applyLimiter(writeLimiter), authMiddleware, requireActiveUser, requireAdmin, updatePricingRate);
+app.delete('/api/admin/pricing/:id', ...applyLimiter(writeLimiter), authMiddleware, requireActiveUser, requireAdmin, deletePricingRate);
 
 // Admin prompt library routes
-app.get('/api/admin/prompts', ...applyLimiter(getLimiter), authMiddleware, requireAdmin, promptsApi.listPrompts);
-app.get('/api/admin/prompts/test/:id', ...applyLimiter(getLimiter), authMiddleware, requireAdmin, promptsApi.getTestRun);
-app.get('/api/admin/prompts/:sectionId/versions', ...applyLimiter(getLimiter), authMiddleware, requireAdmin, promptsApi.listVersions);
-app.get('/api/admin/prompts/:sectionId', ...applyLimiter(getLimiter), authMiddleware, requireAdmin, promptsApi.getPrompt);
-app.post('/api/admin/prompts', ...applyLimiter(writeLimiter), authMiddleware, requireAdmin, promptsApi.createPrompt);
-app.patch('/api/admin/prompts/:id', ...applyLimiter(writeLimiter), authMiddleware, requireAdmin, promptsApi.updatePrompt);
-app.delete('/api/admin/prompts/:id', ...applyLimiter(writeLimiter), authMiddleware, requireAdmin, promptsApi.deletePrompt);
-app.post('/api/admin/prompts/:id/publish', ...applyLimiter(writeLimiter), authMiddleware, requireAdmin, promptsApi.publishPrompt);
-app.post('/api/admin/prompts/:id/revert/:version', ...applyLimiter(writeLimiter), authMiddleware, requireAdmin, promptsApi.revertPrompt);
-app.post('/api/admin/prompts/test', ...applyLimiter(writeLimiter), authMiddleware, requireAdmin, promptsApi.testPrompt);
+app.get('/api/admin/prompts', ...applyLimiter(getLimiter), authMiddleware, requireActiveUser, requireAdmin, promptsApi.listPrompts);
+app.get('/api/admin/prompts/test/:id', ...applyLimiter(getLimiter), authMiddleware, requireActiveUser, requireAdmin, promptsApi.getTestRun);
+app.get('/api/admin/prompts/:sectionId/versions', ...applyLimiter(getLimiter), authMiddleware, requireActiveUser, requireAdmin, promptsApi.listVersions);
+app.get('/api/admin/prompts/:sectionId', ...applyLimiter(getLimiter), authMiddleware, requireActiveUser, requireAdmin, promptsApi.getPrompt);
+app.post('/api/admin/prompts', ...applyLimiter(writeLimiter), authMiddleware, requireActiveUser, requireAdmin, promptsApi.createPrompt);
+app.patch('/api/admin/prompts/:id', ...applyLimiter(writeLimiter), authMiddleware, requireActiveUser, requireAdmin, promptsApi.updatePrompt);
+app.delete('/api/admin/prompts/:id', ...applyLimiter(writeLimiter), authMiddleware, requireActiveUser, requireAdmin, promptsApi.deletePrompt);
+app.post('/api/admin/prompts/:id/publish', ...applyLimiter(writeLimiter), authMiddleware, requireActiveUser, requireAdmin, promptsApi.publishPrompt);
+app.post('/api/admin/prompts/:id/revert/:version', ...applyLimiter(writeLimiter), authMiddleware, requireActiveUser, requireAdmin, promptsApi.revertPrompt);
+app.post('/api/admin/prompts/test', ...applyLimiter(writeLimiter), authMiddleware, requireActiveUser, requireAdmin, promptsApi.testPrompt);
 
-app.get('/api/report-blueprints', ...applyLimiter(getLimiter), authMiddleware, getReportBlueprints);
-app.post('/api/company/resolve', ...applyLimiter(writeLimiter), authMiddleware, resolveCompany);
+app.get('/api/report-blueprints', ...applyLimiter(getLimiter), authMiddleware, requireActiveUser, getReportBlueprints);
+app.post('/api/company/resolve', ...applyLimiter(writeLimiter), authMiddleware, requireActiveUser, resolveCompany);
 
 // ============================================================================
-// NEWS INTELLIGENCE API
+// NEWS INTELLIGENCE API (require active user)
 // ============================================================================
-app.use('/api/news/tags', authMiddleware, newsTagsRouter);
-app.use('/api/news/companies', authMiddleware, newsCompaniesRouter);
-app.use('/api/news/people', authMiddleware, newsPeopleRouter);
-app.use('/api/news/revenue-owners', authMiddleware, newsRevenueOwnersRouter);
-app.use('/api/news/articles', authMiddleware, newsArticlesRouter);
-app.use('/api/news/refresh', authMiddleware, newsRefreshRouter);
-app.use('/api/news/search', authMiddleware, newsSearchRouter);
-app.use('/api/news/export', authMiddleware, newsExportRouter);
+app.use('/api/news/tags', authMiddleware, requireActiveUser, newsTagsRouter);
+app.use('/api/news/companies', authMiddleware, requireActiveUser, newsCompaniesRouter);
+app.use('/api/news/people', authMiddleware, requireActiveUser, newsPeopleRouter);
+app.use('/api/news/revenue-owners', authMiddleware, requireActiveUser, newsRevenueOwnersRouter);
+app.use('/api/news/articles', authMiddleware, requireActiveUser, newsArticlesRouter);
+app.use('/api/news/refresh', authMiddleware, requireActiveUser, newsRefreshRouter);
+app.use('/api/news/search', authMiddleware, requireActiveUser, newsSearchRouter);
+app.use('/api/news/export', authMiddleware, requireActiveUser, newsExportRouter);
 
 // Dev-only auth echo to inspect forwarded headers
 app.get('/api/debug/auth', authMiddleware, (req, res) => {

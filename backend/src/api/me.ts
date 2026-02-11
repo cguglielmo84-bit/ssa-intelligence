@@ -14,6 +14,7 @@ export async function getMe(req: Request, res: Response) {
         email: true,
         name: true,
         role: true,
+        status: true,
         memberships: {
           select: {
             group: {
@@ -34,6 +35,8 @@ export async function getMe(req: Request, res: Response) {
       name: user.name,
       role: user.role,
       isAdmin: user.role === 'ADMIN',
+      isSuperAdmin: req.auth.isSuperAdmin,
+      status: user.status,
       groups: user.memberships.map((m) => m.group)
     });
   } catch (error) {

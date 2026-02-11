@@ -20,8 +20,8 @@ const isAllowedDomain = (email: string, allowedDomains: string[]) => {
 };
 
 export async function listUsers(req: Request, res: Response) {
-  if (!req.auth || !req.auth.isAdmin) {
-    return res.status(403).json({ error: 'Admin access required' });
+  if (!req.auth || !req.auth.isSuperAdmin) {
+    return res.status(403).json({ error: 'Super-admin access required' });
   }
 
   const rawPage = typeof req.query?.page === 'string' ? req.query.page : '1';
@@ -41,6 +41,7 @@ export async function listUsers(req: Request, res: Response) {
           email: true,
           name: true,
           role: true,
+          status: true,
           memberships: {
             select: {
               group: {
@@ -59,6 +60,7 @@ export async function listUsers(req: Request, res: Response) {
         email: user.email,
         name: user.name,
         role: user.role,
+        status: user.status,
         groups: user.memberships.map((m) => m.group)
       })),
       pagination: {
@@ -75,8 +77,8 @@ export async function listUsers(req: Request, res: Response) {
 }
 
 export async function getUser(req: Request, res: Response) {
-  if (!req.auth || !req.auth.isAdmin) {
-    return res.status(403).json({ error: 'Admin access required' });
+  if (!req.auth || !req.auth.isSuperAdmin) {
+    return res.status(403).json({ error: 'Super-admin access required' });
   }
 
   const { id } = req.params;
@@ -92,6 +94,7 @@ export async function getUser(req: Request, res: Response) {
         email: true,
         name: true,
         role: true,
+        status: true,
         memberships: {
           select: {
             group: {
@@ -111,6 +114,7 @@ export async function getUser(req: Request, res: Response) {
       email: user.email,
       name: user.name,
       role: user.role,
+      status: user.status,
       groups: user.memberships.map((m) => m.group)
     });
   } catch (error) {
@@ -120,8 +124,8 @@ export async function getUser(req: Request, res: Response) {
 }
 
 export async function updateUser(req: Request, res: Response) {
-  if (!req.auth || !req.auth.isAdmin) {
-    return res.status(403).json({ error: 'Admin access required' });
+  if (!req.auth || !req.auth.isSuperAdmin) {
+    return res.status(403).json({ error: 'Super-admin access required' });
   }
 
   const { id } = req.params;
@@ -175,6 +179,7 @@ export async function updateUser(req: Request, res: Response) {
         email: true,
         name: true,
         role: true,
+        status: true,
         memberships: {
           select: {
             group: {
@@ -190,6 +195,7 @@ export async function updateUser(req: Request, res: Response) {
       email: user.email,
       name: user.name,
       role: user.role,
+      status: user.status,
       groups: user.memberships.map((m) => m.group)
     });
   } catch (error) {
@@ -199,8 +205,8 @@ export async function updateUser(req: Request, res: Response) {
 }
 
 export async function deleteUser(req: Request, res: Response) {
-  if (!req.auth || !req.auth.isAdmin) {
-    return res.status(403).json({ error: 'Admin access required' });
+  if (!req.auth || !req.auth.isSuperAdmin) {
+    return res.status(403).json({ error: 'Super-admin access required' });
   }
 
   const { id } = req.params;
@@ -238,8 +244,8 @@ export async function deleteUser(req: Request, res: Response) {
 
 
 export async function createUser(req: Request, res: Response) {
-  if (!req.auth || !req.auth.isAdmin) {
-    return res.status(403).json({ error: 'Admin access required' });
+  if (!req.auth || !req.auth.isSuperAdmin) {
+    return res.status(403).json({ error: 'Super-admin access required' });
   }
 
   const email = typeof req.body?.email === 'string' ? req.body.email.trim().toLowerCase() : '';
@@ -330,6 +336,7 @@ export async function createUser(req: Request, res: Response) {
           email: true,
           name: true,
           role: true,
+          status: true,
           memberships: {
             select: {
               group: {
@@ -350,6 +357,7 @@ export async function createUser(req: Request, res: Response) {
       email: user.email,
       name: user.name,
       role: user.role,
+      status: user.status,
       groups: user.memberships.map((m) => m.group)
     });
   } catch (error) {
