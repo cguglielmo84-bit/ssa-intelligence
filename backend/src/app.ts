@@ -265,8 +265,10 @@ app.get('/api/debug/auth', authMiddleware, (req, res) => {
 // Serve built frontend if present (non-impacting dev API)
 // Try multiple candidate paths to avoid stale build path issues.
 const candidateFrontendPaths = [
-  path.resolve(__dirname, '../../frontend/dist'), // expected in Docker image
-  path.resolve(__dirname, '../frontend/dist'),   // fallback if layout differs
+  path.resolve(__dirname, '../../../frontend/dist'), // Docker: __dirname=/app/backend/dist/src → /app/frontend/dist
+  path.resolve(__dirname, '../../frontend/dist'),
+  path.resolve(__dirname, '../frontend/dist'),
+  path.resolve(process.cwd(), '../frontend/dist'),  // Docker: cwd=/app/backend → /app/frontend/dist
   path.resolve(process.cwd(), 'frontend/dist')
 ];
 const frontendDistPath = candidateFrontendPaths.find((p) => fs.existsSync(path.join(p, 'index.html')));
