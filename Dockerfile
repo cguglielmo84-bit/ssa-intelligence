@@ -42,4 +42,4 @@ COPY --from=frontend-build /app/frontend/dist ./frontend/dist
 EXPOSE 3000
 
 # Note: assumes backend handles serving the API (and optionally static frontend if configured in code)
-CMD ["sh", "-c", "cd /app/backend && npx prisma migrate deploy && node dist/src/index.js"]
+CMD ["sh", "-c", "npx prisma migrate deploy --schema=/app/backend/prisma/schema.prisma && node /app/backend/dist/src/index.js"]
