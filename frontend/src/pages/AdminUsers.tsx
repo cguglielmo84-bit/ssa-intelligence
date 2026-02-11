@@ -9,6 +9,7 @@ type AdminUser = {
   email: string;
   name?: string | null;
   role: 'ADMIN' | 'MEMBER';
+  status?: 'ACTIVE' | 'PENDING';
   groups: Array<{ id: string; name: string; slug: string }>;
 };
 
@@ -19,11 +20,25 @@ type AdminGroup = {
   memberCount?: number;
 };
 
+type InviteItem = {
+  id: string;
+  email: string;
+  inviteUrl: string | null;
+  status: 'active' | 'used' | 'expired';
+  used: boolean;
+  usedAt?: string | null;
+  usedBy?: { email: string; name?: string | null } | null;
+  createdBy?: { email: string; name?: string | null } | null;
+  expiresAt: string;
+  createdAt: string;
+};
+
 const API_BASE = (import.meta as any).env?.VITE_API_BASE_URL || '/api';
 
 const fetchJson = async (path: string, options?: RequestInit) => {
   const url = `${API_BASE.replace(/\/$/, '')}${path}`;
   const res = await fetch(url, {
+    credentials: 'include',
     headers: { 'Content-Type': 'application/json', ...(options?.headers || {}) },
     ...options,
   });
@@ -34,7 +49,7 @@ const fetchJson = async (path: string, options?: RequestInit) => {
   return res.json();
 };
 
-export const AdminUsers: React.FC<{ isAdmin?: boolean; currentUserId?: string }> = ({ isAdmin, currentUserId }) => {
+export const AdminUsers: React.FC<{ isAdmin?: boolean; isSuperAdmin?: boolean; currentUserId?: string }> = ({ isAdmin, isSuperAdmin, currentUserId }) => {
   const [confirmState, setConfirmState] = useState<{
     open: boolean;
     title: string;
@@ -53,6 +68,14 @@ export const AdminUsers: React.FC<{ isAdmin?: boolean; currentUserId?: string }>
   const [editingUser, setEditingUser] = useState<AdminUser | null>(null);
   const [showAddUser, setShowAddUser] = useState(false);
   const [deletingGroupId, setDeletingGroupId] = useState<string | null>(null);
+
+  // Invite management state
+  const [invites, setInvites] = useState<InviteItem[]>([]);
+  const [inviteEmail, setInviteEmail] = useState('');
+  const [creatingInvite, setCreatingInvite] = useState(false);
+  const [inviteError, setInviteError] = useState<string | null>(null);
+  const [copiedInviteId, setCopiedInviteId] = useState<string | null>(null);
+  const [invitesExpanded, setInvitesExpanded] = useState(false);
 
   const groupMap = useMemo(() => new Map(groups.map((g) => [g.id, g])), [groups]);
 
@@ -77,6 +100,16 @@ export const AdminUsers: React.FC<{ isAdmin?: boolean; currentUserId?: string }>
       ]);
       setUsers(userRes.results || []);
       setGroups(groupRes.results || []);
+
+      // Load invites if super-admin
+      if (isSuperAdmin) {
+        try {
+          const inviteRes = await fetchJson('/admin/invites');
+          setInvites(inviteRes.results || []);
+        } catch {
+          // Non-critical — invites may not be accessible if not super-admin
+        }
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load admin data.');
     } finally {
@@ -85,9 +118,9 @@ export const AdminUsers: React.FC<{ isAdmin?: boolean; currentUserId?: string }>
   };
 
   useEffect(() => {
-    if (!isAdmin) return;
+    if (!isSuperAdmin) return;
     loadData().catch(() => {});
-  }, [isAdmin]);
+  }, [isSuperAdmin]);
 
   const handleCreateGroup = async () => {
     const name = newGroupName.trim();
@@ -219,10 +252,66 @@ export const AdminUsers: React.FC<{ isAdmin?: boolean; currentUserId?: string }>
     }
   };
 
-  if (!isAdmin) {
+  const handleCreateInvite = async () => {
+    const email = inviteEmail.trim().toLowerCase();
+    if (!email) return;
+    setCreatingInvite(true);
+    setInviteError(null);
+    try {
+      const result = await fetchJson('/admin/invites', {
+        method: 'POST',
+        body: JSON.stringify({ email })
+      });
+      setInviteEmail('');
+      // Refresh invites list
+      const inviteRes = await fetchJson('/admin/invites');
+      setInvites(inviteRes.results || []);
+      // Auto-copy to clipboard
+      try {
+        await navigator.clipboard.writeText(result.inviteUrl);
+        setCopiedInviteId(result.id);
+        setTimeout(() => setCopiedInviteId(null), 3000);
+      } catch {
+        // Clipboard may not be available
+      }
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Failed to create invite';
+      // Try to parse JSON error
+      try {
+        const parsed = JSON.parse(msg);
+        setInviteError(parsed.error || msg);
+      } catch {
+        setInviteError(msg);
+      }
+    } finally {
+      setCreatingInvite(false);
+    }
+  };
+
+  const handleRevokeInvite = async (inviteId: string) => {
+    try {
+      await fetchJson(`/admin/invites/${inviteId}`, { method: 'DELETE' });
+      setInvites((prev) => prev.filter((inv) => inv.id !== inviteId));
+    } catch (err) {
+      setInviteError(err instanceof Error ? err.message : 'Failed to revoke invite.');
+    }
+  };
+
+  const handleCopyInviteUrl = async (invite: InviteItem) => {
+    if (!invite.inviteUrl) return;
+    try {
+      await navigator.clipboard.writeText(invite.inviteUrl);
+      setCopiedInviteId(invite.id);
+      setTimeout(() => setCopiedInviteId(null), 3000);
+    } catch {
+      // Clipboard may not be available
+    }
+  };
+
+  if (!isSuperAdmin) {
     return (
       <div className="bg-white border border-slate-200 rounded-xl p-6 text-slate-500">
-        Admin access required.
+        Super-admin access required.
       </div>
     );
   }
@@ -237,6 +326,116 @@ export const AdminUsers: React.FC<{ isAdmin?: boolean; currentUserId?: string }>
 
   return (
     <div className="space-y-6">
+      {/* Invite Management Section */}
+      <div className="bg-white border border-slate-200 rounded-xl p-6">
+        <h2 className="text-lg font-semibold text-slate-800 mb-4">Invite Users</h2>
+        {inviteError && <div className="text-sm text-rose-600 mb-3">{inviteError}</div>}
+        <div className="flex flex-col md:flex-row gap-3 mb-4">
+          <input
+            type="email"
+            value={inviteEmail}
+            onChange={(e) => setInviteEmail(e.target.value)}
+            placeholder="Enter email address..."
+            className="flex-1 px-3 py-2 border border-slate-200 rounded-lg bg-slate-50 focus:outline-none focus:ring-2 focus:ring-brand-500/20"
+            onKeyDown={(e) => { if (e.key === 'Enter') handleCreateInvite(); }}
+          />
+          <button
+            onClick={handleCreateInvite}
+            disabled={creatingInvite || !inviteEmail.trim()}
+            className="px-4 py-2 rounded-lg bg-brand-600 text-white font-semibold hover:bg-brand-700 disabled:opacity-60"
+          >
+            {creatingInvite ? 'Creating...' : 'Generate Invite Link'}
+          </button>
+        </div>
+
+        {invites.length > 0 && (
+          <div>
+            <button
+              onClick={() => setInvitesExpanded((prev) => !prev)}
+              className="flex items-center gap-2 text-sm font-medium text-slate-600 hover:text-slate-800 transition-colors"
+            >
+              <svg
+                className={`w-4 h-4 transition-transform ${invitesExpanded ? 'rotate-90' : ''}`}
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+              </svg>
+              Recent Invites
+              <span className="text-xs text-slate-400">({invites.length})</span>
+            </button>
+            {invitesExpanded && (
+              <div className="space-y-2 mt-3">
+                {invites.map((invite) => (
+                  <div
+                    key={invite.id}
+                    className={`border rounded-lg p-3 flex flex-col md:flex-row md:items-center justify-between gap-2 ${
+                      invite.status === 'used' ? 'border-emerald-200 bg-emerald-50/50' :
+                      invite.status === 'expired' ? 'border-slate-200 bg-slate-50 opacity-60' :
+                      'border-brand-200 bg-brand-50/30'
+                    }`}
+                  >
+                    <div className="flex-1 min-w-0">
+                      <div className="font-medium text-slate-800 text-sm truncate">{invite.email}</div>
+                      <div className="text-xs text-slate-500 mt-0.5">
+                        {invite.status === 'used' && invite.usedAt && (
+                          <span className="text-emerald-600">Used {new Date(invite.usedAt).toLocaleDateString()}</span>
+                        )}
+                        {invite.status === 'expired' && (
+                          <span className="text-slate-400">Expired {new Date(invite.expiresAt).toLocaleDateString()}</span>
+                        )}
+                        {invite.status === 'active' && (
+                          <span className="text-brand-600">Expires {new Date(invite.expiresAt).toLocaleDateString()}</span>
+                        )}
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className={`text-xs uppercase tracking-wider px-2 py-0.5 rounded font-medium ${
+                        invite.status === 'used' ? 'bg-emerald-100 text-emerald-700' :
+                        invite.status === 'expired' ? 'bg-slate-100 text-slate-500' :
+                        'bg-brand-100 text-brand-700'
+                      }`}>
+                        {invite.status}
+                      </span>
+                      {invite.status === 'active' && (
+                        <>
+                          <button
+                            onClick={() => handleCopyInviteUrl(invite)}
+                            className="text-xs px-2 py-1 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded transition-colors"
+                            title="Copy invite URL"
+                          >
+                            {copiedInviteId === invite.id ? 'Copied!' : 'Copy Link'}
+                          </button>
+                          <button
+                            onClick={() => {
+                              setConfirmState({
+                                open: true,
+                                title: 'Revoke Invite',
+                                message: `Revoke the invite for ${invite.email}? This cannot be undone.`,
+                                variant: 'danger',
+                                onConfirm: () => {
+                                  setConfirmState(null);
+                                  handleRevokeInvite(invite.id);
+                                }
+                              });
+                            }}
+                            className="text-xs px-2 py-1 text-rose-600 hover:bg-rose-50 rounded transition-colors"
+                            title="Revoke invite"
+                          >
+                            Revoke
+                          </button>
+                        </>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+
       <div className="bg-white border border-slate-200 rounded-xl p-6">
         <h2 className="text-lg font-semibold text-slate-800 mb-4">Groups</h2>
         {error && <div className="text-sm text-rose-600 mb-3">{error}</div>}
@@ -336,11 +535,13 @@ export const AdminUsers: React.FC<{ isAdmin?: boolean; currentUserId?: string }>
                 </div>
                 <div className="flex items-center gap-3">
                   <span className={`text-xs uppercase tracking-wider px-2 py-1 rounded ${
-                    user.role === 'ADMIN'
+                    user.status === 'PENDING'
                       ? 'bg-amber-100 text-amber-700'
-                      : 'bg-slate-100 text-slate-500'
+                      : user.role === 'ADMIN'
+                        ? 'bg-blue-100 text-blue-700'
+                        : 'bg-slate-100 text-slate-500'
                   }`}>
-                    {user.role}
+                    {user.status === 'PENDING' ? 'PENDING' : user.role}
                   </span>
                   <button
                     onClick={() => setEditingUser(user)}

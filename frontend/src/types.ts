@@ -2,7 +2,7 @@ export type JobStatus = 'idle' | 'queued' | 'running' | 'completed' | 'completed
 
 export type ReportType = 'GENERIC' | 'INDUSTRIALS' | 'PE' | 'FS' | 'INSURANCE';
 
-export type VisibilityScope = 'PRIVATE' | 'GROUP' | 'GENERAL';
+export type VisibilityScope = 'PRIVATE' | 'GROUP';
 
 export type SectionId =
   | 'exec_summary'

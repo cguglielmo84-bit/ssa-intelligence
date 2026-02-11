@@ -10,6 +10,8 @@ import { AdminPricing } from './pages/AdminPricing';
 import { AdminPrompts } from './pages/AdminPrompts';
 import { NewsDashboard } from './pages/NewsDashboard';
 import { NewsSetup } from './pages/NewsSetup';
+import { InviteAccept } from './pages/InviteAccept';
+import { PendingActivation } from './pages/PendingActivation';
 import { useReportBlueprints, useResearchManager, useUserContext } from './services/researchManager';
 
 export default function App() {
@@ -58,6 +60,24 @@ export default function App() {
   };
 
   const renderContent = () => {
+    // Invite acceptance route — allowed even for pending users
+    if (currentPath.startsWith('/invite/')) {
+      const token = currentPath.split('/invite/')[1];
+      return <InviteAccept token={token} onAccepted={() => { window.location.replace(window.location.pathname + '#/'); }} />;
+    }
+
+    // Gate pending/loading users — show activation or loading state instead of app content
+    if (userContext.loading) {
+      return (
+        <div className="flex items-center justify-center min-h-[60vh]">
+          <div className="w-8 h-8 border-2 border-brand-500 border-t-transparent rounded-full animate-spin" />
+        </div>
+      );
+    }
+    if (userContext.user?.status === 'PENDING') {
+      return <PendingActivation email={userContext.user.email} />;
+    }
+
     if (currentPath === '/') {
       return (
         <Home
@@ -86,7 +106,7 @@ export default function App() {
       );
     }
     if (currentPath === '/admin') {
-      return <AdminUsers isAdmin={userContext.user?.isAdmin} currentUserId={userContext.user?.id} />;
+      return <AdminUsers isAdmin={userContext.user?.isAdmin} isSuperAdmin={userContext.user?.isSuperAdmin} currentUserId={userContext.user?.id} />;
     }
     if (currentPath === '/admin/metrics') {
       return <AdminMetrics isAdmin={userContext.user?.isAdmin} />;
@@ -119,7 +139,7 @@ export default function App() {
   };
 
   return (
-    <Layout onNavigate={navigate} activePath={currentPath} isAdmin={userContext.user?.isAdmin}>
+    <Layout onNavigate={navigate} activePath={currentPath} isAdmin={userContext.user?.isAdmin} isSuperAdmin={userContext.user?.isSuperAdmin}>
       <ErrorBoundary key={currentPath}>
         {renderContent()}
       </ErrorBoundary>

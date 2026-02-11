@@ -88,6 +88,8 @@ type ApiMe = {
   name?: string | null;
   role: 'ADMIN' | 'MEMBER';
   isAdmin: boolean;
+  isSuperAdmin: boolean;
+  status: 'ACTIVE' | 'PENDING';
   groups: Array<{ id: string; name: string; slug: string }>;
 };
 
@@ -1471,17 +1473,18 @@ export const useUserContext = () => {
 
   useEffect(() => {
     let mounted = true;
-    Promise.all([getMeApi(), listGroupsApi()])
-      .then(([me, availableGroups]) => {
-        if (!mounted) return;
-        setUser(me);
-        setGroups(availableGroups);
-      })
-      .catch((err) => logger.error(err))
-      .finally(() => {
-        if (!mounted) return;
-        setLoading(false);
-      });
+
+    // Fetch user and groups independently so a groups 403 (pending user)
+    // doesn't prevent user data from loading.
+    const mePromise = getMeApi()
+      .then((me) => { if (mounted) setUser(me); })
+      .catch((err) => logger.error(err));
+
+    listGroupsApi()
+      .then((availableGroups) => { if (mounted) setGroups(availableGroups); })
+      .catch((err) => logger.error(err));
+
+    mePromise.finally(() => { if (mounted) setLoading(false); });
 
     return () => {
       mounted = false;
