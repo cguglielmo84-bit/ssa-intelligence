@@ -67,13 +67,13 @@ const genericSections: BlueprintSection[] = [
   { id: 'financial_snapshot', title: 'Financial Snapshot', defaultSelected: true, focus: 'Only material metrics tied to the stated topic.' },
   { id: 'company_overview', title: 'Company Overview', defaultSelected: true, focus: 'Business model and the most relevant segments.' },
   { id: 'key_execs_and_board', title: 'Key Execs and Board Members', defaultSelected: false, focus: 'Board composition, C-suite leadership, and business unit leaders.' },
-  { id: 'trends', title: 'Market Trends', defaultSelected: true, focus: '2-4 trends that directly affect the context.' },
-  { id: 'sku_opportunities', title: 'SKU Opportunities', defaultSelected: true, focus: '1-3 SSA problem areas tied to the context.' },
-  { id: 'conversation_starters', title: 'Conversation Starters', defaultSelected: true, focus: 'Short, call-ready questions for the meeting.' },
-  { id: 'appendix', title: 'Appendix and Sources', defaultSelected: true, focus: appendixFocus },
   { id: 'segment_analysis', title: 'Segment Analysis', defaultSelected: false, focus: 'Optional deep dive if the context demands it.' },
+  { id: 'trends', title: 'Market Trends', defaultSelected: true, focus: '2-4 trends that directly affect the context.' },
   { id: 'peer_benchmarking', title: 'Peer Benchmarking', defaultSelected: false, focus: 'Optional when peer comparisons are meaningful.' },
-  { id: 'recent_news', title: 'Recent News', defaultSelected: false, focus: 'Optional when recent developments matter.' }
+  { id: 'sku_opportunities', title: 'SKU Opportunities', defaultSelected: true, focus: '1-3 SSA problem areas tied to the context.' },
+  { id: 'recent_news', title: 'Recent News', defaultSelected: false, focus: 'Optional when recent developments matter.' },
+  { id: 'conversation_starters', title: 'Conversation Starters', defaultSelected: true, focus: 'Short, call-ready questions for the meeting.' },
+  { id: 'appendix', title: 'Appendix and Sources', defaultSelected: true, focus: appendixFocus }
 ].map(withDependencies);
 
 const peSections: BlueprintSection[] = [
