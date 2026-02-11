@@ -4,7 +4,13 @@
  */
 
 import PDFDocument from 'pdfkit';
+import { readFileSync } from 'fs';
+import { fileURLToPath } from 'url';
+import { dirname, join } from 'path';
 import { prisma } from '../lib/prisma.js';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
 
 // SSA Brand Colors
 const BRAND = {
@@ -18,8 +24,13 @@ const BRAND = {
   divider: '#cbd5e1',    // slate-300
 };
 
-// Embedded SSA logo PNG (extracted from the SVG in frontend/public)
-const SSA_LOGO_BASE64 = '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';
+// Load logo from disk
+let logoBuffer: Buffer | null = null;
+try {
+  logoBuffer = readFileSync(join(__dirname, '../../assets/ssa-logo.png'));
+} catch {
+  // Logo file not found — will skip logo in PDF
+}
 
 interface ExportOptions {
   userId?: string;
@@ -43,7 +54,7 @@ export async function generateNewsDigestPDF(options: ExportOptions): Promise<Buf
     userName = user.name || user.email;
   }
 
-  // Fetch articles — by IDs or by user
+  // Fetch articles — by IDs or by user (all non-archived)
   let articles;
   if (articleIds && articleIds.length > 0) {
     articles = await prisma.newsArticle.findMany({
@@ -52,16 +63,18 @@ export async function generateNewsDigestPDF(options: ExportOptions): Promise<Buf
       orderBy: [{ publishedAt: 'desc' }],
     });
   } else if (userId) {
-    const defaultDateFrom = new Date();
-    defaultDateFrom.setDate(defaultDateFrom.getDate() - 7);
+    const where: any = {
+      articleUsers: { some: { userId } },
+      isArchived: false,
+    };
+    // Only apply date filters if explicitly provided
+    if (dateFrom || dateTo) {
+      where.publishedAt = {};
+      if (dateFrom) where.publishedAt.gte = dateFrom;
+      if (dateTo) where.publishedAt.lte = dateTo;
+    }
     articles = await prisma.newsArticle.findMany({
-      where: {
-        articleUsers: { some: { userId } },
-        publishedAt: {
-          gte: dateFrom || defaultDateFrom,
-          lte: dateTo || new Date(),
-        },
-      },
+      where,
       include: { company: true, person: true, tag: true },
       orderBy: [{ publishedAt: 'desc' }],
     });
@@ -74,7 +87,7 @@ export async function generateNewsDigestPDF(options: ExportOptions): Promise<Buf
   const marginLeft = 50;
   const marginRight = 50;
   const contentWidth = pageWidth - marginLeft - marginRight;
-  const maxContentY = 770; // stop article content here to leave room for footer
+  const maxContentY = 760; // stop content here to leave room for footer
 
   const doc = new PDFDocument({
     size: 'A4',
@@ -82,7 +95,7 @@ export async function generateNewsDigestPDF(options: ExportOptions): Promise<Buf
     bufferPages: true,
     autoFirstPage: true,
     info: {
-      Title: `SSAMI News Intelligence Digest - ${userName}`,
+      Title: `SSAMI News Digest - ${userName}`,
       Author: 'SSA & Company',
       CreationDate: new Date(),
     },
@@ -91,45 +104,50 @@ export async function generateNewsDigestPDF(options: ExportOptions): Promise<Buf
   const chunks: Buffer[] = [];
   doc.on('data', (chunk) => chunks.push(chunk));
 
+  // Helper: ensure enough room on page, add new page if needed
+  const ensureSpace = (needed: number) => {
+    if (doc.y + needed > maxContentY) {
+      doc.addPage();
+      doc.y = 50;
+    }
+  };
+
+  // Helper: estimate height of a text block
+  const textHeight = (text: string, fontSize: number, font: string, width: number): number => {
+    doc.fontSize(fontSize).font(font);
+    return doc.heightOfString(text, { width });
+  };
+
   // === HEADER ===
 
   // Logo in top-left corner
-  const logoBuffer = Buffer.from(SSA_LOGO_BASE64, 'base64');
-  doc.image(logoBuffer, marginLeft, 50, { width: 36, height: 36 });
+  if (logoBuffer) {
+    doc.image(logoBuffer, marginLeft, 50, { width: 36, height: 36 });
+  }
 
-  // Centered title (full width, will appear centered above the logo area)
+  // Centered title
   doc.fontSize(18)
      .font('Helvetica-Bold')
      .fillColor(BRAND.primary)
-     .text('SSAMI News Intelligence Digest', marginLeft, 55, {
-       width: contentWidth,
-       align: 'center',
-       lineBreak: false,
-     });
-
-  // Subtitle centered
-  doc.fontSize(8)
-     .font('Helvetica')
-     .fillColor(BRAND.muted)
-     .text('SSA & Company', marginLeft, 76, {
+     .text('SSAMI News Digest', marginLeft, 58, {
        width: contentWidth,
        align: 'center',
        lineBreak: false,
      });
 
   // Brand divider below header
-  doc.rect(marginLeft, 92, contentWidth, 2).fill(BRAND.primary);
+  doc.rect(marginLeft, 82, contentWidth, 2).fill(BRAND.primary);
 
   // Metadata
   const dateStr = new Date().toLocaleDateString('en-US', {
     weekday: 'long', year: 'numeric', month: 'long', day: 'numeric',
   });
 
-  doc.y = 102;
+  doc.y = 92;
   doc.fontSize(9)
      .font('Helvetica')
      .fillColor(BRAND.text)
-     .text('Prepared for: ', marginLeft, 102, { continued: true })
+     .text('Prepared for: ', marginLeft, 92, { continued: true })
      .font('Helvetica-Bold')
      .text(userName, { continued: false });
 
@@ -165,11 +183,8 @@ export async function generateNewsDigestPDF(options: ExportOptions): Promise<Buf
   for (const companyName of companyNames) {
     const companyArticles = grouped[companyName];
 
-    // Ensure room for company header + at least one article start
-    if (doc.y > maxContentY - 100) {
-      doc.addPage();
-      doc.y = 50;
-    }
+    // Ensure room for company header + at least some article content
+    ensureSpace(100);
 
     // Company header bar
     const hdrY = doc.y;
@@ -188,17 +203,26 @@ export async function generateNewsDigestPDF(options: ExportOptions): Promise<Buf
     for (let i = 0; i < companyArticles.length; i++) {
       const article = companyArticles[i];
 
-      if (doc.y > maxContentY - 80) {
-        doc.addPage();
-        doc.y = 50;
+      // Estimate total height for this article
+      let estimatedHeight = 0;
+      if (article.tag?.name) estimatedHeight += 14;
+      estimatedHeight += textHeight(article.headline, 10.5, 'Helvetica-Bold', contentWidth) + 6;
+      if (article.summary) {
+        estimatedHeight += textHeight(article.summary, 9, 'Helvetica', contentWidth) + 6;
       }
+      if (article.whyItMatters) {
+        estimatedHeight += textHeight(`Why It Matters: ${article.whyItMatters}`, 9, 'Helvetica-Oblique', contentWidth) + 6;
+      }
+      estimatedHeight += 20; // source line + separator
+
+      ensureSpace(estimatedHeight);
 
       // Tag badge
       if (article.tag?.name) {
         doc.fontSize(7)
            .font('Helvetica-Bold')
            .fillColor(BRAND.medium)
-           .text(article.tag.name.toUpperCase(), marginLeft, doc.y, { lineBreak: false });
+           .text(article.tag.name.toUpperCase(), marginLeft, doc.y);
         doc.y += 2;
       }
 
@@ -208,10 +232,11 @@ export async function generateNewsDigestPDF(options: ExportOptions): Promise<Buf
          .fillColor(BRAND.text)
          .text(article.headline, marginLeft, doc.y, { width: contentWidth });
 
-      doc.y += 4; // spacing after headline
+      doc.y += 4;
 
       // Summary
       if (article.summary) {
+        ensureSpace(textHeight(article.summary, 9, 'Helvetica', contentWidth) + 6);
         doc.fontSize(9)
            .font('Helvetica')
            .fillColor(BRAND.text)
@@ -221,10 +246,12 @@ export async function generateNewsDigestPDF(options: ExportOptions): Promise<Buf
 
       // Why It Matters
       if (article.whyItMatters) {
+        const witm = `Why It Matters: ${article.whyItMatters}`;
+        ensureSpace(textHeight(witm, 9, 'Helvetica-Oblique', contentWidth) + 6);
         doc.fontSize(9)
            .font('Helvetica-Oblique')
            .fillColor(BRAND.primary)
-           .text(`Why It Matters: ${article.whyItMatters}`, marginLeft, doc.y, { width: contentWidth });
+           .text(witm, marginLeft, doc.y, { width: contentWidth });
         doc.y += 4;
       }
 
@@ -288,7 +315,7 @@ export async function generateNewsDigestPDF(options: ExportOptions): Promise<Buf
        .font('Helvetica')
        .fillColor(BRAND.muted)
        .text(
-         `SSAMI News Intelligence  |  SSA & Company  |  Page ${i + 1} of ${pageCount}`,
+         `SSAMI News Digest  |  SSA & Company  |  Page ${i + 1} of ${pageCount}`,
          marginLeft, footY,
          { align: 'center', width: contentWidth, lineBreak: false }
        );

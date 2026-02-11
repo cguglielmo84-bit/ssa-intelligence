@@ -357,8 +357,10 @@ export const NewsDashboard: React.FC<NewsDashboardProps> = ({ onNavigate, isAdmi
         ids = Array.from(selectedArticleIds);
       } else if (scope === 'pinned') {
         ids = Array.from(pinnedIds);
+      } else {
+        // 'all' — export all currently visible articles by their IDs
+        ids = articles.map(a => a.id);
       }
-      // scope === 'all' → empty ids, will use userId fallback
       await exportArticles(format, ids, currentUserId);
       setShowExportMenu(false);
     } catch (err) {
