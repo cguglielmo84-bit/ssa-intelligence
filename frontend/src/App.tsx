@@ -63,6 +63,10 @@ export default function App() {
   // so these users don't see the full navigation sidebar.
   if (currentPath.startsWith('/invite/')) {
     const token = currentPath.split('/invite/')[1];
+    if (!token) {
+      window.location.hash = '/';
+      return null;
+    }
     return (
       <ErrorBoundary key={currentPath}>
         <InviteAccept token={token} onAccepted={() => { window.location.replace(window.location.pathname + '#/'); }} />
@@ -81,7 +85,7 @@ export default function App() {
   if (userContext.user?.status === 'PENDING') {
     return (
       <ErrorBoundary key="pending">
-        <PendingActivation email={userContext.user.email} />
+        <PendingActivation email={userContext.user.email} supportContact={userContext.user.supportContact} />
       </ErrorBoundary>
     );
   }

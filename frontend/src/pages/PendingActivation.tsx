@@ -2,9 +2,10 @@ import React from 'react';
 
 interface PendingActivationProps {
   email?: string;
+  supportContact?: string | null;
 }
 
-export const PendingActivation: React.FC<PendingActivationProps> = ({ email }) => {
+export const PendingActivation: React.FC<PendingActivationProps> = ({ email, supportContact }) => {
   return (
     <div className="flex items-center justify-center min-h-[60vh]">
       <div className="bg-white border border-slate-200 rounded-xl p-8 max-w-md w-full text-center">
@@ -15,7 +16,11 @@ export const PendingActivation: React.FC<PendingActivationProps> = ({ email }) =
         </div>
         <h2 className="text-lg font-semibold text-slate-800 mb-2">Account Pending Activation</h2>
         <p className="text-sm text-slate-500 mb-4">
-          Your account has not been activated yet. Please contact your administrator for an invite link to get started.
+          Your account has not been activated yet.
+          {supportContact
+            ? <> Please contact your administrator at <a href={`mailto:${supportContact}`} className="text-brand-600 hover:underline">{supportContact}</a> for an invite link to get started.</>
+            : <> Please contact your administrator for an invite link to get started.</>
+          }
         </p>
         {email && (
           <p className="text-xs text-slate-400">

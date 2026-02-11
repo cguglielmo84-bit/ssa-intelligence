@@ -184,7 +184,7 @@ app.get('/api/config', (req, res) => {
 // ============================================================================
 
 // /api/me returns user status so frontend can show appropriate UI
-app.get('/api/me', authMiddleware, getMe);
+app.get('/api/me', ...applyLimiter(getLimiter), authMiddleware, getMe);
 
 // Invite acceptance — this is how pending users become active
 app.post('/api/invites/accept', ...applyLimiter(writeLimiter), authMiddleware, acceptInvite);

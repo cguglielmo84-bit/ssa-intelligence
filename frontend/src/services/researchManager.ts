@@ -91,6 +91,7 @@ type ApiMe = {
   isSuperAdmin: boolean;
   status: 'ACTIVE' | 'PENDING';
   groups: Array<{ id: string; name: string; slug: string }>;
+  supportContact?: string | null;
 };
 
 type ApiGroup = {
