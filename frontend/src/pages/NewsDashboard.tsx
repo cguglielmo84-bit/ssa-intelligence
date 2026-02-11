@@ -5,6 +5,7 @@
  */
 
 import React, { useState, useMemo, useEffect, useRef } from 'react';
+import { logger } from '../utils/logger';
 import {
   RefreshCw,
   Filter,
@@ -1042,7 +1043,6 @@ export const NewsDashboard: React.FC<NewsDashboardProps> = ({ onNavigate, isAdmi
         </div>
       )}
 
-      <ToastContainer />
     </div>
   );
 };
