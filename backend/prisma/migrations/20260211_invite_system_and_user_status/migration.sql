@@ -38,7 +38,9 @@ UPDATE "ResearchJob" SET "visibilityScope" = 'PRIVATE' WHERE "visibilityScope" =
 
 -- Replace VisibilityScope enum (PostgreSQL cannot remove enum values directly)
 CREATE TYPE "VisibilityScope_new" AS ENUM ('PRIVATE', 'GROUP');
+ALTER TABLE "ResearchJob" ALTER COLUMN "visibilityScope" DROP DEFAULT;
 ALTER TABLE "ResearchJob" ALTER COLUMN "visibilityScope" TYPE "VisibilityScope_new" USING ("visibilityScope"::text::"VisibilityScope_new");
+ALTER TABLE "ResearchJob" ALTER COLUMN "visibilityScope" SET DEFAULT 'PRIVATE'::"VisibilityScope_new";
 ALTER TYPE "VisibilityScope" RENAME TO "VisibilityScope_old";
 ALTER TYPE "VisibilityScope_new" RENAME TO "VisibilityScope";
 DROP TYPE "VisibilityScope_old";
