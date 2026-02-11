@@ -141,10 +141,13 @@ model User {
   email     String        @unique
   name      String?
   role      UserRole      @default(MEMBER)
+  status    UserStatus    @default(PENDING)
 
   // Relations
   research  ResearchJob[]
   memberships GroupMembership[]
+  invitesCreated Invite[] @relation("InviteCreatedBy")
+  invitesUsed    Invite[] @relation("InviteUsedBy")
 
   // News Intelligence relations
   callDietCompanies UserCallDietCompany[]
@@ -159,6 +162,23 @@ model User {
   updatedAt DateTime      @updatedAt
 
   @@index([email])
+}
+
+model Invite {
+  id          String    @id @default(cuid())
+  email       String
+  token       String    @unique
+  used        Boolean   @default(false)
+  usedAt      DateTime?
+  usedById    String?
+  usedBy      User?     @relation("InviteUsedBy", fields: [usedById], references: [id])
+  createdById String
+  createdBy   User      @relation("InviteCreatedBy", fields: [createdById], references: [id])
+  expiresAt   DateTime
+  createdAt   DateTime  @default(now())
+
+  @@index([email])
+  @@index([token])
 }
 
 model Group {
@@ -207,10 +227,14 @@ enum UserRole {
   MEMBER
 }
 
+enum UserStatus {
+  ACTIVE
+  PENDING
+}
+
 enum VisibilityScope {
   PRIVATE
   GROUP
-  GENERAL
 }
 
 enum ReportType {

@@ -75,7 +75,7 @@ describe('GET /api/research', () => {
     expect(res.body.results.length).toBe(2);
   });
 
-  it('member sees own jobs + GENERAL + their GROUP jobs', async () => {
+  it('member sees own jobs + their GROUP jobs (no GENERAL)', async () => {
     const member = await createTestUser({ email: 'member@ssaandco.com' });
     const otherUser = await createTestUser({ email: 'other-owner@ssaandco.com' });
     const group = await createTestGroup({ slug: 'team-alpha' });
@@ -83,8 +83,6 @@ describe('GET /api/research', () => {
 
     // Member's own PRIVATE job
     await createTestJob({ userId: member.id, companyName: 'My Company' });
-    // GENERAL job by another user
-    await createTestJob({ userId: otherUser.id, companyName: 'General Company', visibilityScope: 'GENERAL' });
     // GROUP job visible to team-alpha
     await createTestJob({
       userId: otherUser.id,
@@ -102,17 +100,16 @@ describe('GET /api/research', () => {
     expect(res.status).toBe(200);
     const names = res.body.results.map((r: any) => r.companyName);
     expect(names).toContain('My Company');
-    expect(names).toContain('General Company');
     expect(names).toContain('Group Company');
     expect(names).not.toContain('Hidden Company');
-    expect(res.body.results.length).toBe(3);
+    expect(res.body.results.length).toBe(2);
   });
 
   it('member does NOT see other users PRIVATE jobs', async () => {
     const otherUser = await createTestUser({ email: 'private-owner@ssaandco.com' });
     await createTestJob({ userId: otherUser.id, companyName: 'Secret Company', visibilityScope: 'PRIVATE' });
 
-    // member@ssaandco.com is created automatically by auth middleware
+    await createTestUser({ email: 'member@ssaandco.com' });
     const res = await asMember(
       request(app).get('/api/research')
     );

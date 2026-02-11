@@ -5,6 +5,14 @@ All notable changes to this repository will be documented in this file.
 The format is based on Keep a Changelog and this project adheres to Semantic Versioning.
 
 ## [Unreleased]
+- Feat: invite-only access system — new users default to PENDING status; super-admin can generate invite links; users accept invites to become ACTIVE; frontend gates pending users with activation page.
+- Feat: super-admin role (SUPER_ADMIN_EMAIL env var) with dedicated middleware guard for user/group/invite management.
+- Security: replace predictable CUID invite tokens with cryptographically secure `crypto.randomBytes(32)`.
+- Security: fix race condition on invite acceptance with conditional `updateMany` inside interactive transaction.
+- Security: tighten dev-fallback/impersonation guard from `NODE_ENV !== 'production'` to explicit `NODE_ENV === 'development' || DEV_MODE === 'true'`.
+- Security: redact invite tokens from list response for used/expired invites.
+- Refactor: extract shared domain-validation helpers to `backend/src/lib/domain-validation.ts`.
+- Fix: frontend loading-state gate prevents app shell flash for pending users.
 
 ### Added
 - News Intelligence module: multi-layer news fetching (RSS/API + AI search), article pinning, bulk archive, PDF/Markdown export, deep dive search with company name resolution.

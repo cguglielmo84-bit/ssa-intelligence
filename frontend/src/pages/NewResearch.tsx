@@ -666,7 +666,6 @@ export const NewResearch: React.FC<NewResearchProps> = ({
                         Group: {group.name}
                       </option>
                     ))}
-                    <option value="GENERAL">General Use</option>
                   </select>
                   {!canShareToGroups && (
                     <p className="text-xs text-slate-400 mt-2">You are not assigned to any groups yet.</p>

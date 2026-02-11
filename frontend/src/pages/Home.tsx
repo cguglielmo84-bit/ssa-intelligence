@@ -120,7 +120,6 @@ export const Home: React.FC<HomeProps> = ({ jobs, loading = false, reportBluepri
   };
 
   const visibilityLabel = (scope?: string | null, groups?: Array<{ name: string }>) => {
-    if (scope === 'GENERAL') return 'General';
     if (scope === 'GROUP') {
       const names = (groups || []).map((group) => group.name).filter(Boolean);
       return names.length ? names.join(', ') : 'Group';

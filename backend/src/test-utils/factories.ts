@@ -4,7 +4,7 @@
  */
 
 import { testPrisma } from './db-helpers.js';
-import type { ReportType, VisibilityScope, UserRole, FeedbackType, FeedbackStatus } from '@prisma/client';
+import type { ReportType, VisibilityScope, UserRole, UserStatus, FeedbackType, FeedbackStatus } from '@prisma/client';
 
 let counter = 0;
 const unique = () => `${Date.now()}-${++counter}`;
@@ -15,12 +15,14 @@ export async function createTestUser(overrides: {
   email?: string;
   name?: string;
   role?: UserRole;
+  status?: UserStatus;
 } = {}) {
   return testPrisma.user.create({
     data: {
       email: overrides.email ?? `user-${unique()}@ssaandco.com`,
       name: overrides.name ?? 'Test User',
       role: overrides.role ?? 'MEMBER',
+      status: overrides.status ?? 'ACTIVE',
     },
   });
 }

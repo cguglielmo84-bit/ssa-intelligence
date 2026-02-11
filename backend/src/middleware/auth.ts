@@ -1,5 +1,6 @@
 import type { Request, Response, NextFunction } from 'express';
 import { prisma } from '../lib/prisma.js';
+import { parseAllowedDomains, isAllowedDomain } from '../lib/domain-validation.js';
 import type { AuthContext } from '../types/auth.js';
 
 const HEADER_CANDIDATES = {
@@ -44,20 +45,9 @@ const parseAdminEmails = () => {
     .filter(Boolean);
 };
 
-const parseAllowedDomains = () => {
-  const raw = process.env.AUTH_EMAIL_DOMAIN || process.env.OAUTH2_PROXY_EMAIL_DOMAINS || 'ssaandco.com';
-  return raw
-    .split(',')
-    .map((entry) => entry.trim().toLowerCase())
-    .filter(Boolean);
-};
+const parseSuperAdminEmail = () =>
+  (process.env.SUPER_ADMIN_EMAIL || '').trim().toLowerCase();
 
-const isAllowedDomain = (email: string, allowedDomains: string[]) => {
-  if (!email.includes('@')) return false;
-  if (allowedDomains.includes('*')) return true;
-  const domain = email.split('@').pop() || '';
-  return allowedDomains.includes(domain.toLowerCase());
-};
 
 const parseGroups = (raw: string) =>
   raw
@@ -67,6 +57,7 @@ const parseGroups = (raw: string) =>
 
 const resolveAuthContext = async (req: Request): Promise<AuthContext> => {
   const adminEmails = parseAdminEmails();
+  const superAdminEmail = parseSuperAdminEmail();
   const allowedDomains = parseAllowedDomains();
 
   const emailHeader = getHeader(req, HEADER_CANDIDATES.email).toLowerCase();
@@ -77,12 +68,14 @@ const resolveAuthContext = async (req: Request): Promise<AuthContext> => {
   let email = emailHeader;
   let isDevFallback = false;
 
-  if (process.env.NODE_ENV !== 'production' && process.env.DEV_IMPERSONATE_EMAIL) {
+  const isDevMode = process.env.NODE_ENV === 'development' || process.env.DEV_MODE === 'true';
+
+  if (isDevMode && process.env.DEV_IMPERSONATE_EMAIL) {
     email = process.env.DEV_IMPERSONATE_EMAIL.toLowerCase();
   }
 
   if (!email) {
-    if (process.env.NODE_ENV === 'production') {
+    if (!isDevMode) {
       throw new Error('Missing authenticated email');
     }
     email = fallbackEmail;
@@ -91,6 +84,8 @@ const resolveAuthContext = async (req: Request): Promise<AuthContext> => {
   }
 
   const isAdmin = adminEmails.includes(email);
+  const isSuperAdmin = superAdminEmail ? email === superAdminEmail : false;
+
   if (!isAdmin && !isAllowedDomain(email, allowedDomains)) {
     throw new Error('Email domain not allowed');
   }
@@ -99,18 +94,32 @@ const resolveAuthContext = async (req: Request): Promise<AuthContext> => {
   let user = existing;
 
   if (user) {
-    if (isAdmin && user.role !== 'ADMIN') {
+    // Promote to admin if in ADMIN_EMAILS and ensure ACTIVE status
+    if (isAdmin && (user.role !== 'ADMIN' || user.status !== 'ACTIVE')) {
       user = await prisma.user.update({
         where: { id: user.id },
-        data: { role: 'ADMIN' }
+        data: {
+          role: 'ADMIN',
+          status: 'ACTIVE'
+        }
+      });
+    }
+    // Super-admin always gets ACTIVE status
+    if (isSuperAdmin && user.status !== 'ACTIVE') {
+      user = await prisma.user.update({
+        where: { id: user.id },
+        data: { status: 'ACTIVE' }
       });
     }
   } else {
+    // New users: admins/super-admin get ACTIVE, others get PENDING
+    const shouldBeActive = isAdmin || isDevFallback || isSuperAdmin;
     user = await prisma.user.create({
       data: {
         email,
         name: userHeader || null,
-        role: isAdmin || isDevFallback ? 'ADMIN' : 'MEMBER'
+        role: isAdmin || isDevFallback ? 'ADMIN' : 'MEMBER',
+        status: shouldBeActive ? 'ACTIVE' : 'PENDING'
       }
     });
   }
@@ -125,6 +134,8 @@ const resolveAuthContext = async (req: Request): Promise<AuthContext> => {
     email,
     role: user.role,
     isAdmin: user.role === 'ADMIN',
+    isSuperAdmin,
+    status: user.status,
     groupIds: memberships.map((m) => m.groupId),
     groupSlugs: memberships.map((m) => m.group.slug)
   };
@@ -152,12 +163,34 @@ export const requireAdmin = (req: Request, res: Response, next: NextFunction) =>
   return next();
 };
 
+export const requireActiveUser = (req: Request, res: Response, next: NextFunction) => {
+  if (!req.auth) {
+    return res.status(401).json({ error: 'Unauthorized' });
+  }
+  if (req.auth.status !== 'ACTIVE') {
+    return res.status(403).json({
+      error: 'ACCOUNT_PENDING',
+      message: 'Your account has not been activated. Contact an administrator for an invite.'
+    });
+  }
+  return next();
+};
+
+export const requireSuperAdmin = (req: Request, res: Response, next: NextFunction) => {
+  if (!req.auth) {
+    return res.status(401).json({ error: 'Unauthorized' });
+  }
+  if (!req.auth.isSuperAdmin) {
+    return res.status(403).json({ error: 'Super-admin access required' });
+  }
+  return next();
+};
+
 export const buildVisibilityWhere = (auth: AuthContext) => {
   if (auth.isAdmin) return {};
 
-  const clauses: any[] = [
-    { userId: auth.userId },
-    { visibilityScope: 'GENERAL' }
+  const clauses: Record<string, unknown>[] = [
+    { userId: auth.userId }
   ];
 
   if (auth.groupIds.length) {
