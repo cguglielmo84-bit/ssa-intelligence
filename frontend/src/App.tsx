@@ -10,6 +10,8 @@ import { AdminPricing } from './pages/AdminPricing';
 import { AdminPrompts } from './pages/AdminPrompts';
 import { NewsDashboard } from './pages/NewsDashboard';
 import { NewsSetup } from './pages/NewsSetup';
+import { InviteAccept } from './pages/InviteAccept';
+import { PendingActivation } from './pages/PendingActivation';
 import { useReportBlueprints, useResearchManager, useUserContext } from './services/researchManager';
 
 export default function App() {
@@ -57,6 +59,37 @@ export default function App() {
     // hashchange listener will call setCurrentPath
   };
 
+  // Render invite acceptance, loading, and pending states outside Layout
+  // so these users don't see the full navigation sidebar.
+  if (currentPath.startsWith('/invite/')) {
+    const token = currentPath.split('/invite/')[1];
+    if (!token) {
+      window.location.hash = '/';
+      return null;
+    }
+    return (
+      <ErrorBoundary key={currentPath}>
+        <InviteAccept token={token} onAccepted={() => { window.location.replace(window.location.pathname + '#/'); }} />
+      </ErrorBoundary>
+    );
+  }
+
+  if (userContext.loading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="w-8 h-8 border-2 border-brand-500 border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
+  }
+
+  if (userContext.user?.status === 'PENDING') {
+    return (
+      <ErrorBoundary key="pending">
+        <PendingActivation email={userContext.user.email} supportContact={userContext.user.supportContact} />
+      </ErrorBoundary>
+    );
+  }
+
   const renderContent = () => {
     if (currentPath === '/') {
       return (
@@ -86,7 +119,7 @@ export default function App() {
       );
     }
     if (currentPath === '/admin') {
-      return <AdminUsers isAdmin={userContext.user?.isAdmin} currentUserId={userContext.user?.id} />;
+      return <AdminUsers isAdmin={userContext.user?.isAdmin} isSuperAdmin={userContext.user?.isSuperAdmin} currentUserId={userContext.user?.id} />;
     }
     if (currentPath === '/admin/metrics') {
       return <AdminMetrics isAdmin={userContext.user?.isAdmin} />;
@@ -119,7 +152,7 @@ export default function App() {
   };
 
   return (
-    <Layout onNavigate={navigate} activePath={currentPath} isAdmin={userContext.user?.isAdmin}>
+    <Layout onNavigate={navigate} activePath={currentPath} isAdmin={userContext.user?.isAdmin} isSuperAdmin={userContext.user?.isSuperAdmin}>
       <ErrorBoundary key={currentPath}>
         {renderContent()}
       </ErrorBoundary>

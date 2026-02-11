@@ -40,6 +40,16 @@ cd frontend && npm run dev          # Vite on :5176
 
 Copy `backend/.env.example` to `backend/.env` and fill in required values (DATABASE_URL, ANTHROPIC_API_KEY).
 
+## Testing
+
+```bash
+cd backend && npm test              # unit tests only
+cd backend && DATABASE_URL="postgresql://intellectra:intellectra_dev_password@localhost:5434/ssa_intelligence_test" \
+  npm run test:integration          # integration tests (requires test DB)
+```
+
+Integration tests use a separate database (`ssa_intelligence_test`). The global setup (`src/test-utils/global-setup.ts`) enforces that `DATABASE_URL` contains `_test` as a safety guard. The test DB is auto-reset via `prisma db push --force-reset` before each run.
+
 ## Directory Guide
 
 | Path | Purpose |

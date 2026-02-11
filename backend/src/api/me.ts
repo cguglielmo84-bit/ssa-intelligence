@@ -14,6 +14,7 @@ export async function getMe(req: Request, res: Response) {
         email: true,
         name: true,
         role: true,
+        status: true,
         memberships: {
           select: {
             group: {
@@ -28,13 +29,18 @@ export async function getMe(req: Request, res: Response) {
       return res.status(404).json({ error: 'User not found' });
     }
 
+    const superAdminEmail = (process.env.SUPER_ADMIN_EMAIL || '').trim().toLowerCase();
+
     return res.json({
       id: user.id,
       email: user.email,
       name: user.name,
       role: user.role,
       isAdmin: user.role === 'ADMIN',
-      groups: user.memberships.map((m) => m.group)
+      isSuperAdmin: req.auth.isSuperAdmin,
+      status: user.status,
+      groups: user.memberships.map((m) => m.group),
+      supportContact: superAdminEmail || null
     });
   } catch (error) {
     console.error('Failed to fetch current user:', error);

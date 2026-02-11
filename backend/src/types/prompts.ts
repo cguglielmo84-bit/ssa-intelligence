@@ -104,7 +104,7 @@ export interface CreateJobRequest {
   reportType?: 'GENERIC' | 'INDUSTRIALS' | 'PE' | 'FS';
   selectedSections?: string[];
   userAddedPrompt?: string;
-  visibilityScope?: 'PRIVATE' | 'GROUP' | 'GENERAL';
+  visibilityScope?: 'PRIVATE' | 'GROUP';
   groupIds?: string[];
 }
 
@@ -124,7 +124,7 @@ export interface JobStatusResponse {
   companyName: string;
   geography: string;
   reportType?: 'GENERIC' | 'INDUSTRIALS' | 'PE' | 'FS';
-  visibilityScope?: 'PRIVATE' | 'GROUP' | 'GENERAL';
+  visibilityScope?: 'PRIVATE' | 'GROUP';
   selectedSections?: string[];
   userAddedPrompt?: string;
   error?: string | null;
@@ -155,7 +155,7 @@ export interface ResearchDetailResponse {
     geography: string;
     industry?: string;
     reportType?: 'GENERIC' | 'INDUSTRIALS' | 'PE' | 'FS';
-    visibilityScope?: 'PRIVATE' | 'GROUP' | 'GENERAL';
+    visibilityScope?: 'PRIVATE' | 'GROUP';
     selectedSections?: string[];
     userAddedPrompt?: string;
     overallConfidence?: string;
@@ -192,7 +192,7 @@ export interface ListResearchResponse {
     geography: string;
     industry?: string;
     reportType?: 'GENERIC' | 'INDUSTRIALS' | 'PE' | 'FS';
-    visibilityScope?: 'PRIVATE' | 'GROUP' | 'GENERAL';
+    visibilityScope?: 'PRIVATE' | 'GROUP';
     selectedSections?: string[];
     userAddedPrompt?: string;
     progress: number;

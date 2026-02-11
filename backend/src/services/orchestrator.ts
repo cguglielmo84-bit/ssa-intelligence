@@ -430,7 +430,7 @@ export class ResearchOrchestrator {
     reportInputs?: Record<string, unknown>;
     selectedSections?: string[];
     userAddedPrompt?: string;
-    visibilityScope?: 'PRIVATE' | 'GROUP' | 'GENERAL';
+    visibilityScope?: 'PRIVATE' | 'GROUP';
     groupIds?: string[];
     draftId?: string; // Client-generated ID for pre-job cost linkage
   }) {

@@ -27,6 +27,7 @@ describe('GET /api/research/:id', () => {
   });
 
   it('returns 404 for non-existent job', async () => {
+    await createTestUser({ email: 'member@ssaandco.com' });
     const res = await asMember(
       request(app).get('/api/research/nonexistent-id')
     );
@@ -43,6 +44,7 @@ describe('GET /api/research/:id', () => {
     });
 
     // other@ssaandco.com is not the owner
+    await createTestUser({ email: 'other@ssaandco.com' });
     const res = await asOtherMember(
       request(app).get(`/api/research/${job.id}`)
     );

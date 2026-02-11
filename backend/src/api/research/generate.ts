@@ -159,7 +159,7 @@ export async function generateResearch(req: Request, res: Response) {
     selectedSections = Array.from(selected);
 
     const visibilityScope = (body.visibilityScope || 'PRIVATE').toUpperCase() as VisibilityScope;
-    const allowedScopes = new Set<VisibilityScope>(['PRIVATE', 'GROUP', 'GENERAL']);
+    const allowedScopes = new Set<VisibilityScope>(['PRIVATE', 'GROUP']);
     if (!allowedScopes.has(visibilityScope)) {
       return res.status(400).json({ error: 'Invalid visibilityScope' });
     }

@@ -64,6 +64,7 @@ describe('POST /api/research/:id/cancel', () => {
   });
 
   it('returns 404 for non-existent job', async () => {
+    await createTestUser({ email: 'member@ssaandco.com' });
     const res = await asMember(
       request(app).post('/api/research/nonexistent-id/cancel')
     );
@@ -102,6 +103,7 @@ describe('POST /api/research/:id/cancel', () => {
 
     // other@ssaandco.com is not the owner and not admin — visibility filter
     // returns 404 (not 403) to avoid leaking job existence
+    await createTestUser({ email: 'other@ssaandco.com' });
     const res = await asOtherMember(
       request(app).post(`/api/research/${job.id}/cancel`)
     );
