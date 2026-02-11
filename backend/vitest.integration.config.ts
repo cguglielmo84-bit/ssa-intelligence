@@ -4,12 +4,17 @@ import path from 'path';
 export default defineConfig({
   test: {
     environment: 'node',
-    include: ['src/**/*.test.ts'],
-    exclude: ['src/**/*.integration.test.ts'],
+    include: ['src/**/*.integration.test.ts'],
+    globalSetup: ['src/test-utils/global-setup.ts'],
+    setupFiles: ['src/test-utils/setup.ts'],
+    testTimeout: 15000,
+    hookTimeout: 30000,
+    // Integration tests share a single database — run files sequentially
+    fileParallelism: false,
     coverage: {
       provider: 'v8',
       reporter: ['text', 'lcov'],
-      reportsDirectory: './coverage',
+      reportsDirectory: './coverage-integration',
     },
   },
   resolve: {

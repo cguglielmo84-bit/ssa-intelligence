@@ -12,6 +12,7 @@ build/
 coverage/
 backend/coverage/
 frontend/coverage/
+backend/coverage-integration/
 
 # Env
 .env
