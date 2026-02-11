@@ -42,6 +42,15 @@ model ResearchJob {
   financialSnapshot     Json?  // Section2Output
   companyOverview       Json?  // Section3Output
   keyExecsAndBoard      Json?  // KeyExecsAndBoardOutput
+  investmentStrategy    Json?  // PE: InvestmentStrategyOutput
+  portfolioSnapshot     Json?  // PE: PortfolioSnapshotOutput
+  dealActivity          Json?  // PE: DealActivityOutput
+  dealTeam              Json?  // PE: DealTeamOutput
+  portfolioMaturity     Json?  // PE: PortfolioMaturityOutput
+  leadershipAndGovernance Json? // FS/Insurance: LeadershipAndGovernanceOutput
+  strategicPriorities   Json?  // FS/Insurance: StrategicPrioritiesOutput
+  operatingCapabilities Json?  // FS/Insurance: OperatingCapabilitiesOutput
+  distributionAnalysis  Json?  // Insurance: DistributionAnalysisOutput
   segmentAnalysis       Json?  // Section4Output
   trends                Json?  // Section5Output
   peerBenchmarking      Json?  // Section6Output
@@ -359,11 +368,11 @@ model NewsArticle {
   contentScraped Boolean   @default(false) @map("content_scraped")
   scrapedAt      DateTime? @map("scraped_at")
 
-  company      TrackedCompany?  @relation(fields: [companyId], references: [id])
+  company      TrackedCompany?  @relation(fields: [companyId], references: [id], onDelete: SetNull)
   companyId    String?          @map("company_id")
-  person       TrackedPerson?   @relation(fields: [personId], references: [id])
+  person       TrackedPerson?   @relation(fields: [personId], references: [id], onDelete: SetNull)
   personId     String?          @map("person_id")
-  tag          NewsTag?         @relation(fields: [tagId], references: [id])
+  tag          NewsTag?         @relation(fields: [tagId], references: [id], onDelete: SetNull)
   tagId        String?          @map("tag_id")
 
   articleUsers  ArticleUser[]

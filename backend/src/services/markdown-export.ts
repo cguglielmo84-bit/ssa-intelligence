@@ -93,7 +93,8 @@ export async function generateNewsDigestMarkdown(options: ExportOptions): Promis
       ? new Date(article.publishedAt).toLocaleDateString()
       : 'Unknown date';
 
-    lines.push(`[Read more](${article.sourceUrl}) | ${article.sourceName || 'Unknown source'} | ${pubDate}`);
+    const safeUrl = article.sourceUrl.replace(/\(/g, '%28').replace(/\)/g, '%29');
+    lines.push(`[Read more](${safeUrl}) | ${article.sourceName || 'Unknown source'} | ${pubDate}`);
     lines.push('');
     lines.push('---');
     lines.push('');

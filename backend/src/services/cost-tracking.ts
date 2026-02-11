@@ -25,6 +25,7 @@ export interface CostEventParams {
   model: string;
   usage: TokenUsage;
   metadata?: Record<string, unknown>;
+  costUsd?: number;
 }
 
 export interface PricingRateInfo {
@@ -165,8 +166,9 @@ export class CostTrackingService {
    * Record a cost event in the database
    */
   async recordCostEvent(params: CostEventParams): Promise<string> {
-    const pricing = await this.getPricing(params.provider, params.model);
-    const costUsd = this.calculateCost(params.usage, pricing);
+    const costUsd = (params.costUsd != null && Number.isFinite(params.costUsd) && params.costUsd >= 0)
+      ? params.costUsd
+      : this.calculateCost(params.usage, await this.getPricing(params.provider, params.model));
 
     const event = await this.prisma.costEvent.create({
       data: {

@@ -1,19 +1,26 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { ReportBlueprint, ResearchJob, SECTIONS_CONFIG } from '../types';
 import { StatusPill } from '../components/StatusPill';
-import { ArrowRight, Search, TrendingUp, Building2, MapPin, MoreHorizontal, Loader2 } from 'lucide-react';
+import { Search, TrendingUp, Building2, MoreHorizontal, Loader2 } from 'lucide-react';
 import { ShaderGradientCanvas, ShaderGradient } from '@shadergradient/react';
+import { ConfirmDialog } from '../components/ConfirmDialog';
+import { useToast } from '../components/Toast';
+import { logger } from '../utils/logger';
 
 interface HomeProps {
   jobs: ResearchJob[];
+  loading?: boolean;
   reportBlueprints?: ReportBlueprint[];
   onNavigate: (path: string) => void;
   onCancel?: (id: string) => Promise<void>;
   onDelete?: (id: string) => Promise<void>;
+  logoToken?: string | null;
 }
 
-export const Home: React.FC<HomeProps> = ({ jobs, reportBlueprints = [], onNavigate, onCancel, onDelete }) => {
+export const Home: React.FC<HomeProps> = ({ jobs, loading = false, reportBlueprints = [], onNavigate, onCancel, onDelete, logoToken: logoTokenProp }) => {
+  const { showToast, ToastContainer } = useToast();
+  const [confirmState, setConfirmState] = useState<{ open: boolean; jobId: string } | null>(null);
   const completedJobs = [...jobs.filter(j =>
     j.status === 'completed' ||
     j.status === 'completed_with_errors' ||
@@ -29,9 +36,7 @@ export const Home: React.FC<HomeProps> = ({ jobs, reportBlueprints = [], onNavig
   const [selectedCompany, setSelectedCompany] = useState<string | null>(null);
   const [contextJob, setContextJob] = useState<ResearchJob | null>(null);
   const API_BASE = ((import.meta as any).env?.VITE_API_BASE_URL || '/api').replace(/\/$/, '');
-  const [runtimeLogoToken, setRuntimeLogoToken] = useState<string | null>(null);
-  const fallbackLogoToken = (import.meta as any).env?.VITE_LOGO_DEV_TOKEN as string | undefined;
-  const logoToken = runtimeLogoToken || fallbackLogoToken;
+  const logoToken = logoTokenProp;
   const activeJobs = jobs
     .filter(j => j.status === 'running' || j.status === 'queued' || j.status === 'idle')
     .sort((a, b) => {
@@ -41,23 +46,6 @@ export const Home: React.FC<HomeProps> = ({ jobs, reportBlueprints = [], onNavig
       if (pa !== pb) return pa - pb;
       return (a.createdAt || 0) - (b.createdAt || 0);
     });
-  useEffect(() => {
-    let isMounted = true;
-    fetch(`${API_BASE}/config`)
-      .then((res) => (res.ok ? res.json() : null))
-      .then((data) => {
-        if (!isMounted) return;
-        const token = data?.logoToken;
-        if (typeof token === 'string' && token.trim()) {
-          setRuntimeLogoToken(token.trim());
-        }
-      })
-      .catch(() => {});
-    return () => {
-      isMounted = false;
-    };
-  }, [API_BASE]);
-
   useEffect(() => {
     if (!openMenuId) return;
     const closeMenu = () => setOpenMenuId(null);
@@ -159,8 +147,8 @@ export const Home: React.FC<HomeProps> = ({ jobs, reportBlueprints = [], onNavig
       a.remove();
       window.URL.revokeObjectURL(url);
     } catch (err) {
-      console.error(err);
-      alert('Failed to export PDF. Please try again.');
+      logger.error('PDF export failed', err);
+      showToast('Failed to export PDF. Please try again.', 'error');
     } finally {
       setExportingId(null);
       setOpenMenuId(null);
@@ -324,7 +312,12 @@ export const Home: React.FC<HomeProps> = ({ jobs, reportBlueprints = [], onNavig
           </div>
         </div>
 
-        {filteredGroups.length === 0 ? (
+        {loading ? (
+          <div className="bg-white border border-slate-200 rounded-xl p-8 text-center text-slate-400">
+            <Loader2 size={24} className="animate-spin mx-auto mb-2" />
+            Loading reports...
+          </div>
+        ) : filteredGroups.length === 0 ? (
           <div className="bg-white border border-slate-200 rounded-xl p-8 text-center text-slate-400">
             No research yet. Start a new job above.
           </div>
@@ -529,13 +522,8 @@ export const Home: React.FC<HomeProps> = ({ jobs, reportBlueprints = [], onNavig
                                             onClick={() => {
                                               if (!onDelete) return;
                                               if (job.status === 'running' || job.status === 'queued') return;
-                                              const confirmed = window.confirm('Delete this report? This cannot be undone.');
-                                              if (!confirmed) return;
-                                              setDeletingId(job.id);
                                               setOpenMenuId(null);
-                                              onDelete(job.id)
-                                                .catch(() => {})
-                                                .finally(() => setDeletingId(null));
+                                              setConfirmState({ open: true, jobId: job.id });
                                             }}
                                             disabled={!onDelete || job.status === 'running' || job.status === 'queued' || deletingId === job.id}
                                             className="w-full text-left px-3 py-2 text-sm text-rose-700 hover:bg-rose-50 disabled:opacity-60"
@@ -561,6 +549,27 @@ export const Home: React.FC<HomeProps> = ({ jobs, reportBlueprints = [], onNavig
           </div>
         );
       })()}
+
+      <ConfirmDialog
+        open={!!confirmState?.open}
+        title="Delete Report"
+        message="Delete this report? This cannot be undone."
+        confirmLabel="Delete"
+        variant="danger"
+        onConfirm={() => {
+          if (confirmState && onDelete) {
+            setDeletingId(confirmState.jobId);
+            onDelete(confirmState.jobId)
+              .catch(() => {
+                showToast('Failed to delete report. Please try again.', 'error');
+              })
+              .finally(() => setDeletingId(null));
+          }
+          setConfirmState(null);
+        }}
+        onCancel={() => setConfirmState(null)}
+      />
+      <ToastContainer />
 
       {contextJob && (
         <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center p-4 z-50">

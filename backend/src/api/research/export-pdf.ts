@@ -6,6 +6,7 @@ import { formatSectionContent, sectionOrder } from '../../services/section-forma
 import { buildExportSections, isExportReady } from '../../services/export-utils.js';
 import { getReportBlueprint } from '../../services/report-blueprints.js';
 import { buildVisibilityWhere } from '../../middleware/auth.js';
+import { safeErrorMessage } from '../../lib/error-utils.js';
 
 const htmlTemplate = (params: { title: string; meta: string[]; body: string }) => `
 <!DOCTYPE html>
@@ -66,7 +67,10 @@ export async function exportResearchPdf(req: Request, res: Response) {
     }
 
     const dateStr = new Date(job.createdAt).toISOString().slice(0, 10);
-    const filename = `${job.companyName.replace(/\s+/g, '_')}-${dateStr}.pdf`;
+    const sanitize = (name: string) =>
+      name.replace(/[^a-zA-Z0-9_\-. ]/g, '').replace(/\s+/g, '_');
+    const sanitized = sanitize(job.companyName) || 'report';
+    const filename = `${sanitized}-${dateStr}.pdf`;
 
     const blueprint = getReportBlueprint(job.reportType || 'GENERIC');
     const exportSections = buildExportSections({
@@ -116,27 +120,30 @@ export async function exportResearchPdf(req: Request, res: Response) {
       return res.status(500).json({ error: 'PDF export unavailable: browser failed to start' });
     }
 
-    const page = await browser.newPage({
-      viewport: { width: 1200, height: 1800 }
-    });
+    try {
+      const page = await browser.newPage({
+        viewport: { width: 1200, height: 1800 }
+      });
 
-    await page.setContent(html, { waitUntil: 'networkidle' });
-    const pdfBuffer = await page.pdf({
-      format: 'Letter',
-      margin: { top: '40px', bottom: '40px', left: '32px', right: '32px' },
-      printBackground: true
-    });
+      await page.setContent(html, { waitUntil: 'networkidle', timeout: 30000 });
+      const pdfBuffer = await page.pdf({
+        format: 'Letter',
+        margin: { top: '40px', bottom: '40px', left: '32px', right: '32px' },
+        printBackground: true,
+        timeout: 30000
+      });
 
-    await browser.close();
-
-    res.setHeader('Content-Type', 'application/pdf');
-    res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
-    return res.send(pdfBuffer);
+      res.setHeader('Content-Type', 'application/pdf');
+      res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+      return res.send(pdfBuffer);
+    } finally {
+      await browser.close();
+    }
   } catch (error) {
     console.error('Error exporting PDF:', error);
     return res.status(500).json({
       error: 'Failed to export PDF',
-      message: error instanceof Error ? error.message : 'Unknown error'
+      message: safeErrorMessage(error)
     });
   }
 }

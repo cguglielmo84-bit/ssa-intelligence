@@ -14,6 +14,7 @@ import {
   RefreshCw,
   StickyNote
 } from 'lucide-react';
+import { logger } from '../utils/logger';
 
 // Types
 type FeedbackType = 'bug' | 'issue' | 'feature' | 'other';
@@ -134,7 +135,7 @@ export const BugTrackerModal: React.FC<BugTrackerModalProps> = ({
       const result = await onList(filters);
       setFeedbackList(result.data);
     } catch (err) {
-      console.error('Failed to fetch feedback:', err);
+      logger.error('Failed to fetch feedback:', err);
       setFetchError(err instanceof Error ? err.message : 'Failed to load feedback. Please try again.');
     } finally {
       setLoading(false);
@@ -226,7 +227,7 @@ export const BugTrackerModal: React.FC<BugTrackerModalProps> = ({
         )
       );
     } catch (err) {
-      console.error('Failed to update status:', err);
+      logger.error('Failed to update status:', err);
     } finally {
       setUpdatingId(null);
     }
@@ -244,7 +245,7 @@ export const BugTrackerModal: React.FC<BugTrackerModalProps> = ({
       );
       setEditingNotes(null);
     } catch (err) {
-      console.error('Failed to save notes:', err);
+      logger.error('Failed to save notes:', err);
     } finally {
       setSavingNotes(false);
     }
@@ -258,7 +259,7 @@ export const BugTrackerModal: React.FC<BugTrackerModalProps> = ({
       setDeleteConfirmId(null);
       if (expandedId === id) setExpandedId(null);
     } catch (err) {
-      console.error('Failed to delete:', err);
+      logger.error('Failed to delete:', err);
     } finally {
       setDeletingId(null);
     }

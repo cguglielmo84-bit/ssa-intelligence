@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import { prisma } from '../../lib/prisma.js';
 import { buildVisibilityWhere } from '../../middleware/auth.js';
+import { safeErrorMessage } from '../../lib/error-utils.js';
 
 export async function deleteResearchJob(req: Request, res: Response) {
   try {
@@ -34,7 +35,7 @@ export async function deleteResearchJob(req: Request, res: Response) {
     console.error('Error deleting research job:', error);
     return res.status(500).json({
       error: 'Failed to delete research job',
-      message: error instanceof Error ? error.message : 'Unknown error'
+      message: safeErrorMessage(error)
     });
   }
 }

@@ -87,6 +87,7 @@ const resolveAuthContext = async (req: Request): Promise<AuthContext> => {
     }
     email = fallbackEmail;
     isDevFallback = true;
+    console.warn(`[auth] Dev fallback active: auto-granting ADMIN to ${email}`);
   }
 
   const isAdmin = adminEmails.includes(email);

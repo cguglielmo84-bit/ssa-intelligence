@@ -10,6 +10,9 @@ build/
 .next/
 .turbo/
 coverage/
+backend/coverage/
+frontend/coverage/
+backend/coverage-integration/
 
 # Env
 .env
@@ -32,6 +35,7 @@ Thumbs.db
 .worktrees/
 .claude/settings.local.json
 .claude/rules/
+.serena/
 
 # Scratch/debug notes
 SCRATCH.md

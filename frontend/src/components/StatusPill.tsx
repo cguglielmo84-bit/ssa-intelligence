@@ -43,10 +43,14 @@ export const StatusPill: React.FC<StatusPillProps> = ({ status, size = 'md' }) =
 
   const sizeClass = size === 'sm' ? 'px-2 py-0.5 text-xs gap-1' : 'px-2.5 py-1 text-xs gap-1.5';
 
+  const defaultStyle = 'bg-slate-100 text-slate-600 border-slate-200';
+  const defaultIcon = <Clock size={12} />;
+  const defaultLabel = status;
+
   return (
-    <span className={`inline-flex items-center rounded-full border font-medium ${styles[status]} ${sizeClass}`}>
-      {icons[status]}
-      {labels[status]}
+    <span className={`inline-flex items-center rounded-full border font-medium ${styles[status] || defaultStyle} ${sizeClass}`}>
+      {icons[status] || defaultIcon}
+      {labels[status] || defaultLabel}
     </span>
   );
 };

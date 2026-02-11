@@ -5,6 +5,68 @@ All notable changes to this repository will be documented in this file.
 The format is based on Keep a Changelog and this project adheres to Semantic Versioning.
 
 ## [Unreleased]
+
+## [1.0.0] - 2026-02-10
+- Fix: reorder GENERIC report blueprint sections to match standard INDUSTRIALS ordering — Appendix and Sources now appears last instead of 4th from last.
+- Test: add integration tests for 8 API route handlers (~59 tests) using supertest against a real PostgreSQL test database; extract Express app from server startup for testability; add separate CI job with PostgreSQL service container.
+- Test: add Vitest testing framework to backend and frontend, migrate 12 existing test files, add CI workflow for automated test runs on PRs.
+- Fix: show "Analysis Cancelled" state on ResearchDetail instead of stuck "Researching..." spinner when a job is cancelled.
+- Feat: always show company resolve confirmation modal before starting research — exact matches get a green checkmark "Confirm company" prompt; multi-suggestion and corrected results keep existing disambiguation UI.
+- Docs: add project context, architecture, and coding standards to CLAUDE.md and AGENTS.md.
+- Fix: (P2-20) expose `loading` state from `useResearchManager` so Home page shows a spinner during initial fetch instead of flashing "No research yet".
+- Fix: add Escape key handler to UserEditModal and NewsSetup edit modals for full keyboard accessibility.
+- Chore: remove unused `ArrowRight` and `MapPin` imports from Home.tsx.
+- Fix: (P3-3) lift logo token config fetch from Home to App level to avoid redundant API call on every mount.
+- Fix: (P3-4) add backdrop click-to-close on Edit Company and Edit Person modals in NewsSetup.
+- Fix: (P3-5) add backdrop click-to-close on UserEditModal.
+- Fix: (P3-6) replace all `console.error` calls with structured `logger` utility across 9 frontend files.
+- Fix: (P3-7) add ARIA checkbox roles, `aria-checked`, and `aria-label` to custom checkboxes in NewsSetup for screen reader accessibility.
+- Fix: (P3-8) add keyboard accessibility (tabIndex, Space/Enter handler) to topic toggle rows in NewsSetup.
+- Fix: (P3-10) add runtime type guard to AdminMetrics Tooltip formatter to handle non-numeric values.
+- Fix: (P2-6) add content validation guards for 6 additional stages in `ensureStageHasContent` (financial_snapshot, company_overview, peer_benchmarking, recent_news, conversation_starters, key_execs_and_board).
+- Fix: (P2-18) replace all 21 `window.confirm`/`window.alert` calls with `ConfirmDialog` and `Toast` components across 6 pages.
+- Fix: (P2-19) add pagination to news articles — `useNewsArticles` hook now supports page/pageSize with limit/offset query params; Previous/Next controls in News Dashboard.
+- Fix: (P2-23) fix browser back showing stale data — `ResearchDetail` now calls `refreshJobDetail` on mount to fetch fresh data.
+- Fix: (P2-27) fix news refresh TOCTOU race — use PG advisory lock (`pg_try_advisory_xact_lock`) for atomic check-and-set in refresh POST handler.
+- Fix: add missing `key_execs_and_board` to `SECTION_DEPENDENCIES` in NewResearch.
+- Fix: remove redundant `status !== 'completed'` check in narrowed branch in ResearchDetail.
+- Fix: (P1-4) add 9 stage output columns to ResearchJob for PE/FS/Insurance report types so outputs are saved on the parent job and available as context for downstream stages.
+- Fix: (P2-25) graceful shutdown — SIGTERM/SIGINT now wait for in-progress jobs to finish (up to 60s), close HTTP server, and disconnect DB before exiting.
+- Fix: (P0) XSS escape all interpolated fields in news email HTML template.
+- Fix: (P0) cancel button now soft-cancels jobs instead of hard-deleting, preserving audit trail.
+- Fix: (P0) cancel no longer removes jobs from UI state immediately.
+- Fix: add authMiddleware to all news API routes (previously unauthenticated).
+- Fix: wire prompt resolver into orchestrator so published DB overrides take effect.
+- Fix: cost tracking failures no longer crash research stages.
+- Fix: eliminate double cost calculation in orchestrator.
+- Fix: add DATABASE_URL startup guard.
+- Fix: add `credentials: 'include'` to all frontend fetch calls for cross-origin auth.
+- Fix: add AbortController cleanup for polling loops in researchManager and AdminPrompts.
+- Fix: add onCancel prop to fallback route.
+- Fix: duplicate detection now includes 'completed_with_errors' status.
+- Fix: add onDelete SetNull to NewsArticle company/person/tag FKs.
+- Fix: wrap Playwright browser in try/finally with 30s timeouts to prevent leaks.
+- Fix: prompt injection boundary framing around user-supplied prompt context.
+- Fix: stricter rate limit (5/15min) for anonymous feedback endpoint.
+- Fix: support comma-separated CORS_ORIGIN for multi-origin deployments.
+- Fix: sanitize PDF export filenames (strip special characters).
+- Fix: auto-expand missing section dependencies instead of rejecting.
+- Fix: add secondary stale check for running sub-jobs.
+- Fix: remove redundant per-stage overallConfidence overwrite.
+- Fix: generic single-element array unwrapping before schema validation.
+- Fix: cap KPI metrics at 50 to prevent unbounded output.
+- Fix: negative pricing rate validation.
+- Fix: NaN pagination guards with fallback defaults.
+- Fix: Unicode company name support (regex \\p{L}\\p{N}).
+- Fix: escape parentheses in markdown export URLs.
+- Fix: remove redundant setCurrentPath in navigate function.
+- UI: add ErrorBoundary component wrapping main content.
+- UI: add default style/icon/label for unknown status values in StatusPill.
+- UI: pass jobId prop to ResearchDetail instead of hash parsing.
+- UI: wrap fetchMetrics in useCallback with proper dependencies.
+- Refactor: extract shared SECTION_NUMBER_MAP constant and safeErrorMessage/isPrismaNotFound utilities.
+- Refactor: standardize error handling across all 12 API route handlers.
+- Docs: add 5-domain QA audit findings and remediation summary.
 - Refactor: remove string character limits from validation schemas (analyst quotes, conversation starters, distribution analysis).
 - Feat: add `key_execs_and_board` core section with Board of Directors, C-Suite, and business unit leaders.
 - Refactor: slim down `company_overview.key_leadership` to avoid duplication with new key_execs_and_board section.

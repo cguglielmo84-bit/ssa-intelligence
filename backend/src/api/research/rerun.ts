@@ -15,6 +15,7 @@ import {
 } from '../../services/orchestrator.js';
 import { computeTerminalProgress } from '../../services/orchestrator-utils.js';
 import { computeRerunStages } from '../../services/rerun-utils.js';
+import { safeErrorMessage } from '../../lib/error-utils.js';
 
 interface RerunRequestBody {
   sections?: string[];
@@ -156,7 +157,7 @@ export async function rerunResearchSections(req: Request, res: Response) {
     console.error('Error rerunning research sections:', error);
     return res.status(500).json({
       error: 'Failed to rerun research sections',
-      message: error instanceof Error ? error.message : 'Unknown error'
+      message: safeErrorMessage(error)
     });
   }
 }

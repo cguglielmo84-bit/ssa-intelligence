@@ -3,6 +3,7 @@ import { Loader2, Sparkles, CheckCircle2, Circle, ArrowRight, BrainCircuit } fro
 import { BlueprintInput, BlueprintSection, ReportBlueprint, ReportType, SectionId, SECTIONS_CONFIG, VisibilityScope } from '../types';
 import { enforceLockedSections, isSectionLocked } from '../utils/sections';
 import { resolveCompanyApi, CompanyResolveResponse } from '../services/researchManager';
+import { logger } from '../utils/logger';
 import { CompanyResolveModal } from '../components/CompanyResolveModal';
 
 // Generate a simple UUID for draft tracking
@@ -112,6 +113,7 @@ const SECTION_DEPENDENCIES: Record<SectionId, SectionId[]> = {
   segment_analysis: [],
   trends: [],
   peer_benchmarking: ['financial_snapshot'],
+  key_execs_and_board: [],
   sku_opportunities: [],
   recent_news: [],
   conversation_starters: [],
@@ -352,7 +354,7 @@ export const NewResearch: React.FC<NewResearchProps> = ({
         reportType: reportType ?? undefined
       }, draftId);
 
-      if (result.status === 'exact' || result.status === 'unknown') {
+      if (result.status === 'unknown' || !result.suggestions?.length) {
         // Proceed normally - no modal needed
         return true;
       }
@@ -526,7 +528,7 @@ export const NewResearch: React.FC<NewResearchProps> = ({
       setStep('processing');
       
       // Start the process, passing the company name explicitly to avoid stale state issues
-      runJob(id, normalized.company).catch(console.error);
+      runJob(id, normalized.company).catch((err) => logger.error('runJob failed', err));
       onNavigate(`/research/${id}`);
     } catch (err: any) {
       if (err?.duplicate) {
@@ -907,7 +909,7 @@ export const NewResearch: React.FC<NewResearchProps> = ({
             isOpen={showResolveModal}
             input={formData.company}
             suggestions={resolveResult.suggestions}
-            status={resolveResult.status as 'corrected' | 'ambiguous'}
+            status={resolveResult.status as 'exact' | 'corrected' | 'ambiguous'}
             onConfirm={handleResolveConfirm}
             onCancel={handleResolveCancel}
           />

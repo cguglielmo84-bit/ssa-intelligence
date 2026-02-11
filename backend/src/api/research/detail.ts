@@ -8,9 +8,11 @@ import { prisma } from '../../lib/prisma.js';
 import { createSourceCatalog } from '../../services/source-resolver.js';
 import type { FoundationOutput } from '../../types/prompts.js';
 import { buildVisibilityWhere } from '../../middleware/auth.js';
+import { SECTION_NUMBER_MAP } from '../../lib/constants.js';
 import { getReportBlueprint } from '../../services/report-blueprints.js';
 import { buildCompletedStages } from '../../services/stage-tracking-utils.js';
 import { deriveJobStatus } from './status-utils.js';
+import { safeErrorMessage } from '../../lib/error-utils.js';
 
 // Map database fields to section keys
 const SECTION_FIELD_MAP = {
@@ -18,6 +20,15 @@ const SECTION_FIELD_MAP = {
   financial_snapshot: 'financialSnapshot',
   company_overview: 'companyOverview',
   key_execs_and_board: 'keyExecsAndBoard',
+  investment_strategy: 'investmentStrategy',
+  portfolio_snapshot: 'portfolioSnapshot',
+  deal_activity: 'dealActivity',
+  deal_team: 'dealTeam',
+  portfolio_maturity: 'portfolioMaturity',
+  leadership_and_governance: 'leadershipAndGovernance',
+  strategic_priorities: 'strategicPriorities',
+  operating_capabilities: 'operatingCapabilities',
+  distribution_analysis: 'distributionAnalysis',
   segment_analysis: 'segmentAnalysis',
   trends: 'trends',
   peer_benchmarking: 'peerBenchmarking',
@@ -117,21 +128,7 @@ export async function getResearchDetail(req: Request, res: Response) {
     const completedSections = job.subJobs
       .filter(j => j.status === 'completed' && j.stage !== 'foundation')
       .map(j => {
-        // Map stage back to section number for backwards compatibility
-        const sectionMap: Record<string, number> = {
-          exec_summary: 1,
-          financial_snapshot: 2,
-          company_overview: 3,
-          key_execs_and_board: 4,
-          segment_analysis: 5,
-          trends: 6,
-          peer_benchmarking: 7,
-          sku_opportunities: 8,
-          recent_news: 9,
-          conversation_starters: 10,
-          appendix: 11
-        };
-        return sectionMap[j.stage] || 0;
+        return SECTION_NUMBER_MAP[j.stage] || 0;
       })
       .filter(n => n > 0);
 
@@ -186,7 +183,7 @@ export async function getResearchDetail(req: Request, res: Response) {
     
     return res.status(500).json({
       error: 'Failed to fetch research details',
-      message: error instanceof Error ? error.message : 'Unknown error'
+      message: safeErrorMessage(error)
     });
   }
 }

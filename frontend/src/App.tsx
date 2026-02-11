@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { ErrorBoundary } from './components/ErrorBoundary';
 import { Layout } from './components/Layout';
 import { Home } from './pages/Home';
 import { NewResearch } from './pages/NewResearch';
@@ -15,9 +16,28 @@ import { useActivityTracker } from './services/activityTracker';
 export default function App() {
   const [currentPath, setCurrentPath] = useState(window.location.hash.slice(1) || '/');
   const [navResetKey, setNavResetKey] = useState(0);
-  const { jobs, createJob, runJob, rerunJob, cancelJob, deleteJob } = useResearchManager();
+  const { jobs, loading: jobsLoading, createJob, runJob, rerunJob, cancelJob, deleteJob, refreshJobDetail } = useResearchManager();
   const userContext = useUserContext();
   const reportBlueprints = useReportBlueprints();
+  const [logoToken, setLogoToken] = useState<string | null>(null);
+
+  // Fetch logo token once at app level (not on every Home mount)
+  useEffect(() => {
+    const apiBase = ((import.meta as any).env?.VITE_API_BASE_URL || '/api').replace(/\/$/, '');
+    const fallback = (import.meta as any).env?.VITE_LOGO_DEV_TOKEN as string | undefined;
+    if (fallback) {
+      setLogoToken(fallback);
+    }
+    fetch(`${apiBase}/config`, { credentials: 'include' })
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        const token = data?.logoToken;
+        if (typeof token === 'string' && token.trim()) {
+          setLogoToken(token.trim());
+        }
+      })
+      .catch(() => {});
+  }, []);
 
   // Activity tracking (page views, unload events)
   useActivityTracker();
@@ -34,11 +54,11 @@ export default function App() {
   }, []);
 
   const navigate = (path: string) => {
-    setCurrentPath(path);
     if (path === '/new') {
       setNavResetKey((k) => k + 1);
     }
     window.location.hash = path;
+    // hashchange listener will call setCurrentPath
   };
 
   const renderContent = () => {
@@ -46,10 +66,12 @@ export default function App() {
       return (
         <Home
           jobs={jobs}
+          loading={jobsLoading}
           reportBlueprints={reportBlueprints.blueprints}
           onNavigate={navigate}
           onCancel={cancelJob}
           onDelete={deleteJob}
+          logoToken={logoToken}
         />
       );
     }
@@ -89,18 +111,22 @@ export default function App() {
       return (
         <ResearchDetail
           jobs={jobs}
+          jobId={currentPath.split('/research/')[1]}
           reportBlueprints={reportBlueprints.blueprints}
           onNavigate={navigate}
           onRerun={rerunJob}
+          onRefreshDetail={refreshJobDetail}
         />
       );
     }
-    return <Home jobs={jobs} reportBlueprints={reportBlueprints.blueprints} onNavigate={navigate} onDelete={deleteJob} />;
+    return <Home jobs={jobs} loading={jobsLoading} reportBlueprints={reportBlueprints.blueprints} onNavigate={navigate} onCancel={cancelJob} onDelete={deleteJob} logoToken={logoToken} />;
   };
 
   return (
     <Layout onNavigate={navigate} activePath={currentPath} isAdmin={userContext.user?.isAdmin}>
-      {renderContent()}
+      <ErrorBoundary key={currentPath}>
+        {renderContent()}
+      </ErrorBoundary>
     </Layout>
   );
 }

@@ -5,7 +5,7 @@ type CompanyResolveModalProps = {
   isOpen: boolean;
   input: string;
   suggestions: CompanySuggestion[];
-  status: 'corrected' | 'ambiguous';
+  status: 'exact' | 'corrected' | 'ambiguous';
   onConfirm: (selectedName: string) => void;
   onCancel: () => void;
 };
@@ -41,9 +41,17 @@ export const CompanyResolveModal: React.FC<CompanyResolveModalProps> = ({
 
   if (!isOpen) return null;
 
-  const title = status === 'corrected' ? 'Did you mean?' : 'Multiple matches found';
-  const description =
-    status === 'corrected'
+  const isSingleSuggestion = suggestions.length === 1;
+
+  const title = isSingleSuggestion
+    ? 'Confirm company'
+    : status === 'corrected'
+      ? 'Did you mean?'
+      : 'Multiple matches found';
+
+  const description = isSingleSuggestion
+    ? `You're about to research **${suggestions[0].canonicalName}**.`
+    : status === 'corrected'
       ? 'We detected a possible typo or variation. Please confirm the company you meant.'
       : 'Your search matches multiple companies. Please select the correct one.';
 
@@ -59,20 +67,36 @@ export const CompanyResolveModal: React.FC<CompanyResolveModalProps> = ({
       >
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-amber-100 rounded-full flex items-center justify-center">
-              <svg
-                className="w-5 h-5 text-amber-600"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
-                />
-              </svg>
+            <div className={`w-10 h-10 rounded-full flex items-center justify-center ${isSingleSuggestion ? 'bg-emerald-100' : 'bg-amber-100'}`}>
+              {isSingleSuggestion ? (
+                <svg
+                  className="w-5 h-5 text-emerald-600"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+                  />
+                </svg>
+              ) : (
+                <svg
+                  className="w-5 h-5 text-amber-600"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+                  />
+                </svg>
+              )}
             </div>
             <h2 className="text-lg font-semibold text-slate-800">{title}</h2>
           </div>
@@ -92,11 +116,17 @@ export const CompanyResolveModal: React.FC<CompanyResolveModalProps> = ({
           </button>
         </div>
 
-        <div className="mb-4 p-3 bg-amber-50 border border-amber-200 rounded-lg text-sm text-amber-800">
+        <div className={`mb-4 p-3 rounded-lg text-sm ${isSingleSuggestion ? 'bg-emerald-50 border border-emerald-200 text-emerald-800' : 'bg-amber-50 border border-amber-200 text-amber-800'}`}>
           <p className="mb-1">
             <span className="font-medium">You entered:</span> "{input}"
           </p>
-          <p className="text-amber-700">{description}</p>
+          {isSingleSuggestion ? (
+            <p className={isSingleSuggestion ? 'text-emerald-700' : 'text-amber-700'}>
+              You're about to research <span className="font-semibold">{suggestions[0].canonicalName}</span>.
+            </p>
+          ) : (
+            <p className="text-amber-700">{description}</p>
+          )}
         </div>
 
         <div className="space-y-2 mb-4">
@@ -130,29 +160,31 @@ export const CompanyResolveModal: React.FC<CompanyResolveModalProps> = ({
             </label>
           ))}
 
-          {/* "Use as entered" option */}
-          <label
-            className={`flex items-start gap-3 p-3 border rounded-lg cursor-pointer transition-all ${
-              selectedValue === input
-                ? 'border-brand-500 bg-brand-50'
-                : 'border-slate-200 hover:border-brand-300 hover:bg-slate-50'
-            }`}
-          >
-            <input
-              type="radio"
-              name="company-suggestion"
-              value={input}
-              checked={selectedValue === input}
-              onChange={(e) => setSelectedValue(e.target.value)}
-              className="mt-1 text-brand-600 focus:ring-brand-500"
-            />
-            <div className="flex-1">
-              <div className="font-medium text-slate-900">Use as entered</div>
-              <div className="text-sm text-slate-500 mt-0.5">
-                Keep "{input}" without changes
+          {/* "Use as entered" option — hidden for single-suggestion confirmation */}
+          {!isSingleSuggestion && (
+            <label
+              className={`flex items-start gap-3 p-3 border rounded-lg cursor-pointer transition-all ${
+                selectedValue === input
+                  ? 'border-brand-500 bg-brand-50'
+                  : 'border-slate-200 hover:border-brand-300 hover:bg-slate-50'
+              }`}
+            >
+              <input
+                type="radio"
+                name="company-suggestion"
+                value={input}
+                checked={selectedValue === input}
+                onChange={(e) => setSelectedValue(e.target.value)}
+                className="mt-1 text-brand-600 focus:ring-brand-500"
+              />
+              <div className="flex-1">
+                <div className="font-medium text-slate-900">Use as entered</div>
+                <div className="text-sm text-slate-500 mt-0.5">
+                  Keep "{input}" without changes
+                </div>
               </div>
-            </div>
-          </label>
+            </label>
+          )}
         </div>
 
         <div className="flex items-center justify-end gap-2 pt-4 border-t border-slate-200">
@@ -166,7 +198,7 @@ export const CompanyResolveModal: React.FC<CompanyResolveModalProps> = ({
             onClick={handleConfirm}
             className="px-4 py-2 text-sm bg-brand-600 text-white font-semibold rounded-lg hover:bg-brand-700"
           >
-            Confirm
+            {isSingleSuggestion ? 'Continue' : 'Confirm'}
           </button>
         </div>
       </div>

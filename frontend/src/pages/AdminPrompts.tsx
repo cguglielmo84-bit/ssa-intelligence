@@ -1,5 +1,7 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { FileText, Edit2, ChevronDown, ChevronRight, X, Save, Play, History, RotateCcw, Check, AlertCircle, Clock, Loader2, Info, Maximize2, Minimize2 } from 'lucide-react';
+import { ConfirmDialog } from '../components/ConfirmDialog';
+import { logger } from '../utils/logger';
 
 interface AdminPromptsProps {
   isAdmin?: boolean;
@@ -102,6 +104,13 @@ const INSURANCE_SPECIFIC_SECTIONS = new Set([
 ]);
 
 export const AdminPrompts: React.FC<AdminPromptsProps> = ({ isAdmin }) => {
+  const [confirmState, setConfirmState] = useState<{
+    open: boolean;
+    title: string;
+    message: string;
+    onConfirm: () => void;
+    variant?: 'danger' | 'default';
+  } | null>(null);
   const [sections, setSections] = useState<SectionGroup[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -127,6 +136,14 @@ export const AdminPrompts: React.FC<AdminPromptsProps> = ({ isAdmin }) => {
   const [testGeography, setTestGeography] = useState('');
   const [testRun, setTestRun] = useState<TestRun | null>(null);
   const [runningTest, setRunningTest] = useState(false);
+  const pollTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Cleanup poll timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (pollTimeoutRef.current) clearTimeout(pollTimeoutRef.current);
+    };
+  }, []);
 
   useEffect(() => {
     fetchPrompts();
@@ -208,7 +225,7 @@ export const AdminPrompts: React.FC<AdminPromptsProps> = ({ isAdmin }) => {
       const data = await res.json();
       setVersions(data.versions || []);
     } catch (err) {
-      console.error('Error fetching versions:', err);
+      logger.error('Error fetching versions:', err);
     } finally {
       setLoadingVersions(false);
     }
@@ -286,62 +303,73 @@ export const AdminPrompts: React.FC<AdminPromptsProps> = ({ isAdmin }) => {
     }
   };
 
-  const handleRevert = async (version: number) => {
+  const handleRevert = (version: number) => {
     if (!editingPrompt?.dbOverride) return;
+    const overrideId = editingPrompt.dbOverride.id;
 
-    if (!confirm(`Revert to version ${version}? This will create a new draft.`)) {
-      return;
-    }
+    setConfirmState({
+      open: true,
+      title: 'Revert Prompt',
+      message: `Revert to version ${version}? This will create a new draft.`,
+      onConfirm: async () => {
+        setConfirmState(null);
+        setModalError(null);
 
-    setModalError(null);
+        try {
+          const res = await fetch(
+            `${apiBase}/admin/prompts/${overrideId}/revert/${version}`,
+            {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' }
+            }
+          );
 
-    try {
-      const res = await fetch(
-        `${apiBase}/admin/prompts/${editingPrompt.dbOverride.id}/revert/${version}`,
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' }
+          if (!res.ok) {
+            const data = await res.json().catch(() => ({}));
+            throw new Error(data.error || 'Failed to revert prompt');
+          }
+
+          fetchPrompts();
+          closeModal();
+        } catch (err) {
+          setModalError(err instanceof Error ? err.message : 'Unknown error');
         }
-      );
-
-      if (!res.ok) {
-        const data = await res.json().catch(() => ({}));
-        throw new Error(data.error || 'Failed to revert prompt');
-      }
-
-      fetchPrompts();
-      closeModal();
-    } catch (err) {
-      setModalError(err instanceof Error ? err.message : 'Unknown error');
-    }
+      },
+    });
   };
 
-  const handleDelete = async () => {
+  const handleDelete = () => {
     if (!editingPrompt?.dbOverride) return;
+    const overrideId = editingPrompt.dbOverride.id;
 
-    if (!confirm('Delete this override? This will revert to using the code default.')) {
-      return;
-    }
+    setConfirmState({
+      open: true,
+      title: 'Delete Override',
+      message: 'Delete this override? This will revert to using the code default.',
+      variant: 'danger',
+      onConfirm: async () => {
+        setConfirmState(null);
+        try {
+          const res = await fetch(
+            `${apiBase}/admin/prompts/${overrideId}`,
+            {
+              method: 'DELETE',
+              headers: { 'Content-Type': 'application/json' }
+            }
+          );
 
-    try {
-      const res = await fetch(
-        `${apiBase}/admin/prompts/${editingPrompt.dbOverride.id}`,
-        {
-          method: 'DELETE',
-          headers: { 'Content-Type': 'application/json' }
+          if (!res.ok && res.status !== 204) {
+            const data = await res.json().catch(() => ({}));
+            throw new Error(data.error || 'Failed to delete prompt');
+          }
+
+          fetchPrompts();
+          closeModal();
+        } catch (err) {
+          setModalError(err instanceof Error ? err.message : 'Unknown error');
         }
-      );
-
-      if (!res.ok && res.status !== 204) {
-        const data = await res.json().catch(() => ({}));
-        throw new Error(data.error || 'Failed to delete prompt');
-      }
-
-      fetchPrompts();
-      closeModal();
-    } catch (err) {
-      setModalError(err instanceof Error ? err.message : 'Unknown error');
-    }
+      },
+    });
   };
 
   const handleRunTest = async () => {
@@ -380,6 +408,7 @@ export const AdminPrompts: React.FC<AdminPromptsProps> = ({ isAdmin }) => {
     const poll = async () => {
       try {
         const res = await fetch(`${apiBase}/admin/prompts/test/${testRunId}`, {
+          credentials: 'include',
           headers: { 'Content-Type': 'application/json' }
         });
 
@@ -389,12 +418,12 @@ export const AdminPrompts: React.FC<AdminPromptsProps> = ({ isAdmin }) => {
         setTestRun(data.testRun);
 
         if (data.testRun.status === 'running') {
-          setTimeout(poll, 2000);
+          pollTimeoutRef.current = setTimeout(poll, 2000);
         } else {
           setRunningTest(false);
         }
       } catch (err) {
-        console.error('Error polling test run:', err);
+        logger.error('Error polling test run:', err);
         setRunningTest(false);
       }
     };
@@ -1083,6 +1112,17 @@ export const AdminPrompts: React.FC<AdminPromptsProps> = ({ isAdmin }) => {
             )}
           </div>
         </div>
+      )}
+
+      {confirmState && (
+        <ConfirmDialog
+          open={confirmState.open}
+          title={confirmState.title}
+          message={confirmState.message}
+          variant={confirmState.variant}
+          onConfirm={confirmState.onConfirm}
+          onCancel={() => setConfirmState(null)}
+        />
       )}
     </div>
   );

@@ -6,6 +6,7 @@
 import type { RequestHandler } from 'express';
 import { prisma } from '../../lib/prisma.js';
 import { getMetricsService, MetricsFilters } from '../../services/metrics-service.js';
+import { safeErrorMessage } from '../../lib/error-utils.js';
 
 export const getMetrics: RequestHandler = async (req, res) => {
   try {
@@ -62,7 +63,7 @@ export const getMetrics: RequestHandler = async (req, res) => {
     console.error('Error fetching metrics:', error);
     return res.status(500).json({
       error: 'Failed to fetch metrics',
-      message: error instanceof Error ? error.message : 'Unknown error',
+      message: safeErrorMessage(error),
     });
   }
 };
