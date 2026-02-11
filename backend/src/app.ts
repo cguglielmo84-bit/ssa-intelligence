@@ -271,7 +271,21 @@ const candidateFrontendPaths = [
   path.resolve(process.cwd(), '../frontend/dist'),  // Docker: cwd=/app/backend → /app/frontend/dist
   path.resolve(process.cwd(), 'frontend/dist')
 ];
-const frontendDistPath = candidateFrontendPaths.find((p) => fs.existsSync(path.join(p, 'index.html')));
+
+// Startup diagnostics for frontend path resolution
+console.log('[frontend-resolve] __dirname:', __dirname);
+console.log('[frontend-resolve] cwd:', process.cwd());
+for (const p of candidateFrontendPaths) {
+  const indexPath = path.join(p, 'index.html');
+  const dirExists = fs.existsSync(p);
+  const indexExists = fs.existsSync(indexPath);
+  console.log(`[frontend-resolve]   ${p} → dir=${dirExists}, index.html=${indexExists}`);
+}
+
+const frontendDistPath = candidateFrontendPaths.find((p) => fs.existsSync(path.join(p, 'index.html')))
+  ?? (fs.existsSync('/app/frontend/dist/index.html') ? '/app/frontend/dist' : undefined);
+
+console.log('[frontend-resolve] selected:', frontendDistPath ?? 'NONE');
 
 if (frontendDistPath) {
   app.use(express.static(frontendDistPath));
