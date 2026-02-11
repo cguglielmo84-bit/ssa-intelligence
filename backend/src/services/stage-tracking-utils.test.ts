@@ -15,7 +15,7 @@ describe('stage-tracking-utils', () => {
     ).toEqual(['investment_strategy', 'exec_summary']);
   });
 
-  it('returns completed stages in alphabetical order when no order specified', () => {
+  it('returns completed stages in insertion order when no sections specified', () => {
     expect(buildCompletedStages(subJobs)).toEqual(['exec_summary', 'investment_strategy']);
   });
 });

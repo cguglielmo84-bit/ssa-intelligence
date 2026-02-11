@@ -3,7 +3,7 @@ import { formatSectionContent } from './section-formatter.js';
 
 describe('section-formatter', () => {
   it('formats investment strategy section', () => {
-    const investment = formatSectionContent('investment_strategy' as any, {
+    const investment = formatSectionContent('investment_strategy', {
       strategy_summary: 'Strategy summary',
       focus_areas: ['Focus A'],
     });
@@ -12,7 +12,7 @@ describe('section-formatter', () => {
   });
 
   it('formats portfolio snapshot section with table', () => {
-    const portfolio = formatSectionContent('portfolio_snapshot' as any, {
+    const portfolio = formatSectionContent('portfolio_snapshot', {
       summary: 'Portfolio summary',
       portfolio_companies: [
         {

@@ -6,7 +6,7 @@ describe('report-blueprints', () => {
     const fsBlueprint = getReportBlueprint('FS');
     expect(fsBlueprint).toBeTruthy();
 
-    const sectionIds = fsBlueprint.sections.map((section) => section.id);
+    const sectionIds = fsBlueprint!.sections.map((section) => section.id);
     expect(sectionIds[0]).toBe('exec_summary');
     expect(sectionIds[1]).toBe('financial_snapshot');
   });

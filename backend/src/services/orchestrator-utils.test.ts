@@ -40,4 +40,12 @@ describe('orchestrator-utils', () => {
     expect(result.score).toBe(null);
     expect(result.label).toBe(null);
   });
+
+  it('returns failed when foundation sub-job fails', () => {
+    const jobs = [
+      { stage: 'foundation', status: 'failed' },
+      { stage: 'exec_summary', status: 'completed' },
+    ];
+    expect(computeFinalStatus('running', jobs)).toBe('failed');
+  });
 });
