@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 
 const API_BASE = ((import.meta as any).env?.VITE_API_BASE_URL || '/api').replace(/\/$/, '');
 
@@ -10,6 +10,8 @@ interface InviteAcceptProps {
 export const InviteAccept: React.FC<InviteAcceptProps> = ({ token, onAccepted }) => {
   const [status, setStatus] = useState<'loading' | 'success' | 'error'>('loading');
   const [errorMessage, setErrorMessage] = useState('');
+  const onAcceptedRef = useRef(onAccepted);
+  onAcceptedRef.current = onAccepted;
 
   useEffect(() => {
     if (!token) {
@@ -18,18 +20,22 @@ export const InviteAccept: React.FC<InviteAcceptProps> = ({ token, onAccepted })
       return;
     }
 
+    let cancelled = false;
+
     const accept = async () => {
       try {
         // Check if user is already active — skip accept if so
         const meRes = await fetch(`${API_BASE}/me`, { credentials: 'include' });
         if (meRes.ok) {
           const me = await meRes.json();
-          if (me.status === 'ACTIVE') {
+          if (!cancelled && me.status === 'ACTIVE') {
             setStatus('success');
-            setTimeout(() => onAccepted(), 1000);
+            setTimeout(() => onAcceptedRef.current(), 1000);
             return;
           }
         }
+
+        if (cancelled) return;
 
         const res = await fetch(`${API_BASE}/invites/accept`, {
           method: 'POST',
@@ -43,16 +49,19 @@ export const InviteAccept: React.FC<InviteAcceptProps> = ({ token, onAccepted })
           throw new Error(data.error || `Request failed: ${res.status}`);
         }
 
+        if (cancelled) return;
         setStatus('success');
-        setTimeout(() => onAccepted(), 2000);
+        setTimeout(() => onAcceptedRef.current(), 2000);
       } catch (err) {
+        if (cancelled) return;
         setStatus('error');
         setErrorMessage(err instanceof Error ? err.message : 'Failed to accept invite.');
       }
     };
 
     accept();
-  }, [token, onAccepted]);
+    return () => { cancelled = true; };
+  }, [token]);
 
   return (
     <div className="flex items-center justify-center min-h-[60vh]">

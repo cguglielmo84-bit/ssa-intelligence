@@ -59,25 +59,34 @@ export default function App() {
     // hashchange listener will call setCurrentPath
   };
 
+  // Render invite acceptance, loading, and pending states outside Layout
+  // so these users don't see the full navigation sidebar.
+  if (currentPath.startsWith('/invite/')) {
+    const token = currentPath.split('/invite/')[1];
+    return (
+      <ErrorBoundary key={currentPath}>
+        <InviteAccept token={token} onAccepted={() => { window.location.replace(window.location.pathname + '#/'); }} />
+      </ErrorBoundary>
+    );
+  }
+
+  if (userContext.loading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="w-8 h-8 border-2 border-brand-500 border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
+  }
+
+  if (userContext.user?.status === 'PENDING') {
+    return (
+      <ErrorBoundary key="pending">
+        <PendingActivation email={userContext.user.email} />
+      </ErrorBoundary>
+    );
+  }
+
   const renderContent = () => {
-    // Invite acceptance route — allowed even for pending users
-    if (currentPath.startsWith('/invite/')) {
-      const token = currentPath.split('/invite/')[1];
-      return <InviteAccept token={token} onAccepted={() => { window.location.replace(window.location.pathname + '#/'); }} />;
-    }
-
-    // Gate pending/loading users — show activation or loading state instead of app content
-    if (userContext.loading) {
-      return (
-        <div className="flex items-center justify-center min-h-[60vh]">
-          <div className="w-8 h-8 border-2 border-brand-500 border-t-transparent rounded-full animate-spin" />
-        </div>
-      );
-    }
-    if (userContext.user?.status === 'PENDING') {
-      return <PendingActivation email={userContext.user.email} />;
-    }
-
     if (currentPath === '/') {
       return (
         <Home

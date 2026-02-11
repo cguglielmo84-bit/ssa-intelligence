@@ -230,7 +230,7 @@ app.delete('/api/admin/groups/:groupId/members/:userId', authMiddleware, require
 // ADMIN: INVITE MANAGEMENT (super-admin only)
 // ============================================================================
 
-app.get('/api/admin/invites', authMiddleware, requireActiveUser, requireSuperAdmin, listInvites);
+app.get('/api/admin/invites', ...applyLimiter(getLimiter), authMiddleware, requireActiveUser, requireSuperAdmin, listInvites);
 app.post('/api/admin/invites', ...applyLimiter(writeLimiter), authMiddleware, requireActiveUser, requireSuperAdmin, createInvite);
 app.delete('/api/admin/invites/:id', ...applyLimiter(writeLimiter), authMiddleware, requireActiveUser, requireSuperAdmin, revokeInvite);
 

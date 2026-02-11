@@ -189,7 +189,7 @@ export const requireSuperAdmin = (req: Request, res: Response, next: NextFunctio
 export const buildVisibilityWhere = (auth: AuthContext) => {
   if (auth.isAdmin) return {};
 
-  const clauses: any[] = [
+  const clauses: Record<string, unknown>[] = [
     { userId: auth.userId }
   ];
 

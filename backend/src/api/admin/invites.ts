@@ -22,37 +22,36 @@ export async function createInvite(req: Request, res: Response) {
 
   const allowedDomains = parseAllowedDomains();
   if (!isAllowedDomain(email, allowedDomains)) {
-    const domainList = allowedDomains.join(', ');
-    return res.status(400).json({ error: `Email domain not allowed. Allowed domains: ${domainList}` });
-  }
-
-  // Check if user is already active
-  const existingUser = await prisma.user.findUnique({
-    where: { email },
-    select: { id: true, status: true }
-  });
-
-  if (existingUser?.status === 'ACTIVE') {
-    return res.status(400).json({ error: 'User is already active' });
-  }
-
-  // Check for an unexpired, unused invite for the same email
-  const existingInvite = await prisma.invite.findFirst({
-    where: {
-      email,
-      used: false,
-      expiresAt: { gt: new Date() }
-    }
-  });
-
-  if (existingInvite) {
-    return res.status(409).json({
-      error: 'An active invite already exists for this email',
-      inviteId: existingInvite.id
-    });
+    return res.status(400).json({ error: 'Email domain not allowed' });
   }
 
   try {
+    // Check if user is already active
+    const existingUser = await prisma.user.findUnique({
+      where: { email },
+      select: { id: true, status: true }
+    });
+
+    if (existingUser?.status === 'ACTIVE') {
+      return res.status(400).json({ error: 'User is already active' });
+    }
+
+    // Check for an unexpired, unused invite for the same email
+    const existingInvite = await prisma.invite.findFirst({
+      where: {
+        email,
+        used: false,
+        expiresAt: { gt: new Date() }
+      }
+    });
+
+    if (existingInvite) {
+      return res.status(409).json({
+        error: 'An active invite already exists for this email',
+        inviteId: existingInvite.id
+      });
+    }
+
     const expiresAt = new Date();
     expiresAt.setDate(expiresAt.getDate() + 7); // 7-day expiry
 
@@ -250,7 +249,11 @@ export async function revokeInvite(req: Request, res: Response) {
       return res.status(400).json({ error: 'Cannot revoke an already used invite' });
     }
 
-    await prisma.invite.delete({ where: { id } });
+    // Use deleteMany with condition to prevent deleting a concurrently-accepted invite
+    const deleted = await prisma.invite.deleteMany({ where: { id, used: false } });
+    if (deleted.count === 0) {
+      return res.status(400).json({ error: 'Cannot revoke an already used invite' });
+    }
 
     return res.json({ success: true, id });
   } catch (error) {

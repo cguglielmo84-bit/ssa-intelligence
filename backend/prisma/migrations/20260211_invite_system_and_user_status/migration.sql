@@ -4,8 +4,8 @@ CREATE TYPE "UserStatus" AS ENUM ('ACTIVE', 'PENDING');
 -- AlterTable: Add status field to User
 ALTER TABLE "User" ADD COLUMN "status" "UserStatus" NOT NULL DEFAULT 'PENDING';
 
--- Grandfather existing admin users as ACTIVE
-UPDATE "User" SET "status" = 'ACTIVE' WHERE "role" = 'ADMIN';
+-- Grandfather ALL existing users as ACTIVE (they already had access pre-invite system)
+UPDATE "User" SET "status" = 'ACTIVE';
 
 -- CreateTable: Invite
 CREATE TABLE "Invite" (
@@ -31,7 +31,9 @@ CREATE INDEX "Invite_token_idx" ON "Invite"("token");
 ALTER TABLE "Invite" ADD CONSTRAINT "Invite_usedById_fkey" FOREIGN KEY ("usedById") REFERENCES "User"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 ALTER TABLE "Invite" ADD CONSTRAINT "Invite_createdById_fkey" FOREIGN KEY ("createdById") REFERENCES "User"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
--- Migrate GENERAL visibility jobs to PRIVATE before removing the enum value
+-- Migrate GENERAL visibility jobs to PRIVATE before removing the enum value.
+-- NOTE: This is a lossy, irreversible data migration. GENERAL jobs become PRIVATE.
+-- To rollback, re-create the GENERAL enum value and manually re-tag affected jobs.
 UPDATE "ResearchJob" SET "visibilityScope" = 'PRIVATE' WHERE "visibilityScope" = 'GENERAL';
 
 -- Replace VisibilityScope enum (PostgreSQL cannot remove enum values directly)
