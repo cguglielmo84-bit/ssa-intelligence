@@ -26,17 +26,15 @@ router.get('/', async (req: Request, res: Response) => {
     // Build where clause
     const where: any = {};
 
-    // Filter by user
-    if (userId) {
-      where.articleUsers = {
-        some: { userId: userId as string },
-      };
-    }
-
-    // Auto-filter for non-admin authenticated users
-    if (req.auth && !req.auth.isAdmin && !userId) {
+    // Non-admin: always scope to own user, ignore userId param
+    if (req.auth && !req.auth.isAdmin) {
       where.articleUsers = {
         some: { userId: req.auth.userId },
+      };
+    } else if (userId) {
+      // Admin: allow filtering by any userId
+      where.articleUsers = {
+        some: { userId: userId as string },
       };
     }
 

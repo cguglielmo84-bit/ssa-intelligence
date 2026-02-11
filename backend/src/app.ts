@@ -239,8 +239,7 @@ app.use('/api/news/tags', authMiddleware, requireAdmin, newsTagsRouter);
 app.use('/api/news/companies', authMiddleware, requireAdmin, newsCompaniesRouter);
 app.use('/api/news/people', authMiddleware, requireAdmin, newsPeopleRouter);
 app.use('/api/news/users', authMiddleware, newsUserCallDietRouter);
-app.use('/api/news/pins', authMiddleware, newsPinsRouter);
-app.use('/api/news', authMiddleware, newsPinsRouter); // Mount pin routes under /api/news/articles/:id/pin
+app.use('/api/news', authMiddleware, newsPinsRouter);
 app.use('/api/news/activity', authMiddleware, newsActivityRouter);
 app.use('/api/admin/news/activity', authMiddleware, requireAdmin, adminNewsActivityRouter);
 

@@ -57,7 +57,11 @@ interface NewsDashboardProps {
 
 export const NewsDashboard: React.FC<NewsDashboardProps> = ({ onNavigate, isAdmin, currentUserId }) => {
   // Filters state - default to showing new (not archived) articles
-  const [filters, setFilters] = useState<ArticleFilters>({ isArchived: false });
+  // Non-admin users are always scoped to their own userId
+  const [filters, setFilters] = useState<ArticleFilters>({
+    isArchived: false,
+    ...(isAdmin ? {} : { userId: currentUserId }),
+  });
 
   // Deep dive search state
   const [searchCompany, setSearchCompany] = useState('');
@@ -102,13 +106,6 @@ export const NewsDashboard: React.FC<NewsDashboardProps> = ({ onNavigate, isAdmi
 
   // Progress popup state
   const [showProgressPopup, setShowProgressPopup] = useState(false);
-
-  // For member view, default filter to their userId
-  useEffect(() => {
-    if (!isAdmin) {
-      setFilters(prev => ({ ...prev, userId: currentUserId }));
-    }
-  }, [isAdmin, currentUserId]);
 
   // Close export menu on outside click
   useEffect(() => {

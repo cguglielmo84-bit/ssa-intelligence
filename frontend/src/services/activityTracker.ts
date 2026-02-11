@@ -53,7 +53,12 @@ const flushEvents = () => {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body,
+    credentials: 'include',
     keepalive: true,
+  }).then((res) => {
+    if (res.status === 401) {
+      console.warn('[ActivityTracker] 401 Unauthorized — session may have expired');
+    }
   }).catch(() => {
     // Fire-and-forget; don't block the UI
   });

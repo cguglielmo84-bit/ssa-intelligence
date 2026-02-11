@@ -7,6 +7,7 @@
  */
 
 import { Router, Request, Response } from 'express';
+import { prisma } from '../../lib/prisma.js';
 import { generateNewsDigestPDF } from '../../services/pdf-export.js';
 import { generateNewsDigestMarkdown } from '../../services/markdown-export.js';
 
@@ -97,6 +98,17 @@ router.get('/pdf', async (req: Request, res: Response) => {
       return;
     }
 
+    // Non-admin: verify access to all requested articles
+    if (req.auth && !req.auth.isAdmin) {
+      const accessibleCount = await prisma.articleUser.count({
+        where: { articleId: { in: ids }, userId: req.auth.userId },
+      });
+      if (accessibleCount !== ids.length) {
+        res.status(403).json({ error: 'Access denied to one or more articles' });
+        return;
+      }
+    }
+
     const pdf = await generateNewsDigestPDF({
       userId: req.auth?.userId,
       articleIds: ids,
@@ -126,6 +138,17 @@ router.get('/markdown', async (req: Request, res: Response) => {
     if (ids.length === 0) {
       res.status(400).json({ error: 'At least one articleId is required' });
       return;
+    }
+
+    // Non-admin: verify access to all requested articles
+    if (req.auth && !req.auth.isAdmin) {
+      const accessibleCount = await prisma.articleUser.count({
+        where: { articleId: { in: ids }, userId: req.auth.userId },
+      });
+      if (accessibleCount !== ids.length) {
+        res.status(403).json({ error: 'Access denied to one or more articles' });
+        return;
+      }
     }
 
     const markdown = await generateNewsDigestMarkdown({

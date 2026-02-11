@@ -11,7 +11,7 @@ import { prisma } from '../../lib/prisma.js';
 const router = Router();
 
 // GET /api/news/pins - Get current user's pinned article IDs
-router.get('/', async (req: Request, res: Response) => {
+router.get('/pins', async (req: Request, res: Response) => {
   try {
     if (!req.auth) {
       res.status(401).json({ error: 'Unauthorized' });
