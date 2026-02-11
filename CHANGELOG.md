@@ -5,6 +5,7 @@ All notable changes to this repository will be documented in this file.
 The format is based on Keep a Changelog and this project adheres to Semantic Versioning.
 
 ## [Unreleased]
+- Fix: reorder GENERIC report blueprint sections to match standard INDUSTRIALS ordering — Appendix and Sources now appears last instead of 4th from last.
 - Test: add integration tests for 8 API route handlers (~59 tests) using supertest against a real PostgreSQL test database; extract Express app from server startup for testability; add separate CI job with PostgreSQL service container.
 - Test: add Vitest testing framework to backend and frontend, migrate 12 existing test files, add CI workflow for automated test runs on PRs.
 - Fix: show "Analysis Cancelled" state on ResearchDetail instead of stuck "Researching..." spinner when a job is cancelled.
