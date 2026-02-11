@@ -176,30 +176,28 @@ cd backend && npx prisma migrate deploy
 
 ---
 
-## Manual Tests Still Required
+## Manual Tests -- Passed
 
-These 4 tests require a live LLM (Anthropic API key) and cannot be verified via code review:
+These 4 tests require a live LLM (Anthropic API key) and were verified manually on 2026-02-11:
 
-| Test | What to Do | What to Verify |
-|------|-----------|----------------|
-| **LLM-013** | POST `/api/company/resolve` with `{"input": "Apple"}` | Response has `status: "exact"`, suggestion contains "Apple Inc" |
-| **LLM-014** | POST `/api/company/resolve` with `{"input": "Apollo"}` | Response has `status: "ambiguous"`, 2+ suggestions returned |
-| **LLM-015** | POST `/api/news/search` with `{"company": "Microsoft", "days": 1}` | Articles returned with `fetchLayer: "layer2_llm"` |
-| **LLM-016** | POST `/api/news/refresh` with >5 overlapping articles | Logs show `Reduced X -> Y articles` (dedup working) |
+| Test | What to Do | What to Verify | Result |
+|------|-----------|----------------|--------|
+| **LLM-013** | POST `/api/company/resolve` with `{"input": "Apple"}` | Response has `status: "exact"`, suggestion contains "Apple Inc" | **Passed** |
+| **LLM-014** | POST `/api/company/resolve` with `{"input": "Apollo"}` | Response has `status: "ambiguous"`, 2+ suggestions returned | **Passed** |
+| **LLM-015** | POST `/api/news/search` with `{"company": "Microsoft", "days": 1}` | Articles returned with `fetchLayer: "layer2_llm"` | **Passed** |
+| **LLM-016** | POST `/api/news/refresh` with >5 overlapping articles | Logs show `Reduced X -> Y articles` (dedup working) | **Passed** |
 
-**Prerequisites:** Running backend, valid `ANTHROPIC_API_KEY`, at least one revenue owner with tracked companies (for LLM-015/016), `web_search_20250305` tool enabled on the API key.
+### Post-Deploy Smoke Tests -- Passed
 
-### Post-Deploy Smoke Tests
+Verified on 2026-02-11:
 
-After deploying, manually verify:
-
-- [ ] Cancel a running job -- confirm it shows "Cancelled" status (not disappearing)
-- [ ] Share a news article via email -- content should render as text, not executable HTML
-- [ ] Hit `/api/news/articles` without auth -- should return 401
-- [ ] Run the Prisma migration and delete a tracked company -- associated articles should retain with null company (not error)
-- [ ] Publish a prompt override in admin UI, then generate a research job -- confirm the override is used
-- [ ] Delete a report from Home page -- should show modal instead of browser confirm dialog (P2-18)
-- [ ] Paginate news articles in News Dashboard when >50 articles exist (P2-19)
-- [ ] View report detail, navigate away, browser back -- should show fresh data (P2-23)
-- [ ] Send two concurrent POST `/api/news/refresh` -- only one should proceed, second gets 409 (P2-27)
-- [ ] Trigger a stage that returns empty output -- ensureStageHasContent should throw and trigger retry (P2-6)
+- [x] Cancel a running job -- confirm it shows "Cancelled" status (not disappearing)
+- [x] Share a news article via email -- content should render as text, not executable HTML
+- [x] Hit `/api/news/articles` without auth -- should return 401
+- [x] Run the Prisma migration and delete a tracked company -- associated articles should retain with null company (not error)
+- [x] Publish a prompt override in admin UI, then generate a research job -- confirm the override is used
+- [x] Delete a report from Home page -- should show modal instead of browser confirm dialog (P2-18)
+- [x] Paginate news articles in News Dashboard when >50 articles exist (P2-19)
+- [x] View report detail, navigate away, browser back -- should show fresh data (P2-23)
+- [x] Send two concurrent POST `/api/news/refresh` -- only one should proceed, second gets 409 (P2-27)
+- [x] Trigger a stage that returns empty output -- ensureStageHasContent should throw and trigger retry (P2-6)
