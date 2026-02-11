@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach, afterAll } from 'vitest';
 import request from 'supertest';
 import app from '../app.js';
-import { truncateAll, disconnectPrisma } from '../test-utils/db-helpers.js';
+import { truncateAll, disconnectPrisma, testPrisma } from '../test-utils/db-helpers.js';
 
 beforeEach(() => truncateAll());
 afterAll(() => disconnectPrisma());
@@ -86,7 +86,10 @@ describe('POST /api/feedback', () => {
       .send({ message: 'Feedback without explicit type setting' });
 
     expect(res.status).toBe(201);
-    // The type defaults to 'other' — verify by reading back
     expect(res.body.success).toBe(true);
+
+    // Verify the default type was persisted in the DB
+    const saved = await testPrisma.feedback.findUnique({ where: { id: res.body.id } });
+    expect(saved?.type).toBe('other');
   });
 });

@@ -12,7 +12,7 @@ export default async function globalSetup() {
   // Safety guard: never truncate a non-test database
   if (!dbUrl.includes('_test')) {
     throw new Error(
-      `DATABASE_URL must point to a test database (must contain "_test"). Got: ${dbUrl}`
+      'DATABASE_URL must point to a test database (must contain "_test").'
     );
   }
 

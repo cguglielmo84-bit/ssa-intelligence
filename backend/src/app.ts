@@ -83,7 +83,7 @@ const parseEnvInt = (name: string, fallback: number) => {
   const value = raw ? parseInt(raw, 10) : NaN;
   return Number.isFinite(value) ? value : fallback;
 };
-const isProd = process.env.NODE_ENV !== 'development';
+const isProd = !['development', 'test'].includes(process.env.NODE_ENV ?? '');
 
 const getLimiter: RequestHandler | undefined = isProd
   ? rateLimit({
@@ -291,7 +291,6 @@ if (frontendDistPath) {
 app.use((req, res) => {
   res.status(404).json({
     error: 'Not found',
-    path: req.path
   });
 });
 
