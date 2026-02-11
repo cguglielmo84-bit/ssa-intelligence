@@ -6,8 +6,6 @@ SSA Intelligence is a full-stack system for generating executive research briefs
 - `backend/`: Express API, orchestration, prompts, Prisma schema
 - `frontend/`: Vite + React UI
 - `docs/`: product and system documentation (see `docs/prompting/README.md`)
-- `research-guides/`: section-level research guides (docx/js)
-- `artifacts/`: historical logs and run outputs
 
 ## Quick start (development)
 ### Backend
@@ -39,6 +37,7 @@ Start here:
 - `docs/authentication.md`
 - `docs/RESEARCH-BRIEF-GUARDRAILS.md`
 - `docs/storage-overview.md`
+- `docs/testing.md`
 - `TODO.md`
 
 ## Changelog
