@@ -29,8 +29,10 @@ const validBase = {
   reportInputs: { timeHorizon: 'Last Year' },
 };
 
+let testMember: Awaited<ReturnType<typeof createTestUser>>;
 beforeEach(async () => {
   await truncateAll();
+  testMember = await createTestUser({ email: 'member@ssaandco.com' });
   mockCreateJob.mockReset();
   mockGetQueuePosition.mockReset().mockResolvedValue(1);
 });
@@ -111,9 +113,8 @@ describe('POST /api/research/generate', () => {
   });
 
   it('returns 409 for duplicate queued job', async () => {
-    const user = await createTestUser({ email: 'member@ssaandco.com' });
     await createTestJob({
-      userId: user.id,
+      userId: testMember.id,
       companyName: 'Acme Corp',
       status: 'queued',
       reportType: 'GENERIC',
@@ -133,9 +134,8 @@ describe('POST /api/research/generate', () => {
   });
 
   it('returns 409 for duplicate running job even with force=true', async () => {
-    const user = await createTestUser({ email: 'member@ssaandco.com' });
     await createTestJob({
-      userId: user.id,
+      userId: testMember.id,
       companyName: 'Acme Corp',
       status: 'running',
       reportType: 'GENERIC',
@@ -156,9 +156,8 @@ describe('POST /api/research/generate', () => {
   });
 
   it('allows force=true for completed job (201)', async () => {
-    const user = await createTestUser({ email: 'member@ssaandco.com' });
     await createTestJob({
-      userId: user.id,
+      userId: testMember.id,
       companyName: 'Acme Corp',
       status: 'completed',
       reportType: 'GENERIC',
@@ -186,7 +185,6 @@ describe('POST /api/research/generate', () => {
   });
 
   it('creates job with defaults (201, correct shape)', async () => {
-    await createTestUser({ email: 'member@ssaandco.com' });
 
     mockCreateJob.mockResolvedValue({
       id: 'job-123',
@@ -215,7 +213,6 @@ describe('POST /api/research/generate', () => {
   });
 
   it('auto-expands section dependencies', async () => {
-    await createTestUser({ email: 'member@ssaandco.com' });
 
     mockCreateJob.mockImplementation(async (args: any) => {
       return {
