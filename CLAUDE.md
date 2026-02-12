@@ -29,6 +29,7 @@ news digests via email. Multi-tenant with group-based visibility.
 - **Prompt resolver** (`backend/src/services/prompt-resolver.ts`): loads code-default prompts with optional DB overrides (admin-published). Composes base + report-type addendums.
 - **Multi-tenancy**: users belong to groups; research jobs and news entities have `visibility` (group-scoped or all). Auth middleware injects user/group context.
 - **Cost tracking** (`backend/src/services/cost-tracking.ts`): logs token usage and cost per stage; supports configurable pricing rates.
+- **Automatic bug reports** (`backend/src/services/bug-report.ts`): when a research stage permanently fails (retries exhausted), a structured `BugReport` record is auto-created with error classification, severity, fingerprint for dedup, and sanitized context. Query recent failures via `GET /api/admin/bug-reports/agent-query` (returns patterns, occurrence counts, and suggested actions). Use this endpoint to diagnose recurring research failures before investigating code.
 
 ## Dev Environment
 
@@ -54,7 +55,7 @@ Integration tests use a separate database (`ssa_intelligence_test`). The global 
 
 | Path | Purpose |
 |------|---------|
-| `backend/src/api/` | Express route handlers (research, news, admin, company, groups, feedback) |
+| `backend/src/api/` | Express route handlers (research, news, admin, company, groups, feedback, bug-reports) |
 | `backend/src/services/` | Core business logic — orchestrator, Claude client, cost tracking, PDF/markdown export, news fetcher |
 | `backend/src/middleware/` | Auth middleware (proxy-header extraction + group resolution) |
 | `backend/src/lib/` | Shared utilities — Prisma client, constants, error helpers, retry |

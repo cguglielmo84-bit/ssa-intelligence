@@ -36,6 +36,7 @@ import { getMetrics } from './api/admin/metrics.js';
 import { listPricingRates, createPricingRate, updatePricingRate, deletePricingRate } from './api/admin/pricing.js';
 import * as promptsApi from './api/admin/prompts.js';
 import { createInvite, acceptInvite, listInvites, revokeInvite } from './api/admin/invites.js';
+import { agentQueryBugReports, listBugReports, getBugReport, updateBugReport, deleteBugReport } from './api/admin/bug-reports.js';
 import { getReportBlueprints } from './api/report-blueprints.js';
 import { resolveCompany } from './api/company/resolve.js';
 
@@ -258,6 +259,13 @@ app.delete('/api/admin/prompts/:id', ...applyLimiter(writeLimiter), authMiddlewa
 app.post('/api/admin/prompts/:id/publish', ...applyLimiter(writeLimiter), authMiddleware, requireActiveUser, requireAdmin, promptsApi.publishPrompt);
 app.post('/api/admin/prompts/:id/revert/:version', ...applyLimiter(writeLimiter), authMiddleware, requireActiveUser, requireAdmin, promptsApi.revertPrompt);
 app.post('/api/admin/prompts/test', ...applyLimiter(writeLimiter), authMiddleware, requireActiveUser, requireAdmin, promptsApi.testPrompt);
+
+// ADMIN: BUG REPORTS (admin only)
+app.get('/api/admin/bug-reports/agent-query', ...applyLimiter(getLimiter), authMiddleware, requireActiveUser, requireAdmin, agentQueryBugReports);
+app.get('/api/admin/bug-reports', ...applyLimiter(getLimiter), authMiddleware, requireActiveUser, requireAdmin, listBugReports);
+app.get('/api/admin/bug-reports/:id', ...applyLimiter(getLimiter), authMiddleware, requireActiveUser, requireAdmin, getBugReport);
+app.patch('/api/admin/bug-reports/:id', ...applyLimiter(writeLimiter), authMiddleware, requireActiveUser, requireAdmin, updateBugReport);
+app.delete('/api/admin/bug-reports/:id', ...applyLimiter(writeLimiter), authMiddleware, requireActiveUser, requireAdmin, deleteBugReport);
 
 app.get('/api/report-blueprints', ...applyLimiter(getLimiter), authMiddleware, requireActiveUser, getReportBlueprints);
 app.post('/api/company/resolve', ...applyLimiter(writeLimiter), authMiddleware, requireActiveUser, resolveCompany);
