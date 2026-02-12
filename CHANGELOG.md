@@ -18,6 +18,7 @@ The format is based on Keep a Changelog and this project adheres to Semantic Ver
 - Remove `@shadergradient/react`, `@react-three/fiber`, `three`, `three-stdlib`, `camera-controls`, and `@types/three` dependencies; add `ogl`.
 - Add Dependabot with weekly grouped version updates for backend, frontend, and GitHub Actions; high/medium-risk deps (Prisma, Playwright, Anthropic SDK, three.js ecosystem) excluded from groups for individual manual review.
 - Skip changelog CI check for Dependabot PRs.
+- Ignore major version bumps in Dependabot — only minor/patch PRs are opened automatically.
 
 ### Refactored
 - Add `vite-env.d.ts` and remove all `(import.meta as any)` casts across 12 frontend files — uses Vite's built-in `ImportMeta` types instead.
