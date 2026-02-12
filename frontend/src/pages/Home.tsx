@@ -240,13 +240,15 @@ export const Home: React.FC<HomeProps> = ({ jobs, loading = false, reportBluepri
             <p className="text-brand-100 mb-8 text-lg">
               Deploy autonomous agents to gather, analyze, and synthesize company intelligence.
             </p>
-            <button 
-              onClick={() => onNavigate('/new')}
-              className="bg-white text-brand-700 px-6 py-3 rounded-lg font-semibold shadow-lg hover:bg-brand-50 transition-all flex items-center gap-2"
-            >
-              <Search size={20} />
-              Start New Research
-            </button>
+            <div className="conic-border-wrapper rounded-lg inline-block">
+              <button
+                onClick={() => onNavigate('/new')}
+                className="conic-border-content bg-white text-brand-700 px-6 py-3 rounded-lg font-semibold shadow-lg hover:bg-brand-50 transition-all flex items-center gap-2"
+              >
+                <Search size={20} />
+                Start New Research
+              </button>
+            </div>
           </div>
         </div>
       </div>
@@ -337,7 +339,7 @@ export const Home: React.FC<HomeProps> = ({ jobs, loading = false, reportBluepri
               return (
                 <div
                   key={group.key}
-                  className="group relative bg-white border border-slate-200 rounded-xl p-5 shadow-sm hover:shadow-md transition-all cursor-pointer overflow-hidden"
+                  className="group relative bg-white border border-slate-200 rounded-xl p-5 shadow-sm hover:shadow-md transition-all cursor-pointer overflow-hidden min-h-[140px]"
                   onClick={() => setSelectedCompany(group.companyName)}
                 >
                   <div className="flex items-start justify-between mb-3">
@@ -347,9 +349,10 @@ export const Home: React.FC<HomeProps> = ({ jobs, loading = false, reportBluepri
                         {group.jobs.length} {group.jobs.length === 1 ? 'report' : 'reports'}
                       </div>
                     </div>
-                    <span className="text-xs text-slate-500">
-                      {group.lastActive ? `Updated ${new Date(group.lastActive).toLocaleDateString('en-US')}` : ''}
-                    </span>
+                    <div className="text-xs text-slate-400 text-right leading-tight">
+                      <div>Updated</div>
+                      <div className="text-slate-500 font-medium">{new Date(group.lastActive).toLocaleDateString('en-US')}</div>
+                    </div>
                   </div>
                   <div className="absolute bottom-3 right-3 flex items-center gap-2">
                     <div className="w-10 h-10 rounded-lg bg-slate-100 text-slate-500 flex items-center justify-center font-semibold overflow-hidden">

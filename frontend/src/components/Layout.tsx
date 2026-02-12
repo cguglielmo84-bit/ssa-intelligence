@@ -1,7 +1,8 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Home, FileText, PanelLeftClose, PanelLeftOpen, Newspaper, BarChart3, DollarSign, Users, Activity } from 'lucide-react';
 import { BugTrackerModal } from './BugTrackerModal';
 import { logger } from '../utils/logger';
+import { DotGrid } from './DotGrid';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -16,6 +17,24 @@ export const Layout: React.FC<LayoutProps> = ({ children, onNavigate, activePath
   const [healthStatus, setHealthStatus] = useState<'checking' | 'ok' | 'degraded' | 'down'>('checking');
   const [healthModel, setHealthModel] = useState<string>('Sonnet 4.5');
   const [feedbackOpen, setFeedbackOpen] = useState(false);
+  const navRef = useRef<HTMLElement>(null);
+
+  // Show scrollbar only while actively scrolling
+  useEffect(() => {
+    const nav = navRef.current;
+    if (!nav) return;
+    let timeout: ReturnType<typeof setTimeout>;
+    const onScroll = () => {
+      nav.classList.add('is-scrolling');
+      clearTimeout(timeout);
+      timeout = setTimeout(() => nav.classList.remove('is-scrolling'), 1000);
+    };
+    nav.addEventListener('scroll', onScroll, { passive: true });
+    return () => {
+      nav.removeEventListener('scroll', onScroll);
+      clearTimeout(timeout);
+    };
+  }, []);
 
   // Build health endpoint from API base (strip trailing /api)
   const apiBase = (import.meta as any).env?.VITE_API_BASE_URL || '/api';
@@ -126,7 +145,7 @@ export const Layout: React.FC<LayoutProps> = ({ children, onNavigate, activePath
   const pagePath = typeof window !== 'undefined' ? window.location.href : undefined;
 
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-900 flex flex-col md:flex-row">
+    <div className="h-screen overflow-hidden bg-slate-50 text-slate-900 flex flex-col md:flex-row">
       {/* Sidebar Navigation */}
       <aside className={`${isCollapsed ? 'w-20' : 'w-full md:w-80'} bg-white border-r border-slate-200 flex-shrink-0 md:h-screen sticky top-0 z-20 transition-all duration-300 ease-in-out flex flex-col`}>
         <div className={`p-6 border-b border-slate-100 flex items-center ${isCollapsed ? 'justify-center' : 'justify-between'} transition-all`}>
@@ -146,7 +165,7 @@ export const Layout: React.FC<LayoutProps> = ({ children, onNavigate, activePath
         </div>
         
         {/* Toggle Button */}
-         <div className={`flex items-center ${isCollapsed ? 'justify-center p-2' : 'justify-end px-4 py-2'}`}>
+         <div className={`flex items-center ${isCollapsed ? 'justify-center p-2' : 'justify-end px-4 py-1'}`}>
             <button 
               onClick={() => setIsCollapsed(!isCollapsed)}
               className="text-slate-400 hover:text-slate-600 p-1.5 hover:bg-slate-100 rounded-md transition-colors"
@@ -156,7 +175,7 @@ export const Layout: React.FC<LayoutProps> = ({ children, onNavigate, activePath
             </button>
          </div>
 
-        <nav className="p-4 space-y-1 flex-1">
+        <nav ref={navRef} className="p-4 space-y-1 flex-1 overflow-y-auto sidebar-nav">
           {!isCollapsed && (
             <div className="pb-2">
               <span className="px-4 text-xs font-semibold text-slate-400 uppercase tracking-wider">Research Reports</span>
@@ -266,8 +285,9 @@ export const Layout: React.FC<LayoutProps> = ({ children, onNavigate, activePath
       </aside>
 
       {/* Main Content */}
-      <main className="flex-1 min-w-0 overflow-y-auto h-screen relative scroll-smooth">
-         <header className="h-16 bg-white/80 backdrop-blur-md border-b border-slate-200 sticky top-0 z-10 flex items-center justify-between px-6">
+      <main className="flex-1 min-w-0 overflow-y-auto h-screen relative scroll-smooth bg-slate-50">
+         <DotGrid />
+         <header className="h-16 bg-white/20 backdrop-blur-md sticky top-0 z-20 flex items-center justify-between px-6">
             <h1 className="font-semibold text-slate-800">
               {activePath === '/' && 'Research Dashboard'}
               {activePath === '/new' && 'Initiate New Analysis'}

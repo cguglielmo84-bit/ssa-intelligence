@@ -17,6 +17,12 @@ The format is based on Keep a Changelog and this project adheres to Semantic Ver
 - Fix: add Invite table to test truncateAll() to prevent FK constraint failures.
 - Fix: remove stale `migrate resolve --rolled-back` hack from Dockerfile CMD.
 - Fix: add missing migration to replace RevenueOwner-based junction tables with User-based tables (fixes production 500s on all `/api/news/*` endpoints).
+- UI: fix layout overflow causing content clipping at viewport bottom.
+- UI: add animated dot grid background with periodic wave animation.
+- UI: add conic gradient rotating border on "Start New Research" button.
+- UI: sidebar scrollbar auto-hides when not actively scrolling.
+- UI: improve header transparency, z-index layering, remove bottom border.
+- UI: stacked date display and minimum card height on research dashboard cards.
 
 ### Added
 - News Intelligence module: multi-layer news fetching (RSS/API + AI search), article pinning, bulk archive, PDF/Markdown export, deep dive search with company name resolution.
