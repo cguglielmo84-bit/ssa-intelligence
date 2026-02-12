@@ -80,19 +80,24 @@ code {
   scrollbar-width: thin;
   scrollbar-color: transparent transparent;
 }
+
 .sidebar-nav.is-scrolling {
   scrollbar-color: #cbd5e1 transparent;
 }
+
 .sidebar-nav::-webkit-scrollbar {
   width: 4px;
 }
+
 .sidebar-nav::-webkit-scrollbar-track {
   background: transparent;
 }
+
 .sidebar-nav::-webkit-scrollbar-thumb {
   background: transparent;
   border-radius: 2px;
 }
+
 .sidebar-nav.is-scrolling::-webkit-scrollbar-thumb {
   background: #cbd5e1;
 }
@@ -116,7 +121,7 @@ code {
   left: -150%;
   width: 400%;
   height: 400%;
-  background: conic-gradient(transparent 200deg, rgba(255, 255, 255, 0.8), #a78bfa, #6d28d9, transparent);
+  background: conic-gradient(transparent 200deg, rgb(255 255 255 / 80%), #a78bfa, #6d28d9, transparent);
   animation: conic-spin 4s linear infinite;
   z-index: 0;
 }

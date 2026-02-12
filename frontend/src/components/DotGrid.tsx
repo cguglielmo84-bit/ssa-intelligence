@@ -18,7 +18,7 @@ export const DotGrid: React.FC = () => {
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
-    let animId: number;
+    let animId: number = 0;
     let waveStart = -1;
     let waveTimer: ReturnType<typeof setInterval>;
 
@@ -80,15 +80,25 @@ export const DotGrid: React.FC = () => {
         }
       }
 
-      animId = requestAnimationFrame(draw);
+      if (waveStart > 0) {
+        animId = requestAnimationFrame(draw);
+      } else {
+        animId = 0;
+      }
     };
 
     const triggerWave = () => {
       waveStart = performance.now();
+      if (animId === 0) {
+        animId = requestAnimationFrame(draw);
+      }
     };
 
     resize();
-    animId = requestAnimationFrame(draw);
+    // Draw static dots once, then wait for first wave to start the loop
+    requestAnimationFrame((now) => {
+      draw(now);
+    });
 
     // First wave after a short delay, then every WAVE_INTERVAL
     const initialTimer = setTimeout(() => {
@@ -109,7 +119,7 @@ export const DotGrid: React.FC = () => {
   }, []);
 
   return (
-    <div className="sticky top-0 w-full h-0 z-0 pointer-events-none">
+    <div className="sticky top-0 w-full h-0 z-0 pointer-events-none" aria-hidden="true">
       <canvas
         ref={canvasRef}
         className="absolute top-0 left-0 pointer-events-none"

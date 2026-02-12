@@ -349,12 +349,10 @@ export const Home: React.FC<HomeProps> = ({ jobs, loading = false, reportBluepri
                         {group.jobs.length} {group.jobs.length === 1 ? 'report' : 'reports'}
                       </div>
                     </div>
-                    {group.lastActive && (
-                      <div className="text-xs text-slate-400 text-right leading-tight">
-                        <div>Updated</div>
-                        <div className="text-slate-500 font-medium">{new Date(group.lastActive).toLocaleDateString('en-US')}</div>
-                      </div>
-                    )}
+                    <div className="text-xs text-slate-400 text-right leading-tight">
+                      <div>Updated</div>
+                      <div className="text-slate-500 font-medium">{new Date(group.lastActive).toLocaleDateString('en-US')}</div>
+                    </div>
                   </div>
                   <div className="absolute bottom-3 right-3 flex items-center gap-2">
                     <div className="w-10 h-10 rounded-lg bg-slate-100 text-slate-500 flex items-center justify-center font-semibold overflow-hidden">
