@@ -77,7 +77,7 @@ export const AdminUsers: React.FC<{ isAdmin?: boolean; isSuperAdmin?: boolean; c
   const [creatingInvite, setCreatingInvite] = useState(false);
   const [inviteError, setInviteError] = useState<string | null>(null);
   const [copiedInviteId, setCopiedInviteId] = useState<string | null>(null);
-  const [invitesExpanded, setInvitesExpanded] = useState(false);
+  const [invitesExpanded, setInvitesExpanded] = useState(true);
 
   const groupMap = useMemo(() => new Map(groups.map((g) => [g.id, g])), [groups]);
 
