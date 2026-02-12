@@ -77,7 +77,7 @@ interface MetricsResponse {
   filterOptions: FilterOptions;
 }
 
-const apiBase = (import.meta as any).env?.VITE_API_BASE_URL || '/api';
+const apiBase = import.meta.env.VITE_API_BASE_URL || '/api';
 
 export const AdminMetrics: React.FC<AdminMetricsProps> = ({ isAdmin }) => {
   const [metrics, setMetrics] = useState<MetricsResponse | null>(null);

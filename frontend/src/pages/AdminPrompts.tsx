@@ -57,7 +57,7 @@ interface TestRun {
   completedAt: string | null;
 }
 
-const apiBase = (import.meta as any).env?.VITE_API_BASE_URL || '/api';
+const apiBase = import.meta.env.VITE_API_BASE_URL || '/api';
 
 // Core sections that are used across all report types (have addendums)
 const CORE_SECTIONS = new Set([

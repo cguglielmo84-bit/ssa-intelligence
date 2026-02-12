@@ -47,7 +47,7 @@ interface Pagination {
   totalPages: number;
 }
 
-const apiBase = (import.meta as any).env?.VITE_API_BASE_URL || '/api';
+const apiBase = import.meta.env.VITE_API_BASE_URL || '/api';
 
 const SEVERITY_STYLES: Record<string, string> = {
   critical: 'bg-red-50 text-red-700 border-red-200',

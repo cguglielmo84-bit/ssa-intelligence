@@ -26,8 +26,8 @@ export default function App() {
 
   // Fetch logo token once at app level (not on every Home mount)
   useEffect(() => {
-    const apiBase = ((import.meta as any).env?.VITE_API_BASE_URL || '/api').replace(/\/$/, '');
-    const fallback = (import.meta as any).env?.VITE_LOGO_DEV_TOKEN as string | undefined;
+    const apiBase = (import.meta.env.VITE_API_BASE_URL || '/api').replace(/\/$/, '');
+    const fallback = import.meta.env.VITE_LOGO_DEV_TOKEN as string | undefined;
     if (fallback) {
       setLogoToken(fallback);
     }

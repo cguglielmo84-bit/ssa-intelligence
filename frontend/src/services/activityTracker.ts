@@ -5,7 +5,7 @@
 
 import { useEffect, useRef, useCallback } from 'react';
 
-const API_BASE = (import.meta as any).env?.VITE_API_BASE_URL || '/api';
+const API_BASE = import.meta.env.VITE_API_BASE_URL || '/api';
 
 export type ActivityEventType =
   | 'article_open'

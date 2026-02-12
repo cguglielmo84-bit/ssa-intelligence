@@ -37,7 +37,7 @@ export const Layout: React.FC<LayoutProps> = ({ children, onNavigate, activePath
   }, []);
 
   // Build health endpoint from API base (strip trailing /api)
-  const apiBase = (import.meta as any).env?.VITE_API_BASE_URL || '/api';
+  const apiBase = import.meta.env.VITE_API_BASE_URL || '/api';
   const healthBase = apiBase.replace(/\/api\/?$/, '') || '';
   const healthUrl = `${healthBase.replace(/\/$/, '') || ''}/health`;
   const feedbackUrl = `${apiBase.replace(/\/$/, '')}/feedback`;

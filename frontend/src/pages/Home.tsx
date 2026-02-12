@@ -35,7 +35,7 @@ export const Home: React.FC<HomeProps> = ({ jobs, loading = false, reportBluepri
   const [search, setSearch] = useState('');
   const [selectedCompany, setSelectedCompany] = useState<string | null>(null);
   const [contextJob, setContextJob] = useState<ResearchJob | null>(null);
-  const API_BASE = ((import.meta as any).env?.VITE_API_BASE_URL || '/api').replace(/\/$/, '');
+  const API_BASE = (import.meta.env.VITE_API_BASE_URL || '/api').replace(/\/$/, '');
   const logoToken = logoTokenProp;
   const activeJobs = jobs
     .filter(j => j.status === 'running' || j.status === 'queued' || j.status === 'idle')
