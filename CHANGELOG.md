@@ -5,33 +5,28 @@ All notable changes to this repository will be documented in this file.
 The format is based on Keep a Changelog and this project adheres to Semantic Versioning.
 
 ## [Unreleased]
-- Fix: DotGrid background canvas no longer overlaps interactive page content on non-dashboard tabs.
-- Feat: invite-only access system — new users default to PENDING status; super-admin can generate invite links; users accept invites to become ACTIVE; frontend gates pending users with activation page.
-- Feat: super-admin role (SUPER_ADMIN_EMAIL env var) with dedicated middleware guard for user/group/invite management.
-- Security: replace predictable CUID invite tokens with cryptographically secure `crypto.randomBytes(32)`.
-- Security: fix race condition on invite acceptance with conditional `updateMany` inside interactive transaction.
-- Security: tighten dev-fallback/impersonation guard from `NODE_ENV !== 'production'` to explicit `NODE_ENV === 'development' || DEV_MODE === 'true'`.
-- Security: redact invite tokens from list response for used/expired invites.
-- Refactor: extract shared domain-validation helpers to `backend/src/lib/domain-validation.ts`.
-- Fix: frontend loading-state gate prevents app shell flash for pending users.
-- Fix: news integration tests use admin auth to match route middleware requirements (requireAdmin, articleUsers scoping).
-- Fix: add Invite table to test truncateAll() to prevent FK constraint failures.
-- Fix: remove stale `migrate resolve --rolled-back` hack from Dockerfile CMD.
-- Fix: add missing migration to replace RevenueOwner-based junction tables with User-based tables (fixes production 500s on all `/api/news/*` endpoints).
-- UI: fix layout overflow causing content clipping at viewport bottom.
-- UI: add animated dot grid background with periodic wave animation.
-- UI: add conic gradient rotating border on "Start New Research" button.
-- UI: sidebar scrollbar auto-hides when not actively scrolling.
-- UI: improve header transparency, z-index layering, remove bottom border.
-- UI: stacked date display and minimum card height on research dashboard cards.
+
+## [1.1.0] - 2026-02-12
 
 ### Added
+- Automatic bug report creation on permanent research stage failures — captures error details, category, severity, and sanitized context (`backend/src/services/bug-report.ts`).
+- Admin bug reports dashboard (`#/admin/bugs`) with summary cards, filter bar, paginated table, detail modal with status management and resolution notes.
+- AI-agent-queryable endpoint (`GET /api/admin/bug-reports/agent-query`) with fingerprint grouping, pattern detection, and suggested actions per error category.
+- Invite-only access system — new users default to PENDING status; super-admin can generate invite links; users accept invites to become ACTIVE; frontend gates pending users with activation page.
+- Super-admin role (SUPER_ADMIN_EMAIL env var) with dedicated middleware guard for user/group/invite management.
 - News Intelligence module: multi-layer news fetching (RSS/API + AI search), article pinning, bulk archive, PDF/Markdown export, deep dive search with company name resolution.
 - Admin activity dashboard with engagement metrics, filters, and analytics.
 - User activity tracking (article opens, link clicks, page views, exports).
 - User call diet configuration replacing revenue-owner model.
 
 ### Fixed
+- DotGrid background canvas no longer overlaps interactive page content on non-dashboard tabs.
+- Frontend loading-state gate prevents app shell flash for pending users.
+- News integration tests use admin auth to match route middleware requirements (requireAdmin, articleUsers scoping).
+- Add Invite table to test truncateAll() to prevent FK constraint failures.
+- Remove stale `migrate resolve --rolled-back` hack from Dockerfile CMD.
+- Add missing migration to replace RevenueOwner-based junction tables with User-based tables (fixes production 500s on all `/api/news/*` endpoints).
+- Layout overflow causing content clipping at viewport bottom.
 - Security: non-admin users can no longer view other users' articles via `?userId=` query param.
 - Security: batch PDF/Markdown export endpoints now verify article access for non-admin users (403 on unauthorized IDs).
 - Duplicate pins router mount that shadowed other `/api/news/*` routes.
@@ -42,6 +37,22 @@ The format is based on Keep a Changelog and this project adheres to Semantic Ver
 ### Changed
 - `clear-news-data.sql` updated with current table references and wrapped in transaction.
 - Activity tracker fetch fallback now includes `credentials: 'include'` and logs 401 errors.
+
+### Security
+- Replace predictable CUID invite tokens with cryptographically secure `crypto.randomBytes(32)`.
+- Fix race condition on invite acceptance with conditional `updateMany` inside interactive transaction.
+- Tighten dev-fallback/impersonation guard from `NODE_ENV !== 'production'` to explicit `NODE_ENV === 'development' || DEV_MODE === 'true'`.
+- Redact invite tokens from list response for used/expired invites.
+
+### Refactored
+- Extract shared domain-validation helpers to `backend/src/lib/domain-validation.ts`.
+
+### UI
+- Animated dot grid background with periodic wave animation.
+- Conic gradient rotating border on "Start New Research" button.
+- Sidebar scrollbar auto-hides when not actively scrolling.
+- Improved header transparency, z-index layering, remove bottom border.
+- Stacked date display and minimum card height on research dashboard cards.
 
 ## [1.0.0] - 2026-02-10
 - Fix: reorder GENERIC report blueprint sections to match standard INDUSTRIALS ordering — Appendix and Sources now appears last instead of 4th from last.
