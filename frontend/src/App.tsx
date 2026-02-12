@@ -73,7 +73,7 @@ export default function App() {
     }
     return (
       <ErrorBoundary key={currentPath}>
-        <InviteAccept token={token} onAccepted={() => { window.location.replace(window.location.pathname + '#/'); }} />
+        <InviteAccept token={token} onAccepted={async () => { await userContext.refresh(); window.location.hash = '/'; }} />
       </ErrorBoundary>
     );
   }

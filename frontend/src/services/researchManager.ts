@@ -1471,6 +1471,15 @@ export const useUserContext = () => {
   const [groups, setGroups] = useState<ApiGroup[]>([]);
   const [loading, setLoading] = useState(true);
 
+  const fetchAll = async () => {
+    const [me, availableGroups] = await Promise.allSettled([
+      getMeApi(),
+      listGroupsApi()
+    ]);
+    if (me.status === 'fulfilled') setUser(me.value);
+    if (availableGroups.status === 'fulfilled') setGroups(availableGroups.value);
+  };
+
   useEffect(() => {
     let mounted = true;
 
@@ -1491,7 +1500,11 @@ export const useUserContext = () => {
     };
   }, []);
 
-  return { user, groups, loading };
+  const refresh = async () => {
+    await fetchAll();
+  };
+
+  return { user, groups, loading, refresh };
 };
 
 export const useReportBlueprints = () => {
