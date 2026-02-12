@@ -15,6 +15,7 @@ The format is based on Keep a Changelog and this project adheres to Semantic Ver
 - Fix: frontend loading-state gate prevents app shell flash for pending users.
 - Fix: news integration tests use admin auth to match route middleware requirements (requireAdmin, articleUsers scoping).
 - Fix: add Invite table to test truncateAll() to prevent FK constraint failures.
+- Fix: remove stale `migrate resolve --rolled-back` hack from Dockerfile CMD.
 
 ### Added
 - News Intelligence module: multi-layer news fetching (RSS/API + AI search), article pinning, bulk archive, PDF/Markdown export, deep dive search with company name resolution.
