@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach, afterAll } from 'vitest';
 import request from 'supertest';
 import app from '../../app.js';
 import { truncateAll, disconnectPrisma } from '../../test-utils/db-helpers.js';
-import { asMember } from '../../test-utils/auth-helpers.js';
+import { asAdmin } from '../../test-utils/auth-helpers.js';
 import {
   createTestUser,
   createTestNewsArticle,
@@ -14,11 +14,11 @@ afterAll(() => disconnectPrisma());
 
 describe('GET /api/news/articles', () => {
   it('returns articles with default pagination', async () => {
-    await createTestUser({ email: 'member@ssaandco.com' });
+    await createTestUser({ email: 'admin@ssaandco.com', role: 'ADMIN' });
     await createTestNewsArticle({ headline: 'Article One' });
     await createTestNewsArticle({ headline: 'Article Two' });
 
-    const res = await asMember(
+    const res = await asAdmin(
       request(app).get('/api/news/articles')
     );
 
@@ -30,12 +30,12 @@ describe('GET /api/news/articles', () => {
   });
 
   it('filters by companyId', async () => {
-    await createTestUser({ email: 'member@ssaandco.com' });
+    await createTestUser({ email: 'admin@ssaandco.com', role: 'ADMIN' });
     const company = await createTestTrackedCompany({ name: 'Target Corp' });
     await createTestNewsArticle({ headline: 'Target News', companyId: company.id });
     await createTestNewsArticle({ headline: 'Unrelated News', companyId: null });
 
-    const res = await asMember(
+    const res = await asAdmin(
       request(app).get(`/api/news/articles?companyId=${company.id}`)
     );
 
@@ -45,11 +45,11 @@ describe('GET /api/news/articles', () => {
   });
 
   it('filters by isSent', async () => {
-    await createTestUser({ email: 'member@ssaandco.com' });
+    await createTestUser({ email: 'admin@ssaandco.com', role: 'ADMIN' });
     await createTestNewsArticle({ headline: 'Sent Article', isSent: true });
     await createTestNewsArticle({ headline: 'Unsent Article', isSent: false });
 
-    const res = await asMember(
+    const res = await asAdmin(
       request(app).get('/api/news/articles?isSent=true')
     );
 
@@ -59,11 +59,11 @@ describe('GET /api/news/articles', () => {
   });
 
   it('filters by isArchived', async () => {
-    await createTestUser({ email: 'member@ssaandco.com' });
+    await createTestUser({ email: 'admin@ssaandco.com', role: 'ADMIN' });
     await createTestNewsArticle({ headline: 'Archived', isArchived: true });
     await createTestNewsArticle({ headline: 'Active', isArchived: false });
 
-    const res = await asMember(
+    const res = await asAdmin(
       request(app).get('/api/news/articles?isArchived=false')
     );
 
@@ -73,12 +73,12 @@ describe('GET /api/news/articles', () => {
   });
 
   it('returns correct total count', async () => {
-    await createTestUser({ email: 'member@ssaandco.com' });
+    await createTestUser({ email: 'admin@ssaandco.com', role: 'ADMIN' });
     for (let i = 0; i < 5; i++) {
       await createTestNewsArticle({ headline: `Article ${i}` });
     }
 
-    const res = await asMember(
+    const res = await asAdmin(
       request(app).get('/api/news/articles?limit=2')
     );
 
@@ -88,9 +88,9 @@ describe('GET /api/news/articles', () => {
   });
 
   it('returns empty array when no articles match', async () => {
-    await createTestUser({ email: 'member@ssaandco.com' });
+    await createTestUser({ email: 'admin@ssaandco.com', role: 'ADMIN' });
 
-    const res = await asMember(
+    const res = await asAdmin(
       request(app).get('/api/news/articles?companyId=nonexistent')
     );
 
