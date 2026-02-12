@@ -1,0 +1,59 @@
+# To get started with Dependabot version updates, you'll need to specify which
+# package ecosystems to update and where the package manifests are located.
+# Please see the documentation for all configuration options:
+# https://docs.github.com/code-security/dependabot/dependabot-version-updates/configuration-options-for-the-dependabot.yml-file
+
+version: 2
+
+updates:
+  # Backend dependencies
+  - package-ecosystem: npm
+    directory: /backend
+    schedule:
+      interval: weekly
+      day: monday
+    open-pull-requests-limit: 5
+    groups:
+      backend-minor-patch:
+        update-types:
+          - minor
+          - patch
+    ignore:
+      # High risk — review manually
+      - dependency-name: "@prisma/client"
+      - dependency-name: "prisma"
+      - dependency-name: "playwright"
+      - dependency-name: "@anthropic-ai/sdk"
+
+  # Frontend dependencies
+  - package-ecosystem: npm
+    directory: /frontend
+    schedule:
+      interval: weekly
+      day: monday
+    open-pull-requests-limit: 5
+    groups:
+      frontend-minor-patch:
+        update-types:
+          - minor
+          - patch
+    ignore:
+      # Medium risk — tightly coupled, review manually
+      - dependency-name: "@shadergradient/react"
+      - dependency-name: "@react-three/fiber"
+      - dependency-name: "three"
+      - dependency-name: "three-stdlib"
+      - dependency-name: "camera-controls"
+      - dependency-name: "@types/three"
+
+  # GitHub Actions
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+    groups:
+      actions-minor-patch:
+        update-types:
+          - minor
+          - patch
