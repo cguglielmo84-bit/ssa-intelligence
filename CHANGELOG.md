@@ -13,6 +13,8 @@ The format is based on Keep a Changelog and this project adheres to Semantic Ver
 - Security: redact invite tokens from list response for used/expired invites.
 - Refactor: extract shared domain-validation helpers to `backend/src/lib/domain-validation.ts`.
 - Fix: frontend loading-state gate prevents app shell flash for pending users.
+- Fix: news integration tests use admin auth to match route middleware requirements (requireAdmin, articleUsers scoping).
+- Fix: add Invite table to test truncateAll() to prevent FK constraint failures.
 
 ### Added
 - News Intelligence module: multi-layer news fetching (RSS/API + AI search), article pinning, bulk archive, PDF/Markdown export, deep dive search with company name resolution.

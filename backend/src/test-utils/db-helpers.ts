@@ -21,6 +21,7 @@ export async function truncateAll() {
     testPrisma.userCallDietCompany.deleteMany(),
     testPrisma.userCallDietPerson.deleteMany(),
     testPrisma.userCallDietTag.deleteMany(),
+    testPrisma.invite.deleteMany(),
     testPrisma.researchJobGroup.deleteMany(),
     testPrisma.groupMembership.deleteMany(),
     // Children
