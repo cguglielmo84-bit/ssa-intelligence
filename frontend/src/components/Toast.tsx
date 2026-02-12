@@ -1,4 +1,5 @@
 import React, { useState, useCallback, useRef } from 'react';
+import { Portal } from './Portal';
 import { X, CheckCircle2, AlertCircle, Info } from 'lucide-react';
 
 type ToastType = 'error' | 'success' | 'info';
@@ -41,23 +42,26 @@ export const useToast = () => {
     if (toasts.length === 0) return null;
 
     return (
-      <div className="fixed top-4 right-4 z-[60] flex flex-col gap-2 max-w-sm">
-        {toasts.map((toast) => (
-          <div
-            key={toast.id}
-            className={`flex items-start gap-3 px-4 py-3 rounded-xl border shadow-lg animate-in slide-in-from-right duration-300 ${BG[toast.type]}`}
-          >
-            {ICONS[toast.type]}
-            <p className="text-sm font-medium flex-1">{toast.message}</p>
-            <button
-              onClick={() => dismiss(toast.id)}
-              className="text-slate-400 hover:text-slate-600 flex-shrink-0"
+      <Portal>
+        <div className="fixed top-4 right-4 z-[60] flex flex-col gap-2 max-w-sm">
+          {toasts.map((toast) => (
+            <div
+              key={toast.id}
+              className={`flex items-start gap-3 px-4 py-3 rounded-xl border shadow-lg animate-in slide-in-from-right duration-300 ${BG[toast.type]}`}
             >
-              <X size={14} />
-            </button>
-          </div>
-        ))}
-      </div>
+              {ICONS[toast.type]}
+              <p className="text-sm font-medium flex-1">{toast.message}</p>
+              <button
+                onClick={() => dismiss(toast.id)}
+                className="text-slate-400 hover:text-slate-600 flex-shrink-0"
+                aria-label="Dismiss notification"
+              >
+                <X size={14} />
+              </button>
+            </div>
+          ))}
+        </div>
+      </Portal>
     );
   }, [toasts, dismiss]);
 

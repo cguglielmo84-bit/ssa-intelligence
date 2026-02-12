@@ -5,6 +5,7 @@ import { enforceLockedSections, isSectionLocked } from '../utils/sections';
 import { resolveCompanyApi, CompanyResolveResponse } from '../services/researchManager';
 import { logger } from '../utils/logger';
 import { CompanyResolveModal } from '../components/CompanyResolveModal';
+import { Portal } from '../components/Portal';
 
 // Generate a simple UUID for draft tracking
 const generateDraftId = (): string => {
@@ -868,6 +869,7 @@ export const NewResearch: React.FC<NewResearchProps> = ({
         )}
 
         {showIncluded && (
+          <Portal>
           <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center p-4 z-50">
             <div className="bg-white rounded-2xl shadow-2xl max-w-3xl w-full max-h-[85vh] overflow-hidden flex flex-col">
               <div className="flex items-center justify-between border-b border-slate-200 px-6 py-4">
@@ -901,6 +903,7 @@ export const NewResearch: React.FC<NewResearchProps> = ({
               </div>
             </div>
           </div>
+          </Portal>
         )}
 
         {showResolveModal && resolveResult && (

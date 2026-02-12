@@ -1,4 +1,5 @@
 import React from 'react';
+import { Portal } from '../Portal';
 import {
   X,
   Building2,
@@ -37,6 +38,7 @@ export const ArticleDetailModal: React.FC<ArticleDetailModalProps> = ({
   useArticleViewTracker(article.id);
 
   return (
+    <Portal>
     <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-md flex items-start justify-center p-4 z-50 overflow-y-auto">
       <div className="bg-white rounded-3xl shadow-2xl max-w-2xl w-full my-8 overflow-hidden">
         {/* Header with gradient */}
@@ -223,5 +225,6 @@ export const ArticleDetailModal: React.FC<ArticleDetailModalProps> = ({
         </div>
       </div>
     </div>
+    </Portal>
   );
 };

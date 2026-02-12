@@ -9,6 +9,9 @@ The format is based on Keep a Changelog and this project adheres to Semantic Ver
 ### Fixed
 - Remove `z-10` from content wrapper in Layout that created a stacking context trapping modals behind the header and sidebar.
 - Add `backdrop-blur-sm` to Prompt Library edit modal overlay to match the rest of the app.
+- Render all modals and toasts via React portals to `document.body` so backdrop blur covers the full viewport including the sticky header.
+- Add missing `backdrop-blur-sm` to UserAddModal, UserEditModal, and CompanyResolveModal overlays.
+- Center company reports modal vertically instead of top-aligned.
 
 ### Refactored
 - Add `vite-env.d.ts` and remove all `(import.meta as any)` casts across 12 frontend files — uses Vite's built-in `ImportMeta` types instead.
