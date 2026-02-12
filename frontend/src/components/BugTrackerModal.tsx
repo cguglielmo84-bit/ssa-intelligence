@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { Portal } from './Portal';
 import {
   X,
   Bug,
@@ -292,6 +293,7 @@ export const BugTrackerModal: React.FC<BugTrackerModalProps> = ({
   if (!isOpen) return null;
 
   return (
+    <Portal>
     <div
       className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center z-50 p-4"
       role="dialog"
@@ -713,5 +715,6 @@ export const BugTrackerModal: React.FC<BugTrackerModalProps> = ({
         </div>
       </div>
     </div>
+    </Portal>
   );
 };

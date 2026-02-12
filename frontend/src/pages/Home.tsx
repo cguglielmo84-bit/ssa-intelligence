@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { ReportBlueprint, ResearchJob, SECTIONS_CONFIG } from '../types';
+import { Portal } from '../components/Portal';
 import { StatusPill } from '../components/StatusPill';
 import { Search, TrendingUp, Building2, MoreHorizontal, Loader2 } from 'lucide-react';
 import { ShaderGradientCanvas, ShaderGradient } from '@shadergradient/react';
@@ -389,7 +390,8 @@ export const Home: React.FC<HomeProps> = ({ jobs, loading = false, reportBluepri
         const group = companyGroups.find(g => g.companyName === selectedCompany);
         if (!group) return null;
         return (
-          <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-start justify-center p-4 z-50">
+          <Portal>
+          <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center p-4 z-50">
             <div className="bg-white rounded-2xl shadow-2xl max-w-6xl w-full max-h-[90vh] overflow-hidden flex flex-col">
               <div className="flex items-center justify-between border-b border-slate-200 px-6 py-4">
                 <div>
@@ -549,6 +551,7 @@ export const Home: React.FC<HomeProps> = ({ jobs, loading = false, reportBluepri
               </div>
             </div>
           </div>
+          </Portal>
         );
       })()}
 
@@ -574,6 +577,7 @@ export const Home: React.FC<HomeProps> = ({ jobs, loading = false, reportBluepri
       <ToastContainer />
 
       {contextJob && (
+        <Portal>
         <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center p-4 z-50">
           <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full overflow-hidden">
             <div className="flex items-center justify-between border-b border-slate-200 px-6 py-4">
@@ -593,6 +597,7 @@ export const Home: React.FC<HomeProps> = ({ jobs, loading = false, reportBluepri
             </div>
           </div>
         </div>
+        </Portal>
       )}
     </div>
   );

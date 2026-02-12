@@ -1,4 +1,5 @@
 import React, { useState, useCallback, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { X, CheckCircle2, AlertCircle, Info } from 'lucide-react';
 
 type ToastType = 'error' | 'success' | 'info';
@@ -40,7 +41,7 @@ export const useToast = () => {
   const ToastContainer = useCallback(() => {
     if (toasts.length === 0) return null;
 
-    return (
+    return createPortal(
       <div className="fixed top-4 right-4 z-[60] flex flex-col gap-2 max-w-sm">
         {toasts.map((toast) => (
           <div
@@ -57,7 +58,8 @@ export const useToast = () => {
             </button>
           </div>
         ))}
-      </div>
+      </div>,
+      document.body
     );
   }, [toasts, dismiss]);
 

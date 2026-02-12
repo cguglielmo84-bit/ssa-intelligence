@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { X, ChevronDown, ChevronRight, Trash2, RefreshCw } from 'lucide-react';
 import { ConfirmDialog } from '../components/ConfirmDialog';
 import { useToast } from '../components/Toast';
+import { Portal } from '../components/Portal';
 
 interface AdminBugReportsProps {
   isAdmin?: boolean;
@@ -330,6 +331,7 @@ export const AdminBugReports: React.FC<AdminBugReportsProps> = ({ isAdmin }) => 
 
       {/* Detail Modal */}
       {selectedReport && (
+        <Portal>
         <div className="fixed inset-0 bg-black/30 backdrop-blur-sm z-50 flex items-center justify-center p-4" onClick={() => setSelectedReport(null)}>
           <div ref={modalRef} role="dialog" aria-modal="true" aria-label={`Bug report: ${selectedReport.title}`} className="bg-white rounded-2xl shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
             <div className="p-6 border-b border-slate-100 flex items-start justify-between">
@@ -463,6 +465,7 @@ export const AdminBugReports: React.FC<AdminBugReportsProps> = ({ isAdmin }) => 
             </div>
           </div>
         </div>
+        </Portal>
       )}
 
       <ConfirmDialog

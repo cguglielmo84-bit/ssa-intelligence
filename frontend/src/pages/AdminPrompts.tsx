@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { FileText, Edit2, ChevronDown, ChevronRight, X, Save, Play, History, RotateCcw, Check, AlertCircle, Clock, Loader2, Info, Maximize2, Minimize2 } from 'lucide-react';
 import { ConfirmDialog } from '../components/ConfirmDialog';
+import { Portal } from '../components/Portal';
 import { logger } from '../utils/logger';
 
 interface AdminPromptsProps {
@@ -753,6 +754,7 @@ export const AdminPrompts: React.FC<AdminPromptsProps> = ({ isAdmin }) => {
 
       {/* Edit Modal */}
       {editingPrompt && (
+        <Portal>
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
           <div className={`bg-white rounded-lg shadow-xl flex flex-col transition-all duration-200 ${
             isFullscreen
@@ -1112,6 +1114,7 @@ export const AdminPrompts: React.FC<AdminPromptsProps> = ({ isAdmin }) => {
             )}
           </div>
         </div>
+        </Portal>
       )}
 
       {confirmState && (

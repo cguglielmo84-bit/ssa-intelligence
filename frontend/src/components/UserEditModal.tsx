@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { Portal } from './Portal';
 
 type AdminUser = {
   id: string;
@@ -74,7 +75,8 @@ export const UserEditModal: React.FC<UserEditModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={onClose}>
+    <Portal>
+    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4" onClick={onClose}>
       <div
         className="bg-white rounded-xl shadow-xl max-w-md w-full p-6"
         onClick={(e) => e.stopPropagation()}
@@ -199,5 +201,6 @@ export const UserEditModal: React.FC<UserEditModalProps> = ({
         )}
       </div>
     </div>
+    </Portal>
   );
 };
