@@ -4,6 +4,15 @@
 -- never captured in a migration, causing production 500s on all /api/news/* endpoints.
 --
 -- Made idempotent (IF EXISTS / IF NOT EXISTS) for safety across environments.
+--
+-- ROLLBACK (manual):
+-- DROP TABLE IF EXISTS "article_users";
+-- DROP TABLE IF EXISTS "user_call_diet_tags";
+-- DROP TABLE IF EXISTS "user_call_diet_people";
+-- DROP TABLE IF EXISTS "user_call_diet_companies";
+-- DELETE FROM "_prisma_migrations" WHERE migration_name = '20260212_migrate_call_diet_to_user_based';
+-- NOTE: Re-creating the old RevenueOwner tables would require the original DDL from
+-- migration 20260121151740_add_news_intelligence_tables.
 
 -- ============================================================================
 -- 1. DROP OLD JUNCTION TABLES (RevenueOwner-based)
@@ -59,7 +68,16 @@ CREATE TABLE IF NOT EXISTS "article_users" (
 );
 
 -- ============================================================================
--- 3. FOREIGN KEYS
+-- 3. INDEXES (non-leading FK columns for reverse lookups)
+-- ============================================================================
+
+CREATE INDEX IF NOT EXISTS "user_call_diet_companies_companyId_idx" ON "user_call_diet_companies"("companyId");
+CREATE INDEX IF NOT EXISTS "user_call_diet_people_personId_idx" ON "user_call_diet_people"("personId");
+CREATE INDEX IF NOT EXISTS "user_call_diet_tags_tagId_idx" ON "user_call_diet_tags"("tagId");
+CREATE INDEX IF NOT EXISTS "article_users_user_id_idx" ON "article_users"("user_id");
+
+-- ============================================================================
+-- 4. FOREIGN KEYS
 -- ============================================================================
 
 DO $$ BEGIN
