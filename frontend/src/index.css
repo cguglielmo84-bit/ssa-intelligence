@@ -75,6 +75,60 @@ code {
   background: #94a3b8;
 }
 
+/* Sidebar nav: hide scrollbar, show only while scrolling */
+.sidebar-nav {
+  scrollbar-width: thin;
+  scrollbar-color: transparent transparent;
+}
+.sidebar-nav.is-scrolling {
+  scrollbar-color: #cbd5e1 transparent;
+}
+.sidebar-nav::-webkit-scrollbar {
+  width: 4px;
+}
+.sidebar-nav::-webkit-scrollbar-track {
+  background: transparent;
+}
+.sidebar-nav::-webkit-scrollbar-thumb {
+  background: transparent;
+  border-radius: 2px;
+}
+.sidebar-nav.is-scrolling::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+}
+
+/* Conic gradient rotating border */
+@keyframes conic-spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.conic-border-wrapper {
+  position: relative;
+  overflow: hidden;
+  padding: 2px;
+}
+
+.conic-border-wrapper::before {
+  content: '';
+  position: absolute;
+  top: -150%;
+  left: -150%;
+  width: 400%;
+  height: 400%;
+  background: conic-gradient(transparent 200deg, rgba(255, 255, 255, 0.8), #a78bfa, #6d28d9, transparent);
+  animation: conic-spin 4s linear infinite;
+  z-index: 0;
+}
+
+.conic-border-content {
+  position: relative;
+  z-index: 1;
+}
+
+
+
+
 /* Smooth scrolling */
 html {
   scroll-behavior: smooth;
