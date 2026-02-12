@@ -218,7 +218,7 @@ export const updateBugReport: RequestHandler = async (req, res) => {
       // Auto-set resolvedAt/resolvedBy when transitioning to resolved
       if (status === 'resolved' && existing.status !== 'resolved') {
         data.resolvedAt = new Date();
-        data.resolvedBy = (req as any).auth?.email ?? 'admin';
+        data.resolvedBy = req.auth?.email ?? 'admin';
       }
       // Clear resolved fields if un-resolving
       if (status !== 'resolved' && existing.status === 'resolved') {
