@@ -300,7 +300,7 @@ export const Layout: React.FC<LayoutProps> = ({ children, onNavigate, activePath
               {activePath === '/admin/news-activity' && 'News Activity'}
             </h1>
          </header>
-         <div className="p-6 max-w-7xl mx-auto">
+         <div className="p-6 max-w-7xl mx-auto relative z-10">
             {children}
          </div>
       </main>
