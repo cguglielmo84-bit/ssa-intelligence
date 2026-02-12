@@ -42,4 +42,4 @@ COPY --from=frontend-build /app/frontend/dist ./frontend/dist
 EXPOSE 3000
 
 # Note: assumes backend handles serving the API (and optionally static frontend if configured in code)
-CMD ["sh", "-c", "/app/backend/node_modules/.bin/prisma migrate deploy --schema=/app/backend/prisma/schema.prisma && node /app/backend/dist/src/index.js"]
+CMD ["sh", "-c", "/app/backend/node_modules/.bin/prisma migrate resolve --rolled-back 20260212_add_user_activities --schema=/app/backend/prisma/schema.prisma 2>/dev/null; /app/backend/node_modules/.bin/prisma migrate deploy --schema=/app/backend/prisma/schema.prisma && node /app/backend/dist/src/index.js"]
