@@ -19,7 +19,7 @@ interface PricingRate {
   effectiveTo: string | null;
 }
 
-const apiBase = (import.meta as any).env?.VITE_API_BASE_URL || '/api';
+const apiBase = import.meta.env.VITE_API_BASE_URL || '/api';
 
 export const AdminPricing: React.FC<AdminPricingProps> = ({ isAdmin }) => {
   const { showToast, ToastContainer } = useToast();

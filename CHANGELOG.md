@@ -6,6 +6,9 @@ The format is based on Keep a Changelog and this project adheres to Semantic Ver
 
 ## [Unreleased]
 
+### Refactored
+- Add `vite-env.d.ts` and remove all `(import.meta as any)` casts across 12 frontend files — uses Vite's built-in `ImportMeta` types instead.
+
 ## [1.1.0] - 2026-02-12
 
 ### Added

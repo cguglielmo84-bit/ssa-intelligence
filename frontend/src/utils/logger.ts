@@ -10,7 +10,7 @@
 
 const isDev =
   typeof import.meta !== 'undefined' &&
-  (import.meta as any).env?.MODE === 'development';
+  import.meta.env?.MODE === 'development';
 
 function noop(..._args: unknown[]) {
   // intentionally empty
