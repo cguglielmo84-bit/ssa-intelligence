@@ -8,6 +8,11 @@ updates:
       interval: weekly
       day: monday
     open-pull-requests-limit: 5
+    ignore:
+      # Never auto-open major version bumps — upgrade intentionally
+      - dependency-name: "*"
+        update-types:
+          - version-update:semver-major
     groups:
       backend-minor-patch:
         update-types:
@@ -27,6 +32,11 @@ updates:
       interval: weekly
       day: monday
     open-pull-requests-limit: 5
+    ignore:
+      # Never auto-open major version bumps — upgrade intentionally
+      - dependency-name: "*"
+        update-types:
+          - version-update:semver-major
     groups:
       frontend-minor-patch:
         update-types:
@@ -48,6 +58,11 @@ updates:
       interval: weekly
       day: monday
     open-pull-requests-limit: 5
+    ignore:
+      # Never auto-open major version bumps — upgrade intentionally
+      - dependency-name: "*"
+        update-types:
+          - version-update:semver-major
     groups:
       actions-minor-patch:
         update-types:
