@@ -10,6 +10,7 @@ import { AdminPricing } from './pages/AdminPricing';
 import { AdminPrompts } from './pages/AdminPrompts';
 import { NewsDashboard } from './pages/NewsDashboard';
 import { AdminNewsActivity } from './pages/AdminNewsActivity';
+import { AdminBugReports } from './pages/AdminBugReports';
 import { InviteAccept } from './pages/InviteAccept';
 import { PendingActivation } from './pages/PendingActivation';
 import { useReportBlueprints, useResearchManager, useUserContext } from './services/researchManager';
@@ -139,6 +140,9 @@ export default function App() {
     }
     if (currentPath === '/admin/news-activity') {
       return <AdminNewsActivity isAdmin={userContext.user?.isAdmin} />;
+    }
+    if (currentPath === '/admin/bugs') {
+      return <AdminBugReports isAdmin={userContext.user?.isAdmin} />;
     }
     if (currentPath.startsWith('/research/')) {
       return (

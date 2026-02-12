@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Home, FileText, PanelLeftClose, PanelLeftOpen, Newspaper, BarChart3, DollarSign, Users, Activity } from 'lucide-react';
+import { Home, FileText, PanelLeftClose, PanelLeftOpen, Newspaper, BarChart3, DollarSign, Users, Activity, Bug } from 'lucide-react';
 import { BugTrackerModal } from './BugTrackerModal';
 import { logger } from '../utils/logger';
 import { DotGrid } from './DotGrid';
@@ -253,6 +253,14 @@ export const Layout: React.FC<LayoutProps> = ({ children, onNavigate, activePath
                 <Activity size={18} className="flex-shrink-0" />
                 {!isCollapsed && <span className="whitespace-nowrap">News Activity</span>}
               </button>
+              <button
+                onClick={() => onNavigate('/admin/bugs')}
+                className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-colors ${activePath === '/admin/bugs' ? 'bg-brand-50 text-brand-700' : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'} ${isCollapsed ? 'justify-center px-2' : ''}`}
+                title={isCollapsed ? "Bug Reports" : undefined}
+              >
+                <Bug size={18} className="flex-shrink-0" />
+                {!isCollapsed && <span className="whitespace-nowrap">Bug Reports</span>}
+              </button>
             </>
           )}
         </nav>
@@ -298,6 +306,7 @@ export const Layout: React.FC<LayoutProps> = ({ children, onNavigate, activePath
               {activePath === '/admin/prompts' && 'Prompt Library'}
               {activePath === '/news' && 'News Intelligence'}
               {activePath === '/admin/news-activity' && 'News Activity'}
+              {activePath === '/admin/bugs' && 'Bug Reports'}
             </h1>
          </header>
          <div className="p-6 max-w-7xl mx-auto relative z-10">
