@@ -105,7 +105,7 @@ Copy `backend/.env.example` to `backend/.env` and fill in required values (DATAB
 
 ## Dependabot PR Review
 
-Dependabot opens automated dependency update PRs every Monday. **Humans should not merge these directly.** An LLM agent must review and approve every Dependabot PR before it is merged.
+Dependabot opens automated dependency update PRs monthly. **Humans should not merge these directly.** An LLM agent must review and approve every Dependabot PR before it is merged.
 
 ### Review checklist
 

@@ -25,6 +25,7 @@ The format is based on Keep a Changelog and this project adheres to Semantic Ver
 - Remove unused `backend/Dockerfile` — production uses the root `Dockerfile` via Render.
 - Remove stale `backend` service from `docker-compose.yml` (referenced deleted Dockerfile); postgres and redis services remain for local dev.
 - Sync Dependabot review instructions between CLAUDE.md and AGENTS.md — add three.js lockstep rule, "What is excluded" section, and Dockerfile check step to both.
+- Switch Dependabot from weekly to monthly schedule; remove stale three.js/ShaderGradient exclude-patterns from frontend group, replace with `ogl`.
 
 ### Refactored
 - Add `vite-env.d.ts` and remove all `(import.meta as any)` casts across 12 frontend files — uses Vite's built-in `ImportMeta` types instead.

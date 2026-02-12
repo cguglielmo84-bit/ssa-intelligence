@@ -5,8 +5,7 @@ updates:
   - package-ecosystem: npm
     directory: /backend
     schedule:
-      interval: weekly
-      day: monday
+      interval: monthly
     open-pull-requests-limit: 5
     ignore:
       # Never auto-open major version bumps — upgrade intentionally
@@ -29,8 +28,7 @@ updates:
   - package-ecosystem: npm
     directory: /frontend
     schedule:
-      interval: weekly
-      day: monday
+      interval: monthly
     open-pull-requests-limit: 5
     ignore:
       # Never auto-open major version bumps — upgrade intentionally
@@ -43,20 +41,14 @@ updates:
           - minor
           - patch
         exclude-patterns:
-          # Medium risk — tightly coupled, get individual PRs for manual review
-          - "@shadergradient/react"
-          - "@react-three/fiber"
-          - "three"
-          - "three-stdlib"
-          - "camera-controls"
-          - "@types/three"
+          # Medium risk — get individual PRs for manual review
+          - "ogl"
 
   # GitHub Actions
   - package-ecosystem: github-actions
     directory: /
     schedule:
-      interval: weekly
-      day: monday
+      interval: monthly
     open-pull-requests-limit: 5
     ignore:
       # Never auto-open major version bumps — upgrade intentionally

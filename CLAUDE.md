@@ -75,7 +75,7 @@ Integration tests use a separate database (`ssa_intelligence_test`). The global 
 
 ## Dependabot PR Review
 
-Dependabot opens automated dependency update PRs every Monday. **Humans should not merge these directly.** An LLM agent must review and approve every Dependabot PR before it is merged.
+Dependabot opens automated dependency update PRs monthly. **Humans should not merge these directly.** An LLM agent must review and approve every Dependabot PR before it is merged.
 
 ### Review checklist
 
