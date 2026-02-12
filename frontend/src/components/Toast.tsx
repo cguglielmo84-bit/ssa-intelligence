@@ -54,6 +54,7 @@ export const useToast = () => {
               <button
                 onClick={() => dismiss(toast.id)}
                 className="text-slate-400 hover:text-slate-600 flex-shrink-0"
+                aria-label="Dismiss notification"
               >
                 <X size={14} />
               </button>
