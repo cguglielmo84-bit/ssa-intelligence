@@ -296,6 +296,70 @@ model Feedback {
 }
 
 // ============================================================================
+// AUTOMATIC BUG REPORTING
+// ============================================================================
+
+enum BugReportSeverity {
+  critical
+  warning
+  error
+}
+
+enum BugReportStatus {
+  open
+  acknowledged
+  investigating
+  resolved
+  wont_fix
+}
+
+enum BugReportCategory {
+  rate_limit
+  server_error
+  parse_error
+  content_error
+  timeout
+  unknown
+}
+
+model BugReport {
+  id               String              @id @default(cuid())
+  severity         BugReportSeverity
+  status           BugReportStatus     @default(open)
+  category         BugReportCategory   @default(unknown)
+  title            String
+  description      String              @db.Text
+  errorMessage     String              @map("error_message")
+  errorStack       String?             @db.Text @map("error_stack")
+  errorFingerprint String              @map("error_fingerprint")
+  jobId            String              @map("job_id")
+  subJobId         String?             @map("sub_job_id")
+  stage            String
+  companyName      String              @map("company_name")
+  reportType       String              @map("report_type")
+  geography        String?
+  industry         String?
+  attempts         Int
+  maxAttempts      Int                 @map("max_attempts")
+  errorContext     Json                @default("{}") @map("error_context")
+  resolutionNotes  String?             @map("resolution_notes") @db.Text
+  resolvedAt       DateTime?           @map("resolved_at")
+  resolvedBy       String?             @map("resolved_by")
+  createdAt        DateTime            @default(now()) @map("created_at")
+  updatedAt        DateTime            @updatedAt @map("updated_at")
+
+  @@index([status])
+  @@index([severity])
+  @@index([category])
+  @@index([stage])
+  @@index([jobId])
+  @@index([errorFingerprint])
+  @@index([createdAt])
+  @@index([status, severity])
+  @@map("bug_reports")
+}
+
+// ============================================================================
 // NEWS INTELLIGENCE MODELS
 // ============================================================================
 
