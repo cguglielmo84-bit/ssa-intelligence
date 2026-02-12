@@ -22,9 +22,9 @@ export const agentQueryBugReports: RequestHandler = async (req, res) => {
     const limitParam = parseInt(req.query.limit as string, 10);
     const groupBy = req.query.groupBy as string | undefined;
 
-    const since = sinceParam
-      ? new Date(sinceParam)
-      : new Date(Date.now() - 7 * 24 * 60 * 60 * 1000); // default 7 days
+    const defaultSince = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+    const parsedSince = sinceParam ? new Date(sinceParam) : defaultSince;
+    const since = Number.isNaN(parsedSince.getTime()) ? defaultSince : parsedSince;
     const limit = Number.isFinite(limitParam) && limitParam > 0 ? Math.min(limitParam, 200) : 50;
 
     const bugs = await prisma.bugReport.findMany({

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { X, ChevronDown, ChevronRight, Trash2, RefreshCw } from 'lucide-react';
 import { ConfirmDialog } from '../components/ConfirmDialog';
 import { useToast } from '../components/Toast';
@@ -103,6 +103,17 @@ export const AdminBugReports: React.FC<AdminBugReportsProps> = ({ isAdmin }) => 
   const [saving, setSaving] = useState(false);
   const [showStack, setShowStack] = useState(false);
   const [showContext, setShowContext] = useState(false);
+  const modalRef = useRef<HTMLDivElement>(null);
+
+  // Escape key handler for detail modal
+  useEffect(() => {
+    if (!selectedReport) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setSelectedReport(null);
+    };
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [selectedReport]);
 
   const fetchBugReports = useCallback(async (page = 1) => {
     setLoading(true);
@@ -117,6 +128,7 @@ export const AdminBugReports: React.FC<AdminBugReportsProps> = ({ isAdmin }) => 
 
       const res = await fetch(`${apiBase}/admin/bug-reports?${params}`, {
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
       });
       if (!res.ok) throw new Error('Failed to fetch bug reports');
       const data = await res.json();
@@ -149,6 +161,7 @@ export const AdminBugReports: React.FC<AdminBugReportsProps> = ({ isAdmin }) => 
       const res = await fetch(`${apiBase}/admin/bug-reports/${selectedReport.id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
         body: JSON.stringify({ status: editStatus, resolutionNotes: editNotes }),
       });
       if (!res.ok) {
@@ -174,7 +187,7 @@ export const AdminBugReports: React.FC<AdminBugReportsProps> = ({ isAdmin }) => 
       variant: 'danger',
       onConfirm: async () => {
         try {
-          const res = await fetch(`${apiBase}/admin/bug-reports/${report.id}`, { method: 'DELETE' });
+          const res = await fetch(`${apiBase}/admin/bug-reports/${report.id}`, { method: 'DELETE', credentials: 'include' });
           if (!res.ok && res.status !== 204) throw new Error('Delete failed');
           showToast('Bug report deleted', 'success');
           setSelectedReport(null);
@@ -318,7 +331,7 @@ export const AdminBugReports: React.FC<AdminBugReportsProps> = ({ isAdmin }) => 
       {/* Detail Modal */}
       {selectedReport && (
         <div className="fixed inset-0 bg-black/30 backdrop-blur-sm z-50 flex items-center justify-center p-4" onClick={() => setSelectedReport(null)}>
-          <div className="bg-white rounded-2xl shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+          <div ref={modalRef} role="dialog" aria-modal="true" aria-label={`Bug report: ${selectedReport.title}`} className="bg-white rounded-2xl shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
             <div className="p-6 border-b border-slate-100 flex items-start justify-between">
               <div>
                 <h2 className="text-lg font-semibold text-slate-800">{selectedReport.title}</h2>
