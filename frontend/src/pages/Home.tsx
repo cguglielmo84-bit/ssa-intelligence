@@ -9,6 +9,8 @@ import { ConfirmDialog } from '../components/ConfirmDialog';
 import { useToast } from '../components/Toast';
 import { logger } from '../utils/logger';
 
+const THREAD_COLOR: [number, number, number] = [1, 1, 1];
+
 interface HomeProps {
   jobs: ResearchJob[];
   loading?: boolean;
@@ -188,7 +190,7 @@ export const Home: React.FC<HomeProps> = ({ jobs, loading = false, reportBluepri
       <div className="relative overflow-hidden rounded-2xl shadow-xl bg-brand-700">
         <div className="absolute inset-0">
           <Threads
-            color={[1, 1, 1]}
+            color={THREAD_COLOR}
             amplitude={1.5}
             distance={.8}
             lineWidth={18}

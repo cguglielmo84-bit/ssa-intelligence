@@ -12,20 +12,14 @@
     "test:coverage": "vitest run --coverage"
   },
   "dependencies": {
-    "@react-three/fiber": "^9.4.2",
-    "@shadergradient/react": "^2.4.20",
-    "camera-controls": "^3.1.2",
     "lucide-react": "^0.555.0",
     "ogl": "^1.0.11",
     "react": "^19.2.1",
     "react-dom": "^19.2.1",
-    "recharts": "^3.7.0",
-    "three": "^0.182.0",
-    "three-stdlib": "^2.36.1"
+    "recharts": "^3.7.0"
   },
   "devDependencies": {
     "@types/node": "^22.14.0",
-    "@types/three": "^0.182.0",
     "@vitejs/plugin-react": "^5.0.0",
     "@vitest/coverage-v8": "^4.0.18",
     "autoprefixer": "^10.4.20",
