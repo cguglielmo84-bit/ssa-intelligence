@@ -9,6 +9,11 @@ The format is based on Keep a Changelog and this project adheres to Semantic Ver
 ### Refactored
 - Add `vite-env.d.ts` and remove all `(import.meta as any)` casts across 12 frontend files — uses Vite's built-in `ImportMeta` types instead.
 
+## [1.1.1] - 2026-02-12
+
+### Changed
+- Rename admin "Bug Reports" page to "Research Failures" to distinguish from user-facing "Report Issue" feature.
+
 ## [1.1.0] - 2026-02-12
 
 ### Added

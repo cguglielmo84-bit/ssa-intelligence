@@ -136,7 +136,7 @@ export const AdminBugReports: React.FC<AdminBugReportsProps> = ({ isAdmin }) => 
       setSummary(data.summary || { open: 0, critical: 0, byCategory: {} });
       setPagination(data.pagination || { page: 1, limit: 20, total: 0, totalPages: 0 });
     } catch {
-      showToast('Failed to load bug reports', 'error');
+      showToast('Failed to load research failures', 'error');
     } finally {
       setLoading(false);
     }
@@ -182,18 +182,18 @@ export const AdminBugReports: React.FC<AdminBugReportsProps> = ({ isAdmin }) => 
   const handleDelete = (report: BugReport) => {
     setConfirmState({
       open: true,
-      title: 'Delete Bug Report',
+      title: 'Delete Research Failure',
       message: `Delete "${report.title}"? This cannot be undone.`,
       variant: 'danger',
       onConfirm: async () => {
         try {
           const res = await fetch(`${apiBase}/admin/bug-reports/${report.id}`, { method: 'DELETE', credentials: 'include' });
           if (!res.ok && res.status !== 204) throw new Error('Delete failed');
-          showToast('Bug report deleted', 'success');
+          showToast('Record deleted', 'success');
           setSelectedReport(null);
           fetchBugReports(pagination.page);
         } catch {
-          showToast('Failed to delete bug report', 'error');
+          showToast('Failed to delete record', 'error');
         }
         setConfirmState(null);
       },
@@ -262,7 +262,7 @@ export const AdminBugReports: React.FC<AdminBugReportsProps> = ({ isAdmin }) => 
             <div className="w-6 h-6 border-2 border-brand-500 border-t-transparent rounded-full animate-spin" />
           </div>
         ) : bugReports.length === 0 ? (
-          <div className="text-center text-slate-400 py-16">No bug reports found.</div>
+          <div className="text-center text-slate-400 py-16">No research failures found.</div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full">
