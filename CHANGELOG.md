@@ -6,6 +6,10 @@ The format is based on Keep a Changelog and this project adheres to Semantic Ver
 
 ## [Unreleased]
 
+### Fixed
+- Remove `z-10` from content wrapper in Layout that created a stacking context trapping modals behind the header and sidebar.
+- Add `backdrop-blur-sm` to Prompt Library edit modal overlay to match the rest of the app.
+
 ### Refactored
 - Add `vite-env.d.ts` and remove all `(import.meta as any)` casts across 12 frontend files — uses Vite's built-in `ImportMeta` types instead.
 

@@ -309,7 +309,7 @@ export const Layout: React.FC<LayoutProps> = ({ children, onNavigate, activePath
               {activePath === '/admin/bugs' && 'Research Failures'}
             </h1>
          </header>
-         <div className="p-6 max-w-7xl mx-auto relative z-10">
+         <div className="p-6 max-w-7xl mx-auto relative">
             {children}
          </div>
       </main>
