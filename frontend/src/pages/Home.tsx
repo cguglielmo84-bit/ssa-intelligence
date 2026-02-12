@@ -4,10 +4,12 @@ import { ReportBlueprint, ResearchJob, SECTIONS_CONFIG } from '../types';
 import { Portal } from '../components/Portal';
 import { StatusPill } from '../components/StatusPill';
 import { Search, TrendingUp, Building2, MoreHorizontal, Loader2 } from 'lucide-react';
-import { ShaderGradientCanvas, ShaderGradient } from '@shadergradient/react';
+import Threads from '../components/Threads';
 import { ConfirmDialog } from '../components/ConfirmDialog';
 import { useToast } from '../components/Toast';
 import { logger } from '../utils/logger';
+
+const THREAD_COLOR: [number, number, number] = [1, 1, 1];
 
 interface HomeProps {
   jobs: ResearchJob[];
@@ -185,63 +187,24 @@ export const Home: React.FC<HomeProps> = ({ jobs, loading = false, reportBluepri
     <div className="space-y-8 animate-in fade-in duration-500">
       
       {/* Hero / Action Area */}
-      <div className="relative overflow-hidden rounded-2xl shadow-xl">
-        <ShaderGradientCanvas
-          style={{ position: 'absolute', inset: 0 }}
-          pixelDensity={3}
-          fov={45}
-        >
-          <ShaderGradient
-            animate="on"
-            axesHelper="off"
-            bgColor1="#000000"
-            bgColor2="#000000"
-            brightness={1}
-            cAzimuthAngle={180}
-            cDistance={1.6}
-            cPolarAngle={90}
-            cameraZoom={1.65}
-            color1="#003399"
-            color2="#0A7CC1"
-            color3="#FFFFFF"
-            destination="onCanvas"
-            embedMode="off"
-            envPreset="city"
-            format="gif"
-            fov={45}
-            frameRate={10}
-            gizmoHelper="hide"
-            grain="on"
-            lightType="3d"
-            positionX={-0.8}
-            positionY={0}
-            positionZ={0}
-            range="disabled"
-            rangeEnd={40}
-            rangeStart={0}
-            reflection={0.1}
-            rotationX={0}
-            rotationY={10}
-            rotationZ={50}
-            shader="defaults"
-            type="waterPlane"
-            uAmplitude={1}
-            uDensity={1.5}
-            uFrequency={5.5}
-            uSpeed={0.2}
-            uStrength={2}
-            uTime={0}
-            wireframe={false}
+      <div className="relative overflow-hidden rounded-2xl shadow-xl bg-brand-700">
+        <div className="absolute inset-0">
+          <Threads
+            color={THREAD_COLOR}
+            amplitude={1.5}
+            distance={.8}
+            lineWidth={18}
+            enableMouseInteraction
           />
-        </ShaderGradientCanvas>
+        </div>
 
-        <div className="relative z-10 bg-gradient-to-br from-brand-600/80 to-brand-800/80 p-8 text-white">
+        <div className="relative z-10 p-8 text-white pointer-events-none">
           <div className="max-w-2xl">
             <h2 className="text-3xl font-bold mb-3">Institutional-grade research in minutes.</h2>
             <p className="text-brand-100 mb-8 text-lg">
               Deploy autonomous agents to gather, analyze, and synthesize company intelligence.
             </p>
-            <div className="conic-border-wrapper rounded-lg inline-block">
+            <div className="conic-border-wrapper rounded-lg inline-block pointer-events-auto">
               <button
                 onClick={() => onNavigate('/new')}
                 className="conic-border-content bg-white text-brand-700 px-6 py-3 rounded-lg font-semibold shadow-lg hover:bg-brand-50 transition-all flex items-center gap-2"
