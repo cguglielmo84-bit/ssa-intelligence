@@ -5,6 +5,7 @@ All notable changes to this repository will be documented in this file.
 The format is based on Keep a Changelog and this project adheres to Semantic Versioning.
 
 ## [Unreleased]
+- Fix: DotGrid background canvas no longer overlaps interactive page content on non-dashboard tabs.
 - Feat: invite-only access system — new users default to PENDING status; super-admin can generate invite links; users accept invites to become ACTIVE; frontend gates pending users with activation page.
 - Feat: super-admin role (SUPER_ADMIN_EMAIL env var) with dedicated middleware guard for user/group/invite management.
 - Security: replace predictable CUID invite tokens with cryptographically secure `crypto.randomBytes(32)`.
