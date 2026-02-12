@@ -123,6 +123,7 @@ Dependabot opens automated dependency update PRs every Monday. **Humans should n
    - **three.js ecosystem** (`three`, `@react-three/fiber`, `three-stdlib`, `camera-controls`, `@types/three`): These must be bumped in lockstep. If only one is bumped, do not approve — coordinate a combined upgrade.
    - Do not approve if breaking changes are detected. Leave a comment explaining the risk.
 5. **Security PRs** (from Dependabot security alerts): Prioritize these. Review and approve promptly.
+6. **Check the Dockerfile** — review `Dockerfile` (project root) to see if the bumped dependency is pinned in the Docker image (e.g. base image tags). If so, update the Dockerfile to match.
 
 ### What is excluded
 
