@@ -16,6 +16,7 @@ The format is based on Keep a Changelog and this project adheres to Semantic Ver
 - Fix: news integration tests use admin auth to match route middleware requirements (requireAdmin, articleUsers scoping).
 - Fix: add Invite table to test truncateAll() to prevent FK constraint failures.
 - Fix: remove stale `migrate resolve --rolled-back` hack from Dockerfile CMD.
+- Fix: add missing migration to replace RevenueOwner-based junction tables with User-based tables (fixes production 500s on all `/api/news/*` endpoints).
 
 ### Added
 - News Intelligence module: multi-layer news fetching (RSS/API + AI search), article pinning, bulk archive, PDF/Markdown export, deep dive search with company name resolution.
