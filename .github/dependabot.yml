@@ -1,0 +1,55 @@
+version: 2
+
+updates:
+  # Backend dependencies
+  - package-ecosystem: npm
+    directory: /backend
+    schedule:
+      interval: weekly
+      day: monday
+    open-pull-requests-limit: 5
+    groups:
+      backend-minor-patch:
+        update-types:
+          - minor
+          - patch
+        exclude-patterns:
+          # High risk — get individual PRs for manual review
+          - "@prisma/client"
+          - "prisma"
+          - "playwright"
+          - "@anthropic-ai/sdk"
+
+  # Frontend dependencies
+  - package-ecosystem: npm
+    directory: /frontend
+    schedule:
+      interval: weekly
+      day: monday
+    open-pull-requests-limit: 5
+    groups:
+      frontend-minor-patch:
+        update-types:
+          - minor
+          - patch
+        exclude-patterns:
+          # Medium risk — tightly coupled, get individual PRs for manual review
+          - "@shadergradient/react"
+          - "@react-three/fiber"
+          - "three"
+          - "three-stdlib"
+          - "camera-controls"
+          - "@types/three"
+
+  # GitHub Actions
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+    open-pull-requests-limit: 5
+    groups:
+      actions-minor-patch:
+        update-types:
+          - minor
+          - patch
