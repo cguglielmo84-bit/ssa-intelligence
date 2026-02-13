@@ -13,6 +13,20 @@ The format is based on Keep a Changelog and this project adheres to Semantic Ver
 ### Fixed
 - Fix export dropdown being clipped by `overflow-hidden` on the news feed header.
 - Move stat cards out of News Activity header so they render on a light background with visible styling.
+- Copy `backend/assets/` into Docker production image so SSA logos appear in PDF and DOCX exports.
+- Fix asset path resolution in PDF and DOCX exporters — compiled JS in `dist/` resolved to wrong directory; now detects source vs compiled context at startup.
+
+## [1.2.0] - 2026-02-13
+
+### Added
+- DOCX and Markdown export routes with SSA-branded cover page, header logo, and footer.
+- DOCX OOXML post-processing pipeline for Word compliance (relationship IDs, section properties, footer anchor fixes).
+- DOCX and section renderer unit tests (42 tests).
+
+### Fixed
+- Resolve "Word found unreadable content" errors in DOCX export via OOXML compliance fixes.
+- Show footer on DOCX title page while keeping header suppressed.
+- Show export loading spinner only on the clicked format button instead of all buttons.
 - Remove `z-10` from content wrapper in Layout that created a stacking context trapping modals behind the header and sidebar.
 - Add `backdrop-blur-sm` to Prompt Library edit modal overlay to match the rest of the app.
 - Render all modals and toasts via React portals to `document.body` so backdrop blur covers the full viewport including the sticky header.
@@ -23,6 +37,7 @@ The format is based on Keep a Changelog and this project adheres to Semantic Ver
 - Standardize header bars across Research, News Feed, and News Activity with matching height, dark-to-brand gradient, Threads animation, and bottom-right button alignment.
 - Restyle export button and time period selector to white to match research dashboard button.
 - Remove refresh button and time period selector from News Feed header.
+- Open User/Group/Invite management to all admins (role: ADMIN) instead of restricting to the single super-admin.
 - Replace ShaderGradient hero background with React Bits Threads animation (OGL-based WebGL) — white animated threads on brand-700 with mouse interaction.
 - Remove `@shadergradient/react`, `@react-three/fiber`, `three`, `three-stdlib`, `camera-controls`, and `@types/three` dependencies; add `ogl`.
 - Add Dependabot with weekly grouped version updates for backend, frontend, and GitHub Actions; high/medium-risk deps (Prisma, Playwright, Anthropic SDK, three.js ecosystem) excluded from groups for individual manual review.
