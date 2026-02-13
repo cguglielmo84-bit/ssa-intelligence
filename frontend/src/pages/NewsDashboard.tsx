@@ -49,6 +49,7 @@ import { resolveCompanyApi, CompanySuggestion } from '../services/researchManage
 import { ArticleCard } from '../components/news/ArticleCard';
 import { ArticleDetailModal } from '../components/news/ArticleDetailModal';
 import { CompanyArticleGroup } from '../components/news/CompanyArticleGroup';
+import { Portal } from '../components/Portal';
 
 interface NewsDashboardProps {
   onNavigate: (path: string) => void;
@@ -871,6 +872,7 @@ export const NewsDashboard: React.FC<NewsDashboardProps> = ({ onNavigate, isAdmi
 
       {/* Deep Dive Search Progress Popup */}
       {showSearchProgress && (
+        <Portal>
         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-md flex items-center justify-center p-4 z-50">
           <div className="bg-white rounded-3xl shadow-2xl max-w-md w-full overflow-hidden">
             {/* Header */}
@@ -990,10 +992,12 @@ export const NewsDashboard: React.FC<NewsDashboardProps> = ({ onNavigate, isAdmi
             </div>
           </div>
         </div>
+        </Portal>
       )}
 
       {/* Company Resolution Modal */}
       {resolveModalOpen && (
+        <Portal>
         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-md flex items-center justify-center p-4 z-50">
           <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full overflow-hidden">
             <div className="px-6 py-4 bg-gradient-to-r from-amber-500 to-orange-500">
@@ -1041,6 +1045,7 @@ export const NewsDashboard: React.FC<NewsDashboardProps> = ({ onNavigate, isAdmi
             </div>
           </div>
         </div>
+        </Portal>
       )}
 
     </div>
@@ -1054,6 +1059,7 @@ const ProgressPopup: React.FC<{
   onClose: () => void;
 }> = ({ status, refreshing, onClose }) => {
   return (
+    <Portal>
     <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-md flex items-center justify-center p-4 z-50">
       <div className="bg-white rounded-3xl shadow-2xl max-w-lg w-full overflow-hidden">
         {/* Header with gradient */}
@@ -1203,5 +1209,6 @@ const ProgressPopup: React.FC<{
         </div>
       </div>
     </div>
+    </Portal>
   );
 };

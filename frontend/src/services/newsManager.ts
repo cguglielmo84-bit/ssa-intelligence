@@ -5,7 +5,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 
-const API_BASE = (import.meta as any).env?.VITE_API_BASE_URL || '/api';
+const API_BASE = import.meta.env.VITE_API_BASE_URL || '/api';
 
 // ============================================================================
 // Types
@@ -641,7 +641,7 @@ export const useUserPins = () => {
 // ============================================================================
 
 export const exportArticles = async (format: 'pdf' | 'markdown', articleIds: string[], userId?: string) => {
-  const API_BASE_URL = (import.meta as any).env?.VITE_API_BASE_URL || '/api';
+  const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api';
   const base = API_BASE_URL.replace(/\/$/, '');
 
   let url: string;

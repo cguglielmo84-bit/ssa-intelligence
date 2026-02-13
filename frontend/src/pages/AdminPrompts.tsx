@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { FileText, Edit2, ChevronDown, ChevronRight, X, Save, Play, History, RotateCcw, Check, AlertCircle, Clock, Loader2, Info, Maximize2, Minimize2 } from 'lucide-react';
 import { ConfirmDialog } from '../components/ConfirmDialog';
+import { Portal } from '../components/Portal';
 import { logger } from '../utils/logger';
 
 interface AdminPromptsProps {
@@ -57,7 +58,7 @@ interface TestRun {
   completedAt: string | null;
 }
 
-const apiBase = (import.meta as any).env?.VITE_API_BASE_URL || '/api';
+const apiBase = import.meta.env.VITE_API_BASE_URL || '/api';
 
 // Core sections that are used across all report types (have addendums)
 const CORE_SECTIONS = new Set([
@@ -753,7 +754,8 @@ export const AdminPrompts: React.FC<AdminPromptsProps> = ({ isAdmin }) => {
 
       {/* Edit Modal */}
       {editingPrompt && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+        <Portal>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
           <div className={`bg-white rounded-lg shadow-xl flex flex-col transition-all duration-200 ${
             isFullscreen
               ? 'w-full h-full max-w-none max-h-none rounded-none'
@@ -1112,6 +1114,7 @@ export const AdminPrompts: React.FC<AdminPromptsProps> = ({ isAdmin }) => {
             )}
           </div>
         </div>
+        </Portal>
       )}
 
       {confirmState && (

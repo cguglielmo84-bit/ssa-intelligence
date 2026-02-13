@@ -4,7 +4,7 @@
  */
 
 import { testPrisma } from './db-helpers.js';
-import type { ReportType, VisibilityScope, UserRole, UserStatus, FeedbackType, FeedbackStatus } from '@prisma/client';
+import type { ReportType, VisibilityScope, UserRole, UserStatus, FeedbackType, FeedbackStatus, BugReportSeverity, BugReportStatus, BugReportCategory, Prisma } from '@prisma/client';
 
 let counter = 0;
 const unique = () => `${Date.now()}-${++counter}`;
@@ -192,6 +192,53 @@ export async function createTestNewsArticle(overrides: {
       isSent: overrides.isSent ?? false,
       isArchived: overrides.isArchived ?? false,
       publishedAt: overrides.publishedAt ?? new Date(),
+    },
+  });
+}
+
+// ─── Bug Report ─────────────────────────────────────────────────────────────
+
+export async function createTestBugReport(overrides: {
+  severity?: BugReportSeverity;
+  status?: BugReportStatus;
+  category?: BugReportCategory;
+  title?: string;
+  description?: string;
+  errorMessage?: string;
+  errorStack?: string;
+  errorFingerprint?: string;
+  jobId?: string;
+  subJobId?: string;
+  stage?: string;
+  companyName?: string;
+  reportType?: string;
+  geography?: string;
+  industry?: string;
+  attempts?: number;
+  maxAttempts?: number;
+  errorContext?: Record<string, unknown>;
+} = {}) {
+  const u = unique();
+  return testPrisma.bugReport.create({
+    data: {
+      severity: overrides.severity ?? 'error',
+      status: overrides.status ?? 'open',
+      category: overrides.category ?? 'unknown',
+      title: overrides.title ?? `Test bug report ${u}`,
+      description: overrides.description ?? 'Test bug report description',
+      errorMessage: overrides.errorMessage ?? 'Test error message',
+      errorStack: overrides.errorStack ?? null,
+      errorFingerprint: overrides.errorFingerprint ?? `fp-${u}`,
+      jobId: overrides.jobId ?? `job-${u}`,
+      subJobId: overrides.subJobId ?? null,
+      stage: overrides.stage ?? 'foundation',
+      companyName: overrides.companyName ?? 'Test Corp',
+      reportType: overrides.reportType ?? 'GENERIC',
+      geography: overrides.geography ?? null,
+      industry: overrides.industry ?? null,
+      attempts: overrides.attempts ?? 3,
+      maxAttempts: overrides.maxAttempts ?? 3,
+      errorContext: (overrides.errorContext ?? {}) as Prisma.InputJsonValue,
     },
   });
 }

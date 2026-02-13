@@ -1,12 +1,15 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { ReportBlueprint, ResearchJob, SECTIONS_CONFIG } from '../types';
+import { Portal } from '../components/Portal';
 import { StatusPill } from '../components/StatusPill';
 import { Search, TrendingUp, Building2, MoreHorizontal, Loader2 } from 'lucide-react';
-import { ShaderGradientCanvas, ShaderGradient } from '@shadergradient/react';
+import Threads from '../components/Threads';
 import { ConfirmDialog } from '../components/ConfirmDialog';
 import { useToast } from '../components/Toast';
 import { logger } from '../utils/logger';
+
+const THREAD_COLOR: [number, number, number] = [1, 1, 1];
 
 interface HomeProps {
   jobs: ResearchJob[];
@@ -35,7 +38,7 @@ export const Home: React.FC<HomeProps> = ({ jobs, loading = false, reportBluepri
   const [search, setSearch] = useState('');
   const [selectedCompany, setSelectedCompany] = useState<string | null>(null);
   const [contextJob, setContextJob] = useState<ResearchJob | null>(null);
-  const API_BASE = ((import.meta as any).env?.VITE_API_BASE_URL || '/api').replace(/\/$/, '');
+  const API_BASE = (import.meta.env.VITE_API_BASE_URL || '/api').replace(/\/$/, '');
   const logoToken = logoTokenProp;
   const activeJobs = jobs
     .filter(j => j.status === 'running' || j.status === 'queued' || j.status === 'idle')
@@ -184,69 +187,32 @@ export const Home: React.FC<HomeProps> = ({ jobs, loading = false, reportBluepri
     <div className="space-y-8 animate-in fade-in duration-500">
       
       {/* Hero / Action Area */}
-      <div className="relative overflow-hidden rounded-2xl shadow-xl">
-        <ShaderGradientCanvas
-          style={{ position: 'absolute', inset: 0 }}
-          pixelDensity={3}
-          fov={45}
-        >
-          <ShaderGradient
-            animate="on"
-            axesHelper="off"
-            bgColor1="#000000"
-            bgColor2="#000000"
-            brightness={1}
-            cAzimuthAngle={180}
-            cDistance={1.6}
-            cPolarAngle={90}
-            cameraZoom={1.65}
-            color1="#003399"
-            color2="#0A7CC1"
-            color3="#FFFFFF"
-            destination="onCanvas"
-            embedMode="off"
-            envPreset="city"
-            format="gif"
-            fov={45}
-            frameRate={10}
-            gizmoHelper="hide"
-            grain="on"
-            lightType="3d"
-            positionX={-0.8}
-            positionY={0}
-            positionZ={0}
-            range="disabled"
-            rangeEnd={40}
-            rangeStart={0}
-            reflection={0.1}
-            rotationX={0}
-            rotationY={10}
-            rotationZ={50}
-            shader="defaults"
-            type="waterPlane"
-            uAmplitude={1}
-            uDensity={1.5}
-            uFrequency={5.5}
-            uSpeed={0.2}
-            uStrength={2}
-            uTime={0}
-            wireframe={false}
+      <div className="relative overflow-hidden rounded-2xl shadow-xl bg-brand-700">
+        <div className="absolute inset-0">
+          <Threads
+            color={THREAD_COLOR}
+            amplitude={1.5}
+            distance={.8}
+            lineWidth={18}
+            enableMouseInteraction
           />
-        </ShaderGradientCanvas>
+        </div>
 
-        <div className="relative z-10 bg-gradient-to-br from-brand-600/80 to-brand-800/80 p-8 text-white">
+        <div className="relative z-10 p-8 text-white pointer-events-none">
           <div className="max-w-2xl">
             <h2 className="text-3xl font-bold mb-3">Institutional-grade research in minutes.</h2>
             <p className="text-brand-100 mb-8 text-lg">
               Deploy autonomous agents to gather, analyze, and synthesize company intelligence.
             </p>
-            <button 
-              onClick={() => onNavigate('/new')}
-              className="bg-white text-brand-700 px-6 py-3 rounded-lg font-semibold shadow-lg hover:bg-brand-50 transition-all flex items-center gap-2"
-            >
-              <Search size={20} />
-              Start New Research
-            </button>
+            <div className="conic-border-wrapper rounded-lg inline-block pointer-events-auto">
+              <button
+                onClick={() => onNavigate('/new')}
+                className="conic-border-content bg-white text-brand-700 px-6 py-3 rounded-lg font-semibold shadow-lg hover:bg-brand-50 transition-all flex items-center gap-2"
+              >
+                <Search size={20} />
+                Start New Research
+              </button>
+            </div>
           </div>
         </div>
       </div>
@@ -337,7 +303,7 @@ export const Home: React.FC<HomeProps> = ({ jobs, loading = false, reportBluepri
               return (
                 <div
                   key={group.key}
-                  className="group relative bg-white border border-slate-200 rounded-xl p-5 shadow-sm hover:shadow-md transition-all cursor-pointer overflow-hidden"
+                  className="group relative bg-white border border-slate-200 rounded-xl p-5 shadow-sm hover:shadow-md transition-all cursor-pointer overflow-hidden min-h-[140px]"
                   onClick={() => setSelectedCompany(group.companyName)}
                 >
                   <div className="flex items-start justify-between mb-3">
@@ -347,9 +313,10 @@ export const Home: React.FC<HomeProps> = ({ jobs, loading = false, reportBluepri
                         {group.jobs.length} {group.jobs.length === 1 ? 'report' : 'reports'}
                       </div>
                     </div>
-                    <span className="text-xs text-slate-500">
-                      {group.lastActive ? `Updated ${new Date(group.lastActive).toLocaleDateString('en-US')}` : ''}
-                    </span>
+                    <div className="text-xs text-slate-400 text-right leading-tight">
+                      <div>Updated</div>
+                      <div className="text-slate-500 font-medium">{new Date(group.lastActive).toLocaleDateString('en-US')}</div>
+                    </div>
                   </div>
                   <div className="absolute bottom-3 right-3 flex items-center gap-2">
                     <div className="w-10 h-10 rounded-lg bg-slate-100 text-slate-500 flex items-center justify-center font-semibold overflow-hidden">
@@ -386,7 +353,8 @@ export const Home: React.FC<HomeProps> = ({ jobs, loading = false, reportBluepri
         const group = companyGroups.find(g => g.companyName === selectedCompany);
         if (!group) return null;
         return (
-          <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-start justify-center p-4 z-50">
+          <Portal>
+          <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center p-4 z-50">
             <div className="bg-white rounded-2xl shadow-2xl max-w-6xl w-full max-h-[90vh] overflow-hidden flex flex-col">
               <div className="flex items-center justify-between border-b border-slate-200 px-6 py-4">
                 <div>
@@ -546,6 +514,7 @@ export const Home: React.FC<HomeProps> = ({ jobs, loading = false, reportBluepri
               </div>
             </div>
           </div>
+          </Portal>
         );
       })()}
 
@@ -571,6 +540,7 @@ export const Home: React.FC<HomeProps> = ({ jobs, loading = false, reportBluepri
       <ToastContainer />
 
       {contextJob && (
+        <Portal>
         <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center p-4 z-50">
           <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full overflow-hidden">
             <div className="flex items-center justify-between border-b border-slate-200 px-6 py-4">
@@ -590,6 +560,7 @@ export const Home: React.FC<HomeProps> = ({ jobs, loading = false, reportBluepri
             </div>
           </div>
         </div>
+        </Portal>
       )}
     </div>
   );

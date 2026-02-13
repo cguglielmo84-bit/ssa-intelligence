@@ -10,6 +10,7 @@ import { AdminPricing } from './pages/AdminPricing';
 import { AdminPrompts } from './pages/AdminPrompts';
 import { NewsDashboard } from './pages/NewsDashboard';
 import { AdminNewsActivity } from './pages/AdminNewsActivity';
+import { AdminBugReports } from './pages/AdminBugReports';
 import { InviteAccept } from './pages/InviteAccept';
 import { PendingActivation } from './pages/PendingActivation';
 import { useReportBlueprints, useResearchManager, useUserContext } from './services/researchManager';
@@ -25,8 +26,8 @@ export default function App() {
 
   // Fetch logo token once at app level (not on every Home mount)
   useEffect(() => {
-    const apiBase = ((import.meta as any).env?.VITE_API_BASE_URL || '/api').replace(/\/$/, '');
-    const fallback = (import.meta as any).env?.VITE_LOGO_DEV_TOKEN as string | undefined;
+    const apiBase = (import.meta.env.VITE_API_BASE_URL || '/api').replace(/\/$/, '');
+    const fallback = import.meta.env.VITE_LOGO_DEV_TOKEN as string | undefined;
     if (fallback) {
       setLogoToken(fallback);
     }
@@ -139,6 +140,9 @@ export default function App() {
     }
     if (currentPath === '/admin/news-activity') {
       return <AdminNewsActivity isAdmin={userContext.user?.isAdmin} />;
+    }
+    if (currentPath === '/admin/bugs') {
+      return <AdminBugReports isAdmin={userContext.user?.isAdmin} />;
     }
     if (currentPath.startsWith('/research/')) {
       return (

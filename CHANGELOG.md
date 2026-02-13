@@ -5,26 +5,58 @@ All notable changes to this repository will be documented in this file.
 The format is based on Keep a Changelog and this project adheres to Semantic Versioning.
 
 ## [Unreleased]
-- Feat: invite-only access system — new users default to PENDING status; super-admin can generate invite links; users accept invites to become ACTIVE; frontend gates pending users with activation page.
-- Feat: super-admin role (SUPER_ADMIN_EMAIL env var) with dedicated middleware guard for user/group/invite management.
-- Security: replace predictable CUID invite tokens with cryptographically secure `crypto.randomBytes(32)`.
-- Security: fix race condition on invite acceptance with conditional `updateMany` inside interactive transaction.
-- Security: tighten dev-fallback/impersonation guard from `NODE_ENV !== 'production'` to explicit `NODE_ENV === 'development' || DEV_MODE === 'true'`.
-- Security: redact invite tokens from list response for used/expired invites.
-- Refactor: extract shared domain-validation helpers to `backend/src/lib/domain-validation.ts`.
-- Fix: frontend loading-state gate prevents app shell flash for pending users.
-- Fix: news integration tests use admin auth to match route middleware requirements (requireAdmin, articleUsers scoping).
-- Fix: add Invite table to test truncateAll() to prevent FK constraint failures.
-- Fix: remove stale `migrate resolve --rolled-back` hack from Dockerfile CMD.
-- Fix: add missing migration to replace RevenueOwner-based junction tables with User-based tables (fixes production 500s on all `/api/news/*` endpoints).
+
+### Fixed
+- Remove `z-10` from content wrapper in Layout that created a stacking context trapping modals behind the header and sidebar.
+- Add `backdrop-blur-sm` to Prompt Library edit modal overlay to match the rest of the app.
+- Render all modals and toasts via React portals to `document.body` so backdrop blur covers the full viewport including the sticky header.
+- Add missing `backdrop-blur-sm` to UserAddModal, UserEditModal, and CompanyResolveModal overlays.
+- Center company reports modal vertically instead of top-aligned.
+
+### Changed
+- Replace ShaderGradient hero background with React Bits Threads animation (OGL-based WebGL) — white animated threads on brand-700 with mouse interaction.
+- Remove `@shadergradient/react`, `@react-three/fiber`, `three`, `three-stdlib`, `camera-controls`, and `@types/three` dependencies; add `ogl`.
+- Add Dependabot with weekly grouped version updates for backend, frontend, and GitHub Actions; high/medium-risk deps (Prisma, Playwright, Anthropic SDK, three.js ecosystem) excluded from groups for individual manual review.
+- Skip changelog CI check for Dependabot PRs.
+- Ignore major version bumps in Dependabot — only minor/patch PRs are opened automatically.
+- Add Dependabot PR review instructions to CLAUDE.md, AGENTS.md, and CONTRIBUTING.md — LLM agents must review every Dependabot PR before merge.
+- Skip CodeRabbit automatic reviews on Dependabot PRs (`.coderabbit.yaml`).
+- Update Playwright Docker base image from v1.57.0 to v1.58.2 to match the bumped library version.
+- Remove unused `backend/Dockerfile` — production uses the root `Dockerfile` via Render.
+- Remove stale `backend` service from `docker-compose.yml` (referenced deleted Dockerfile); postgres and redis services remain for local dev.
+- Sync Dependabot review instructions between CLAUDE.md and AGENTS.md — add three.js lockstep rule, "What is excluded" section, and Dockerfile check step to both.
+- Switch Dependabot from weekly to monthly schedule; remove stale three.js/ShaderGradient exclude-patterns from frontend group, replace with `ogl`.
+- Add step-by-step Dependabot workflow guide for human devs in `CONTRIBUTING.md`.
+
+### Refactored
+- Add `vite-env.d.ts` and remove all `(import.meta as any)` casts across 12 frontend files — uses Vite's built-in `ImportMeta` types instead.
+
+## [1.1.1] - 2026-02-12
+
+### Changed
+- Rename admin "Bug Reports" page to "Research Failures" to distinguish from user-facing "Report Issue" feature.
+
+## [1.1.0] - 2026-02-12
 
 ### Added
+- Automatic bug report creation on permanent research stage failures — captures error details, category, severity, and sanitized context (`backend/src/services/bug-report.ts`).
+- Admin bug reports dashboard (`#/admin/bugs`) with summary cards, filter bar, paginated table, detail modal with status management and resolution notes.
+- AI-agent-queryable endpoint (`GET /api/admin/bug-reports/agent-query`) with fingerprint grouping, pattern detection, and suggested actions per error category.
+- Invite-only access system — new users default to PENDING status; super-admin can generate invite links; users accept invites to become ACTIVE; frontend gates pending users with activation page.
+- Super-admin role (SUPER_ADMIN_EMAIL env var) with dedicated middleware guard for user/group/invite management.
 - News Intelligence module: multi-layer news fetching (RSS/API + AI search), article pinning, bulk archive, PDF/Markdown export, deep dive search with company name resolution.
 - Admin activity dashboard with engagement metrics, filters, and analytics.
 - User activity tracking (article opens, link clicks, page views, exports).
 - User call diet configuration replacing revenue-owner model.
 
 ### Fixed
+- DotGrid background canvas no longer overlaps interactive page content on non-dashboard tabs.
+- Frontend loading-state gate prevents app shell flash for pending users.
+- News integration tests use admin auth to match route middleware requirements (requireAdmin, articleUsers scoping).
+- Add Invite table to test truncateAll() to prevent FK constraint failures.
+- Remove stale `migrate resolve --rolled-back` hack from Dockerfile CMD.
+- Add missing migration to replace RevenueOwner-based junction tables with User-based tables (fixes production 500s on all `/api/news/*` endpoints).
+- Layout overflow causing content clipping at viewport bottom.
 - Security: non-admin users can no longer view other users' articles via `?userId=` query param.
 - Security: batch PDF/Markdown export endpoints now verify article access for non-admin users (403 on unauthorized IDs).
 - Duplicate pins router mount that shadowed other `/api/news/*` routes.
@@ -35,6 +67,22 @@ The format is based on Keep a Changelog and this project adheres to Semantic Ver
 ### Changed
 - `clear-news-data.sql` updated with current table references and wrapped in transaction.
 - Activity tracker fetch fallback now includes `credentials: 'include'` and logs 401 errors.
+
+### Security
+- Replace predictable CUID invite tokens with cryptographically secure `crypto.randomBytes(32)`.
+- Fix race condition on invite acceptance with conditional `updateMany` inside interactive transaction.
+- Tighten dev-fallback/impersonation guard from `NODE_ENV !== 'production'` to explicit `NODE_ENV === 'development' || DEV_MODE === 'true'`.
+- Redact invite tokens from list response for used/expired invites.
+
+### Refactored
+- Extract shared domain-validation helpers to `backend/src/lib/domain-validation.ts`.
+
+### UI
+- Animated dot grid background with periodic wave animation.
+- Conic gradient rotating border on "Start New Research" button.
+- Sidebar scrollbar auto-hides when not actively scrolling.
+- Improved header transparency, z-index layering, remove bottom border.
+- Stacked date display and minimum card height on research dashboard cards.
 
 ## [1.0.0] - 2026-02-10
 - Fix: reorder GENERIC report blueprint sections to match standard INDUSTRIALS ordering — Appendix and Sources now appears last instead of 4th from last.

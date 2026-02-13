@@ -35,6 +35,7 @@ import { getReportBlueprint } from './report-blueprints.js';
 import { collectBlockedStages } from './dependency-utils.js';
 import { computeFinalStatus, computeOverallConfidence, computeTerminalProgress } from './orchestrator-utils.js';
 import { getCostTrackingService, CostTrackingService } from './cost-tracking.js';
+import { createBugReport } from './bug-report.js';
 
 // Import validation schemas
 import {
@@ -1222,6 +1223,27 @@ export class ResearchOrchestrator {
           output: (rawContent ? { rawContent, error: errorMessage } : subJob.output) as any
         }
       });
+
+      // Auto-create bug report (fire-and-forget, cannot break pipeline)
+      try {
+        const job = await this.prisma.researchJob.findUnique({
+          where: { id: jobId },
+          select: {
+            companyName: true, reportType: true, geography: true,
+            industry: true, selectedSections: true, focusAreas: true,
+          },
+        });
+        if (job) {
+          await createBugReport(this.prisma, {
+            jobId, subJobId: subJob.id, stage: stageId, error,
+            rawContent,
+            subJob: { attempts, maxAttempts: subJob.maxAttempts, dependencies: subJob.dependencies },
+            job,
+          });
+        }
+      } catch (bugReportError) {
+        console.error('[bug-report] Failed to create automatic bug report:', bugReportError);
+      }
 
       const subJobs = await this.prisma.researchSubJob.findMany({
         where: { researchId: jobId },
