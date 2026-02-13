@@ -8,6 +8,7 @@ The format is based on Keep a Changelog and this project adheres to Semantic Ver
 
 ### Fixed
 - Copy `backend/assets/` into Docker production image so SSA logos appear in PDF and DOCX exports.
+- Fix asset path resolution in PDF and DOCX exporters — compiled JS in `dist/` resolved to wrong directory; now detects source vs compiled context at startup.
 
 ## [1.2.0] - 2026-02-13
 

@@ -14,7 +14,10 @@ import { safeErrorMessage } from '../../lib/error-utils.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-const assetsDir = path.resolve(__dirname, '../../../assets');
+// Resolve assets dir for both source (src/api/research/) and compiled (dist/src/api/research/) contexts
+const assetsDir = fs.existsSync(path.resolve(__dirname, '../../../assets'))
+  ? path.resolve(__dirname, '../../../assets')
+  : path.resolve(__dirname, '../../../../assets');
 
 // ── SSA brand constants (matching docx-export.ts) ─────────────────────
 const BRAND_BLUE = '#003399';

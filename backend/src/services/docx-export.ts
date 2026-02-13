@@ -25,7 +25,10 @@ import { renderSection, styledHeading } from './docx-section-renderers.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-const assetsDir = path.resolve(__dirname, '../../assets');
+// Resolve assets dir for both source (src/services/) and compiled (dist/src/services/) contexts
+const assetsDir = fs.existsSync(path.resolve(__dirname, '../../assets'))
+  ? path.resolve(__dirname, '../../assets')
+  : path.resolve(__dirname, '../../../assets');
 
 // SSA brand colors
 const BRAND_BLUE = '003399';
