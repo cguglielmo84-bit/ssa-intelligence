@@ -1,4 +1,5 @@
 import { STAGE_OUTPUT_FIELDS, type StageId } from './orchestrator.js';
+import { formatSectionContent, type SectionId } from './section-formatter.js';
 
 type ExportJob = {
   reportType?: string | null;
@@ -109,4 +110,40 @@ export const buildExportSections = (params: {
   }
 
   return results;
+};
+
+export const buildResearchMarkdown = (params: {
+  companyName: string;
+  geography?: string | null;
+  industry?: string | null;
+  date?: string;
+  exportSections: ExportSection[];
+  skipTitleBlock?: boolean;
+}): string => {
+  const { companyName, exportSections } = params;
+  const chunks: string[] = [];
+
+  if (!params.skipTitleBlock) {
+    chunks.push(`# ${companyName}`);
+    chunks.push('');
+    if (params.geography) chunks.push(`**Geography:** ${params.geography}`);
+    if (params.industry) chunks.push(`**Industry:** ${params.industry}`);
+    if (params.date) chunks.push(`**Date:** ${params.date}`);
+    chunks.push('');
+    chunks.push('---');
+    chunks.push('');
+  }
+
+  exportSections.forEach(({ id: sectionId, title, data }) => {
+    chunks.push(`## ${title}`);
+    const formatted = formatSectionContent(sectionId as SectionId, data);
+    if (formatted && formatted.trim().length) {
+      chunks.push(formatted);
+    } else {
+      chunks.push('_No content generated for this section._');
+    }
+    chunks.push('');
+  });
+
+  return chunks.join('\n');
 };

@@ -33,7 +33,7 @@ export const Home: React.FC<HomeProps> = ({ jobs, loading = false, reportBluepri
   );
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
   const [menuPosition, setMenuPosition] = useState<{ top: number; left: number } | null>(null);
-  const [exportingId, setExportingId] = useState<string | null>(null);
+  const [exportingKey, setExportingKey] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [search, setSearch] = useState('');
   const [selectedCompany, setSelectedCompany] = useState<string | null>(null);
@@ -130,29 +130,30 @@ export const Home: React.FC<HomeProps> = ({ jobs, loading = false, reportBluepri
     return 'Private';
   };
 
-  const handleExport = async (job: ResearchJob) => {
+  const handleExport = async (job: ResearchJob, format: 'pdf' | 'docx' | 'markdown' = 'pdf') => {
     try {
-      setExportingId(job.id);
-      const res = await fetch(`${API_BASE}/research/${job.id}/export/pdf`);
+      setExportingKey(`${job.id}:${format}`);
+      const res = await fetch(`${API_BASE}/research/${job.id}/export/${format}`);
       if (!res.ok) {
         const text = await res.text();
-        throw new Error(text || 'Failed to export PDF');
+        throw new Error(text || `Failed to export ${format.toUpperCase()}`);
       }
       const blob = await res.blob();
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
       const dateStr = new Date(job.createdAt).toISOString().slice(0, 10);
+      const ext = format === 'markdown' ? 'md' : format;
       a.href = url;
-      a.download = `${job.companyName.replace(/\s+/g, '_')}-${dateStr}.pdf`;
+      a.download = `${job.companyName.replace(/\s+/g, '_')}-${dateStr}.${ext}`;
       document.body.appendChild(a);
       a.click();
       a.remove();
       window.URL.revokeObjectURL(url);
     } catch (err) {
-      logger.error('PDF export failed', err);
-      showToast('Failed to export PDF. Please try again.', 'error');
+      logger.error(`${format.toUpperCase()} export failed`, err);
+      showToast(`Failed to export ${format.toUpperCase()}. Please try again.`, 'error');
     } finally {
-      setExportingId(null);
+      setExportingKey(null);
       setOpenMenuId(null);
     }
   };
@@ -193,7 +194,7 @@ export const Home: React.FC<HomeProps> = ({ jobs, loading = false, reportBluepri
             color={THREAD_COLOR}
             amplitude={1.5}
             distance={.8}
-            lineWidth={18}
+            lineWidth={22}
             enableMouseInteraction
           />
         </div>
@@ -471,19 +472,28 @@ export const Home: React.FC<HomeProps> = ({ jobs, loading = false, reportBluepri
                                           style={{ top: menuPosition?.top ?? 0, left: menuPosition?.left ?? 0 }}
                                         >
                                           <button
-                                            onClick={() => handleExport(job)}
-                                            disabled={exportingId === job.id}
+                                            onClick={() => handleExport(job, 'pdf')}
+                                            disabled={exportingKey?.startsWith(job.id) ?? false}
                                             className="w-full text-left px-3 py-2 text-sm hover:bg-slate-50 flex items-center gap-2 disabled:opacity-60"
                                           >
-                                            {exportingId === job.id ? <Loader2 size={14} className="animate-spin text-slate-500" /> : null}
+                                            {exportingKey === `${job.id}:pdf` ? <Loader2 size={14} className="animate-spin text-slate-500" /> : null}
                                             Export PDF
                                           </button>
                                           <button
-                                            disabled
-                                            className="w-full text-left px-3 py-2 text-sm text-slate-400 cursor-not-allowed flex items-center"
-                                            title="Coming soon"
+                                            onClick={() => handleExport(job, 'docx')}
+                                            disabled={exportingKey?.startsWith(job.id) ?? false}
+                                            className="w-full text-left px-3 py-2 text-sm hover:bg-slate-50 flex items-center gap-2 disabled:opacity-60"
                                           >
-                                            Rerun
+                                            {exportingKey === `${job.id}:docx` ? <Loader2 size={14} className="animate-spin text-slate-500" /> : null}
+                                            Export DOCX
+                                          </button>
+                                          <button
+                                            onClick={() => handleExport(job, 'markdown')}
+                                            disabled={exportingKey?.startsWith(job.id) ?? false}
+                                            className="w-full text-left px-3 py-2 text-sm hover:bg-slate-50 flex items-center gap-2 disabled:opacity-60"
+                                          >
+                                            {exportingKey === `${job.id}:markdown` ? <Loader2 size={14} className="animate-spin text-slate-500" /> : null}
+                                            Export Markdown
                                           </button>
                                           <button
                                             onClick={() => {
