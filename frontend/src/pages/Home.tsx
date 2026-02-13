@@ -188,7 +188,7 @@ export const Home: React.FC<HomeProps> = ({ jobs, loading = false, reportBluepri
     <div className="space-y-8 animate-in fade-in duration-500">
       
       {/* Hero / Action Area */}
-      <div className="relative overflow-hidden rounded-2xl shadow-xl bg-brand-700">
+      <div className="relative overflow-hidden rounded-2xl shadow-xl bg-gradient-to-br from-slate-900 via-brand-800 to-brand-700">
         <div className="absolute inset-0">
           <Threads
             color={THREAD_COLOR}
@@ -199,12 +199,14 @@ export const Home: React.FC<HomeProps> = ({ jobs, loading = false, reportBluepri
           />
         </div>
 
-        <div className="relative z-10 p-8 text-white pointer-events-none">
+        <div className="relative z-10 p-8 text-white pointer-events-none flex flex-col justify-between min-h-[11rem]">
           <div className="max-w-2xl">
             <h2 className="text-3xl font-bold mb-3">Institutional-grade research in minutes.</h2>
-            <p className="text-brand-100 mb-8 text-lg">
+            <p className="text-brand-100 text-lg">
               Deploy autonomous agents to gather, analyze, and synthesize company intelligence.
             </p>
+          </div>
+          <div className="flex justify-end">
             <div className="conic-border-wrapper rounded-lg inline-block pointer-events-auto">
               <button
                 onClick={() => onNavigate('/new')}

@@ -20,7 +20,7 @@ services:
     plan: standard  # Standard plan needed for Playwright/PDF export (more memory)
     healthCheckPath: /health
     # Run database migrations before each deploy
-    preDeployCommand: cd /app/backend && npx prisma migrate resolve --rolled-back 20260212_add_user_activities 2>/dev/null; npx prisma migrate deploy
+    preDeployCommand: cd /app/backend && npx prisma migrate resolve --rolled-back 20260212_add_user_activities 2>/dev/null; npx prisma migrate deploy && node dist/src/scripts/seed-call-diets.js
     envVars:
       - key: NODE_ENV
         value: production
