@@ -7,7 +7,6 @@ The format is based on Keep a Changelog and this project adheres to Semantic Ver
 ## [Unreleased]
 
 ### Added
-- Call diet seed script (`seed-call-diets.ts`) with all 19 teammates and their tracked companies/people for initial Render deploy.
 - Always show "Selected" section in news export dropdown (disabled at count 0).
 
 ### Fixed
