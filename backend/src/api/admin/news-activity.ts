@@ -12,7 +12,7 @@ import { Prisma } from '@prisma/client';
 const router = Router();
 
 // Meaningful event types for tier classification
-const MEANINGFUL_TYPES = ['article_open', 'article_link_click', 'pin', 'unpin', 'export_pdf', 'export_markdown'];
+const MEANINGFUL_TYPES = ['article_open', 'article_link_click', 'pin', 'unpin', 'export_pdf', 'export_markdown', 'export_docx'];
 
 function classifyTier(meaningfulEvents: number): string {
   if (meaningfulEvents >= 20) return 'Power';
@@ -95,7 +95,7 @@ router.get('/', async (req: Request, res: Response) => {
       // 4. Total exports
       prisma.userActivity.count({
         where: {
-          type: { in: ['export_pdf', 'export_markdown'] },
+          type: { in: ['export_pdf', 'export_markdown', 'export_docx'] },
           createdAt: { gte: since },
           ...userFilterPrisma,
         },
@@ -121,8 +121,8 @@ router.get('/', async (req: Request, res: Response) => {
           COUNT(DISTINCT user_id) AS unique_users,
           COUNT(*) FILTER (WHERE type = 'article_open') AS article_reads,
           COUNT(*) FILTER (WHERE type = 'article_open' OR type = 'pin' OR type = 'unpin'
-            OR type = 'export_pdf' OR type = 'export_markdown') AS meaningful_reads,
-          COUNT(*) FILTER (WHERE type = 'export_pdf' OR type = 'export_markdown') AS exports
+            OR type = 'export_pdf' OR type = 'export_markdown' OR type = 'export_docx') AS meaningful_reads,
+          COUNT(*) FILTER (WHERE type = 'export_pdf' OR type = 'export_markdown' OR type = 'export_docx') AS exports
         FROM user_activities
         WHERE created_at >= ${since}
         ${userFilterSqlNoAlias}
@@ -143,10 +143,10 @@ router.get('/', async (req: Request, res: Response) => {
       }>>`
         SELECT
           ua.user_id,
-          COUNT(*) FILTER (WHERE ua.type IN ('article_open','article_link_click','pin','unpin','export_pdf','export_markdown')) AS meaningful_count,
+          COUNT(*) FILTER (WHERE ua.type IN ('article_open','article_link_click','pin','unpin','export_pdf','export_markdown','export_docx')) AS meaningful_count,
           COUNT(*) FILTER (WHERE ua.type = 'article_open') AS article_reads,
           COUNT(*) FILTER (WHERE ua.type = 'article_link_click') AS link_clicks,
-          COUNT(*) FILTER (WHERE ua.type IN ('export_pdf','export_markdown')) AS exports,
+          COUNT(*) FILTER (WHERE ua.type IN ('export_pdf','export_markdown','export_docx')) AS exports,
           COUNT(*) FILTER (WHERE ua.type IN ('pin','unpin')) AS pins,
           COALESCE(SUM(ua.duration_ms) FILTER (WHERE ua.type = 'article_close' AND ua.duration_ms > 0), 0) AS total_read_time_ms,
           MAX(ua.created_at) AS last_active
@@ -181,12 +181,12 @@ router.get('/', async (req: Request, res: Response) => {
           COUNT(DISTINCT ua.user_id) FILTER (WHERE ua.type = 'article_open') AS unique_readers,
           COALESCE(SUM(ua.duration_ms) FILTER (WHERE ua.type = 'article_close' AND ua.duration_ms > 0), 0) AS total_read_time_ms,
           COUNT(ua.id) FILTER (WHERE ua.type = 'article_link_click') AS link_clicks,
-          COUNT(ua.id) FILTER (WHERE ua.type IN ('export_pdf', 'export_markdown')) AS exports,
+          COUNT(ua.id) FILTER (WHERE ua.type IN ('export_pdf', 'export_markdown', 'export_docx')) AS exports,
           (SELECT COUNT(*) FROM user_call_diet_companies ucd WHERE ucd."companyId" = tc.id) AS call_diet_user_count
         FROM user_activities ua
         JOIN news_articles na ON na.id = ua.article_id
         JOIN tracked_companies tc ON tc.id = na.company_id
-        WHERE ua.type IN ('article_open', 'article_close', 'article_link_click', 'export_pdf', 'export_markdown')
+        WHERE ua.type IN ('article_open', 'article_close', 'article_link_click', 'export_pdf', 'export_markdown', 'export_docx')
           AND ua.created_at >= ${since}
           ${userFilterSql}
         GROUP BY tc.id, tc.name, tc.ticker
@@ -219,11 +219,11 @@ router.get('/', async (req: Request, res: Response) => {
             ELSE NULL
           END AS avg_read_time_ms,
           COUNT(ua.id) FILTER (WHERE ua.type = 'article_link_click') AS link_clicks,
-          COUNT(ua.id) FILTER (WHERE ua.type IN ('export_pdf', 'export_markdown')) AS exports
+          COUNT(ua.id) FILTER (WHERE ua.type IN ('export_pdf', 'export_markdown', 'export_docx')) AS exports
         FROM user_activities ua
         JOIN news_articles na ON na.id = ua.article_id
         LEFT JOIN tracked_companies tc ON tc.id = na.company_id
-        WHERE ua.type IN ('article_open', 'article_close', 'article_link_click', 'export_pdf', 'export_markdown')
+        WHERE ua.type IN ('article_open', 'article_close', 'article_link_click', 'export_pdf', 'export_markdown', 'export_docx')
           AND ua.created_at >= ${since}
           ${userFilterSql}
         GROUP BY na.id, na.headline, tc.name, tc.ticker
@@ -426,7 +426,7 @@ router.get('/companies', async (req: Request, res: Response) => {
         COUNT(ua.id) FILTER (WHERE ua.type = 'article_open') AS total_reads,
         COUNT(DISTINCT ua.user_id) FILTER (WHERE ua.type = 'article_open') AS unique_readers,
         COALESCE(SUM(ua.duration_ms) FILTER (WHERE ua.type = 'article_close'), 0) AS total_read_time_ms,
-        COUNT(ua.id) FILTER (WHERE ua.type IN ('export_pdf','export_markdown')) AS exports
+        COUNT(ua.id) FILTER (WHERE ua.type IN ('export_pdf','export_markdown','export_docx')) AS exports
       FROM user_activities ua
       JOIN news_articles na ON na.id = ua.article_id
       JOIN tracked_companies tc ON tc.id = na.company_id
@@ -573,8 +573,8 @@ router.get('/:userId', async (req: Request, res: Response) => {
       }]>`
         SELECT
           COUNT(*) FILTER (WHERE type = 'article_open') AS article_reads,
-          COUNT(*) FILTER (WHERE type IN ('article_open','pin','unpin','export_pdf','export_markdown')) AS meaningful_events,
-          COUNT(*) FILTER (WHERE type IN ('export_pdf','export_markdown')) AS exports,
+          COUNT(*) FILTER (WHERE type IN ('article_open','pin','unpin','export_pdf','export_markdown','export_docx')) AS meaningful_events,
+          COUNT(*) FILTER (WHERE type IN ('export_pdf','export_markdown','export_docx')) AS exports,
           COUNT(*) FILTER (WHERE type IN ('pin','unpin')) AS pins
         FROM user_activities
         WHERE user_id = ${userId} AND created_at >= ${since}
@@ -619,8 +619,8 @@ router.get('/:userId', async (req: Request, res: Response) => {
         SELECT
           DATE_TRUNC('week', created_at) AS week_start,
           COUNT(*) FILTER (WHERE type = 'article_open') AS reads,
-          COUNT(*) FILTER (WHERE type IN ('article_open','pin','unpin','export_pdf','export_markdown')) AS meaningful_reads,
-          COUNT(*) FILTER (WHERE type IN ('export_pdf','export_markdown')) AS exports
+          COUNT(*) FILTER (WHERE type IN ('article_open','pin','unpin','export_pdf','export_markdown','export_docx')) AS meaningful_reads,
+          COUNT(*) FILTER (WHERE type IN ('export_pdf','export_markdown','export_docx')) AS exports
         FROM user_activities
         WHERE user_id = ${userId} AND created_at >= ${since}
         GROUP BY DATE_TRUNC('week', created_at)

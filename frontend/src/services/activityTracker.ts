@@ -17,6 +17,7 @@ export type ActivityEventType =
   | 'unpin'
   | 'export_pdf'
   | 'export_markdown'
+  | 'export_docx'
   | 'search'
   | 'filter_change';
 
