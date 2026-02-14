@@ -17,6 +17,7 @@ import {
   ShadingType,
   Table,
   VerticalAlignSection,
+  LineRuleType,
 } from 'docx';
 import { prisma } from '../lib/prisma.js';
 import {
@@ -177,7 +178,7 @@ export async function generateNewsDigestDocx(options: ExportOptions): Promise<Bu
           color: 'auto',
           fill: BRAND_BLUE,
         },
-        spacing: { before: 0, after: 0, line: 320, lineRule: 'exact' as any },
+        spacing: { before: 0, after: 0, line: 320, lineRule: LineRuleType.EXACT },
         children: [
           new TextRun({
             text: companyName.toUpperCase(),

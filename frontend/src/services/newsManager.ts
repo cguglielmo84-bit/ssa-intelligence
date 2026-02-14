@@ -655,7 +655,7 @@ export const exportArticles = async (format: 'pdf' | 'markdown' | 'docx', articl
     throw new Error('No articles selected');
   }
 
-  const res = await fetch(url);
+  const res = await fetch(url, { credentials: 'include' });
   if (!res.ok) throw new Error('Export failed');
   const blob = await res.blob();
   const ext = format === 'pdf' ? 'pdf' : format === 'docx' ? 'docx' : 'md';
