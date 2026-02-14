@@ -29,6 +29,7 @@ import {
   Sparkles,
   Pin,
   FileDown,
+  FileText,
   Download,
 } from 'lucide-react';
 import Threads from '../components/Threads';
@@ -350,7 +351,7 @@ export const NewsDashboard: React.FC<NewsDashboardProps> = ({ onNavigate, isAdmi
   };
 
   // Handle export with scope: all, pinned, or selected
-  const handleExport = async (format: 'pdf' | 'markdown', scope: 'all' | 'pinned' | 'selected') => {
+  const handleExport = async (format: 'pdf' | 'markdown' | 'docx', scope: 'all' | 'pinned' | 'selected') => {
     try {
       let ids: string[] = [];
       if (scope === 'selected') {
@@ -369,7 +370,7 @@ export const NewsDashboard: React.FC<NewsDashboardProps> = ({ onNavigate, isAdmi
   };
 
   // Handle single article export from detail modal
-  const handleArticleExport = async (articleId: string, format: 'pdf' | 'markdown') => {
+  const handleArticleExport = async (articleId: string, format: 'pdf' | 'markdown' | 'docx') => {
     try {
       await exportArticles(format, [articleId], currentUserId);
     } catch (err) {
@@ -403,12 +404,22 @@ export const NewsDashboard: React.FC<NewsDashboardProps> = ({ onNavigate, isAdmi
             enableMouseInteraction
           />
         </div>
+        <div className="absolute inset-0 rounded-2xl pointer-events-none" style={{ background: 'radial-gradient(ellipse at 80% 30%, rgba(255,255,255,0.18) 0%, transparent 55%)' }} />
         <div className="relative z-10 p-8 text-white pointer-events-none flex flex-col justify-between min-h-[11rem]">
-          <div className="max-w-2xl">
-            <h2 className="text-3xl font-bold mb-3">News Intelligence</h2>
-            <p className="text-brand-100 text-lg">
-              <span className="text-white font-semibold">{total}</span> curated articles from your tracked companies and people, refreshed and updated in real time
-            </p>
+          <div className="flex items-center">
+            <div className="max-w-2xl">
+              <h2 className="text-3xl font-bold mb-3">News Intelligence</h2>
+              <p className="text-brand-100 text-lg">
+                <span className="text-white font-semibold">{total}</span> curated articles from your tracked companies and people, refreshed and updated in real time
+              </p>
+            </div>
+            <div className="hidden lg:flex flex-1 items-center justify-center pointer-events-none">
+              <img
+                src="/SAMI_News.png"
+                alt="SAMI"
+                className="h-56 object-contain drop-shadow-[0_4px_12px_rgba(0,0,0,0.4)]"
+              />
+            </div>
           </div>
           <div className="flex items-center gap-3 justify-end pointer-events-auto">
             {/* Selection count */}
@@ -432,7 +443,7 @@ export const NewsDashboard: React.FC<NewsDashboardProps> = ({ onNavigate, isAdmi
                 className="flex items-center gap-2 px-6 py-3 rounded-lg font-semibold bg-white text-brand-700 shadow-lg hover:bg-brand-50 transition-all"
               >
                 <Download size={18} />
-                <span className="hidden sm:inline">Export</span>
+                <span className="hidden sm:inline">Export News</span>
                 <ChevronDown size={14} />
               </button>
               {showExportMenu && (
@@ -453,6 +464,12 @@ export const NewsDashboard: React.FC<NewsDashboardProps> = ({ onNavigate, isAdmi
                   >
                     <Download size={15} /> Markdown
                   </button>
+                  <button
+                    onClick={() => handleExport('docx', 'all')}
+                    className="w-full flex items-center gap-2 px-4 py-2 text-sm text-slate-700 hover:bg-brand-50 hover:text-brand-700 transition-colors"
+                  >
+                    <FileText size={15} /> Word (DOCX)
+                  </button>
 
                   {/* Pinned Articles */}
                   {pinnedIds.size > 0 && (
@@ -472,6 +489,12 @@ export const NewsDashboard: React.FC<NewsDashboardProps> = ({ onNavigate, isAdmi
                         className="w-full flex items-center gap-2 px-4 py-2 text-sm text-slate-700 hover:bg-brand-50 hover:text-brand-700 transition-colors"
                       >
                         <Download size={15} /> Markdown
+                      </button>
+                      <button
+                        onClick={() => handleExport('docx', 'pinned')}
+                        className="w-full flex items-center gap-2 px-4 py-2 text-sm text-slate-700 hover:bg-brand-50 hover:text-brand-700 transition-colors"
+                      >
+                        <FileText size={15} /> Word (DOCX)
                       </button>
                     </>
                   )}
@@ -494,6 +517,13 @@ export const NewsDashboard: React.FC<NewsDashboardProps> = ({ onNavigate, isAdmi
                     className={`w-full flex items-center gap-2 px-4 py-2 text-sm transition-colors ${selectedArticleIds.size === 0 ? 'text-slate-300 cursor-not-allowed' : 'text-slate-700 hover:bg-brand-50 hover:text-brand-700'}`}
                   >
                     <Download size={15} /> Markdown
+                  </button>
+                  <button
+                    onClick={() => handleExport('docx', 'selected')}
+                    disabled={selectedArticleIds.size === 0}
+                    className={`w-full flex items-center gap-2 px-4 py-2 text-sm transition-colors ${selectedArticleIds.size === 0 ? 'text-slate-300 cursor-not-allowed' : 'text-slate-700 hover:bg-brand-50 hover:text-brand-700'}`}
+                  >
+                    <FileText size={15} /> Word (DOCX)
                   </button>
                 </div>
               )}

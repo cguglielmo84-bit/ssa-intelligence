@@ -198,13 +198,23 @@ export const Home: React.FC<HomeProps> = ({ jobs, loading = false, reportBluepri
             enableMouseInteraction
           />
         </div>
+        <div className="absolute inset-0 rounded-2xl pointer-events-none" style={{ background: 'radial-gradient(ellipse at 80% 30%, rgba(255,255,255,0.18) 0%, transparent 55%)' }} />
 
         <div className="relative z-10 p-8 text-white pointer-events-none flex flex-col justify-between min-h-[11rem]">
-          <div className="max-w-2xl">
-            <h2 className="text-3xl font-bold mb-3">Institutional-grade research in minutes.</h2>
-            <p className="text-brand-100 text-lg">
-              Deploy autonomous agents to gather, analyze, and synthesize company intelligence.
-            </p>
+          <div className="flex items-center">
+            <div className="max-w-2xl">
+              <h2 className="text-3xl font-bold mb-3">Institutional-grade research in minutes.</h2>
+              <p className="text-brand-100 text-lg">
+                Deploy autonomous agents to gather, analyze, and synthesize company intelligence.
+              </p>
+            </div>
+            <div className="hidden lg:flex flex-1 items-center justify-center pointer-events-none">
+              <img
+                src="/SAMI_Research.png"
+                alt="SAMI"
+                className="h-56 object-contain drop-shadow-[0_4px_12px_rgba(0,0,0,0.4)] -ml-8"
+              />
+            </div>
           </div>
           <div className="flex justify-end">
             <div className="conic-border-wrapper rounded-lg inline-block pointer-events-auto">
@@ -212,8 +222,8 @@ export const Home: React.FC<HomeProps> = ({ jobs, loading = false, reportBluepri
                 onClick={() => onNavigate('/new')}
                 className="conic-border-content bg-white text-brand-700 px-6 py-3 rounded-lg font-semibold shadow-lg hover:bg-brand-50 transition-all flex items-center gap-2"
               >
-                <Search size={20} />
-                Start New Research
+                <Search size={18} />
+                New Research
               </button>
             </div>
           </div>

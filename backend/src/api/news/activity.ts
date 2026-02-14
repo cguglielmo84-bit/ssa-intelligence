@@ -13,7 +13,7 @@ const router = Router();
 
 const VALID_TYPES: ActivityType[] = [
   'article_open', 'article_close', 'article_link_click', 'page_view', 'page_leave',
-  'pin', 'unpin', 'export_pdf', 'export_markdown', 'search', 'filter_change',
+  'pin', 'unpin', 'export_pdf', 'export_markdown', 'export_docx', 'search', 'filter_change',
 ];
 
 // POST /api/news/activity - Record events (fire-and-forget, returns 202)

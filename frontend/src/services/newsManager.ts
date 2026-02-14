@@ -640,7 +640,7 @@ export const useUserPins = () => {
 // Export Articles
 // ============================================================================
 
-export const exportArticles = async (format: 'pdf' | 'markdown', articleIds: string[], userId?: string) => {
+export const exportArticles = async (format: 'pdf' | 'markdown' | 'docx', articleIds: string[], userId?: string) => {
   const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api';
   const base = API_BASE_URL.replace(/\/$/, '');
 
@@ -658,8 +658,8 @@ export const exportArticles = async (format: 'pdf' | 'markdown', articleIds: str
   const res = await fetch(url);
   if (!res.ok) throw new Error('Export failed');
   const blob = await res.blob();
-  const ext = format === 'pdf' ? 'pdf' : 'md';
-  const filename = `news-digest-${new Date().toISOString().split('T')[0]}.${ext}`;
+  const ext = format === 'pdf' ? 'pdf' : format === 'docx' ? 'docx' : 'md';
+  const filename = `sami-news-digest-${new Date().toISOString().split('T')[0]}.${ext}`;
   const a = document.createElement('a');
   a.href = URL.createObjectURL(blob);
   a.download = filename;
