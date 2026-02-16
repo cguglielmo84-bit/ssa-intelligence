@@ -7,6 +7,18 @@ The format is based on Keep a Changelog and this project adheres to Semantic Ver
 ## [Unreleased]
 
 ### Added
+- SAMI mascot image on News Activity header (cropped from SSAMI_Admin asset).
+
+### Changed
+- Move header bar action buttons to bottom-left on Research, News, and Activity pages.
+- Update News and Activity header titles to descriptive sentences.
+- Vertically and horizontally center SAMI mascots in all hero header bars.
+- Increase header bar height and padding for better spacing.
+- Remove redundant sticky page-name header bar from layout.
+
+## [Previous]
+
+### Added
 - News DOCX export with full SSA branding (cover page, blue company bars, header/footer).
 - Rewrite news PDF export from PDFKit to Playwright with branded cover page, wave footer, and Avenir font.
 - SAMI mascot images on news and research export cover pages (SAMI_News.png).
