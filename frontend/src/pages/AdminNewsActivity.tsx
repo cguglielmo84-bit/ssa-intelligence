@@ -462,12 +462,19 @@ export const AdminNewsActivity: React.FC<AdminNewsActivityProps> = ({ isAdmin })
             enableMouseInteraction
           />
         </div>
-        <div className="relative z-10 p-8 text-white pointer-events-none flex flex-col justify-between min-h-[11rem]">
+        <div className="relative z-10 p-10 text-white pointer-events-none flex flex-col justify-between gap-6 min-h-[15rem]">
+          <div className="hidden lg:flex absolute left-[50%] right-0 top-1/2 -translate-y-1/2 items-center justify-center pointer-events-none">
+            <img
+              src="/SAMI_Activity.png"
+              alt="SAMI"
+              className="h-56 object-contain drop-shadow-[0_4px_12px_rgba(0,0,0,0.4)]"
+            />
+          </div>
           <div className="max-w-2xl">
-            <h2 className="text-3xl font-bold mb-3">News Engagement</h2>
+            <h2 className="text-3xl font-bold mb-3">Understand how your team engages with news.</h2>
             <p className="text-brand-100 text-lg">Track how your team engages with news content across reads, exports, and link clicks</p>
           </div>
-          <div className="flex justify-end">
+          <div className="flex justify-start">
             <select
               value={days}
               onChange={e => setDays(Number(e.target.value))}

@@ -293,20 +293,6 @@ export const Layout: React.FC<LayoutProps> = ({ children, onNavigate, activePath
       {/* Main Content */}
       <main className="flex-1 min-w-0 overflow-y-auto h-screen relative scroll-smooth bg-slate-50">
          <DotGrid />
-         <header className="h-16 bg-white/20 backdrop-blur-md sticky top-0 z-20 flex items-center justify-between px-6">
-            <h1 className="font-semibold text-slate-800">
-              {activePath === '/' && 'Research Dashboard'}
-              {activePath === '/new' && 'Initiate New Analysis'}
-              {activePath.startsWith('/research') && 'Research Report'}
-              {activePath === '/admin' && 'User & Group Management'}
-              {activePath === '/admin/metrics' && 'Metrics Dashboard'}
-              {activePath === '/admin/pricing' && 'Pricing Management'}
-              {activePath === '/admin/prompts' && 'Prompt Library'}
-              {activePath === '/news' && 'News Intelligence'}
-              {activePath === '/admin/news-activity' && 'News Activity'}
-              {activePath === '/admin/bugs' && 'Research Failures'}
-            </h1>
-         </header>
          <div className="p-6 max-w-7xl mx-auto relative">
             {children}
          </div>

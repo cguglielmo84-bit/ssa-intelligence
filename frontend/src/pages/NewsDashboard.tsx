@@ -405,23 +405,21 @@ export const NewsDashboard: React.FC<NewsDashboardProps> = ({ onNavigate, isAdmi
           />
         </div>
         <div className="absolute inset-0 rounded-2xl pointer-events-none" style={{ background: 'radial-gradient(ellipse at 80% 30%, rgba(255,255,255,0.18) 0%, transparent 55%)' }} />
-        <div className="relative z-10 p-8 text-white pointer-events-none flex flex-col justify-between min-h-[11rem]">
-          <div className="flex items-center">
-            <div className="max-w-2xl">
-              <h2 className="text-3xl font-bold mb-3">News Intelligence</h2>
-              <p className="text-brand-100 text-lg">
-                <span className="text-white font-semibold">{total}</span> curated articles from your tracked companies and people, refreshed and updated in real time
-              </p>
-            </div>
-            <div className="hidden lg:flex flex-1 items-center justify-center pointer-events-none">
-              <img
-                src="/SAMI_News.png"
-                alt="SAMI"
-                className="h-56 object-contain drop-shadow-[0_4px_12px_rgba(0,0,0,0.4)]"
-              />
-            </div>
+        <div className="relative z-10 p-10 text-white pointer-events-none flex flex-col justify-between gap-6 min-h-[15rem]">
+          <div className="hidden lg:flex absolute left-[50%] right-0 top-1/2 -translate-y-1/2 items-center justify-center pointer-events-none">
+            <img
+              src="/SAMI_News.png"
+              alt="SAMI"
+              className="h-56 object-contain drop-shadow-[0_4px_12px_rgba(0,0,0,0.4)]"
+            />
           </div>
-          <div className="flex items-center gap-3 justify-end pointer-events-auto">
+          <div className="max-w-2xl">
+            <h2 className="text-3xl font-bold mb-3">Curated news intelligence, delivered daily.</h2>
+            <p className="text-brand-100 text-lg">
+              <span className="text-white font-semibold">{total}</span> curated articles from your tracked companies and people, refreshed and updated in real time
+            </p>
+          </div>
+          <div className="flex items-center gap-3 justify-start pointer-events-auto">
             {/* Selection count */}
             {selectedArticleIds.size > 0 && (
               <div className="flex items-center gap-2">
