@@ -69,7 +69,6 @@ export async function listResearch(req: Request, res: Response) {
         updatedAt: true,
         completedAt: true,
         queuedAt: true,
-        thumbnailUrl: true,
         // include sub-job status for effective status + generated sections
         subJobs: {
           select: { stage: true, status: true }
@@ -123,7 +122,6 @@ export async function listResearch(req: Request, res: Response) {
       queuedAt: job.queuedAt,
       updatedAt: job.updatedAt,
       completedAt: job.completedAt,
-      thumbnailUrl: job.thumbnailUrl || null,
       metadata: {
         companyName: job.companyName,
         geography: job.geography,

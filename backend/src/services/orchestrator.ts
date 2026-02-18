@@ -30,7 +30,7 @@ import { buildStrategicPrioritiesPrompt } from '../../prompts/strategic-prioriti
 import { buildOperatingCapabilitiesPrompt } from '../../prompts/operating-capabilities.js';
 import { buildDistributionAnalysisPrompt } from '../../prompts/distribution-analysis.js';
 import { generateAppendix } from '../../prompts/appendix.js';
-import { generateThumbnailForJob } from './thumbnail.js';
+
 import { getReportBlueprint } from './report-blueprints.js';
 import { collectBlockedStages } from './dependency-utils.js';
 import { computeFinalStatus, computeOverallConfidence, computeTerminalProgress } from './orchestrator-utils.js';
@@ -709,10 +709,6 @@ export class ResearchOrchestrator {
       if (finalStatus !== current.status) {
         await this.updateJobStatus(jobId, finalStatus);
       }
-
-      if (finalStatus === 'completed' || finalStatus === 'completed_with_errors') {
-        await this.triggerThumbnail(jobId);
-      }
     } catch (error) {
       console.error(`Job ${jobId} failed:`, error);
       await this.updateJobStatus(jobId, 'failed');
@@ -1357,9 +1353,6 @@ export class ResearchOrchestrator {
 
     await this.updateJobStatus(jobId, finalStatus);
 
-    if (finalStatus === 'completed' || finalStatus === 'completed_with_errors') {
-      await this.triggerThumbnail(jobId);
-    }
   }
 
   /**
@@ -2078,17 +2071,6 @@ export class ResearchOrchestrator {
     }
 
     return cleaned;
-  }
-
-  /**
-   * Kick off thumbnail generation for completed jobs (best-effort, non-blocking)
-   */
-  private async triggerThumbnail(jobId: string) {
-    try {
-      await generateThumbnailForJob(this.prisma, jobId);
-    } catch (err) {
-      console.error(`Thumbnail generation failed for ${jobId}:`, err);
-    }
   }
 
   private isRateLimitError(message: string): boolean {

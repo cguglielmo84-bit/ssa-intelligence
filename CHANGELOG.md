@@ -6,6 +6,14 @@ The format is based on Keep a Changelog and this project adheres to Semantic Ver
 
 ## [Unreleased]
 
+### Removed
+- Remove thumbnail generation service and S3 storage dependency (`@aws-sdk/client-s3`).
+- Drop `thumbnailUrl` column from `ResearchJob` schema (migration included).
+- Remove `THUMBNAIL_S3_*` env vars from `.env.example`.
+
+### Added
+- Architecture report (`docs/architecture-report.md`) and Mermaid architecture diagram.
+
 ### Fixed
 - Copy `backend/assets/` into Docker production image so SSA logos appear in PDF and DOCX exports.
 - Fix asset path resolution in PDF and DOCX exporters — compiled JS in `dist/` resolved to wrong directory; now detects source vs compiled context at startup.

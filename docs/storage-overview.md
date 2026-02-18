@@ -17,7 +17,7 @@ Key fields:
 - Prompt configuration: `reportType`, `selectedSections`, `userAddedPrompt`, `visibilityScope`.
 - Outputs (base sections): `foundation`, `execSummary`, `financialSnapshot`, `companyOverview`, `segmentAnalysis`, `trends`, `peerBenchmarking`, `skuOpportunities`, `recentNews`, `conversationStarters`, `appendix`.
 - Metadata: `metadata` (includes `blueprintVersion`, `reportInputs`, and source tracking), `overallConfidence`, `overallConfidenceScore`.
-- Usage/cost: `promptTokens`, `completionTokens`, `costUsd`, `thumbnailUrl`.
+- Usage/cost: `promptTokens`, `completionTokens`, `costUsd`.
 
 Note: report-specific section outputs (PE/FS) are stored only in `ResearchSubJob.output` and are surfaced by the API.
 

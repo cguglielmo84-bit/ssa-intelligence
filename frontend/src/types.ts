@@ -70,7 +70,6 @@ export interface ResearchJob {
   promptTokens?: number | null;
   completionTokens?: number | null;
   costUsd?: number | null;
-  thumbnailUrl?: string | null;
   createdAt: number;
   status: JobStatus;
   progress: number; // 0-100
