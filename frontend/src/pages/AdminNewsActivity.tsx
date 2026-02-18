@@ -41,6 +41,7 @@ import {
   ShieldCheck,
   Timer,
 } from 'lucide-react';
+import Threads from '../components/Threads';
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL || '/api';
 
@@ -449,26 +450,35 @@ export const AdminNewsActivity: React.FC<AdminNewsActivityProps> = ({ isAdmin })
     .filter(u => u.tier === 'Inactive' && u.callDietCompanyCount > 0).length;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8 animate-in fade-in duration-500">
       {/* Top Bar — Header + Summary Stats */}
-      <div className="relative bg-gradient-to-br from-brand-600 via-brand-700 to-violet-700 rounded-2xl overflow-hidden shadow-lg shadow-brand-500/20">
-        <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxnIGZpbGw9IiNmZmYiIGZpbGwtb3BhY2l0eT0iMC4wNSI+PGNpcmNsZSBjeD0iMzAiIGN5PSIzMCIgcj0iMiIvPjwvZz48L2c+PC9zdmc+')] opacity-50" />
-        <div className="relative p-6">
-          {/* Title row */}
-          <div className="flex items-center justify-between mb-5">
-            <div className="flex items-center gap-3">
-              <div className="p-2.5 bg-white/15 backdrop-blur-sm rounded-xl border border-white/20">
-                <BarChart3 size={22} className="text-white" />
-              </div>
-              <div>
-                <h2 className="text-xl font-bold text-white tracking-tight">News Engagement</h2>
-                <p className="text-sm text-white/60 mt-0.5">Track how your team engages with news content</p>
-              </div>
-            </div>
+      <div className="relative overflow-hidden rounded-2xl shadow-xl bg-gradient-to-br from-slate-900 via-brand-800 to-brand-700">
+        <div className="absolute inset-0">
+          <Threads
+            color={[1, 1, 1]}
+            amplitude={1.5}
+            distance={0.8}
+            lineWidth={18}
+            enableMouseInteraction
+          />
+        </div>
+        <div className="relative z-10 p-10 text-white pointer-events-none flex flex-col justify-between gap-6 min-h-[15rem]">
+          <div className="hidden lg:flex absolute left-[50%] right-0 top-1/2 -translate-y-1/2 items-center justify-center pointer-events-none">
+            <img
+              src="/SAMI_Activity.png"
+              alt="SAMI"
+              className="h-56 object-contain drop-shadow-[0_4px_12px_rgba(0,0,0,0.4)]"
+            />
+          </div>
+          <div className="max-w-2xl">
+            <h2 className="text-3xl font-bold mb-3">Understand how your team engages with news.</h2>
+            <p className="text-brand-100 text-lg">Track how your team engages with news content across reads, exports, and link clicks</p>
+          </div>
+          <div className="flex justify-start">
             <select
               value={days}
               onChange={e => setDays(Number(e.target.value))}
-              className="px-4 py-2.5 rounded-xl text-sm bg-white/15 backdrop-blur-sm font-medium text-white border border-white/20 focus:outline-none focus:ring-2 focus:ring-white/30 transition-all [&>option]:text-slate-700 [&>option]:bg-white"
+              className="pointer-events-auto px-6 py-3 rounded-lg font-semibold bg-white text-brand-700 shadow-lg hover:bg-brand-50 transition-all cursor-pointer focus:outline-none focus:ring-2 focus:ring-brand-300 [&>option]:text-slate-700 [&>option]:bg-white"
             >
               <option value={7}>Last 7 days</option>
               <option value={14}>Last 14 days</option>
@@ -476,16 +486,16 @@ export const AdminNewsActivity: React.FC<AdminNewsActivityProps> = ({ isAdmin })
               <option value={90}>Last 90 days</option>
             </select>
           </div>
-
-          {/* Stat cards row */}
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
-            <StatCard icon={<Clock size={18} />} label="Read Time" value={formatTime(summary.totalReadTimeSec)} iconColor="purple" />
-            <StatCard icon={<Users size={18} />} label="Active Users" value={`${summary.uniqueActiveUsers} / ${summary.totalUsersWithCallDiet}`} iconColor="blue" />
-            <StatCard icon={<ExternalLink size={18} />} label="Link Clicks" value={String(summary.totalLinkClicks)} iconColor="indigo" />
-            <StatCard icon={<Download size={18} />} label="Exports" value={String(summary.totalExports)} iconColor="amber" />
-            <StatCard icon={<UserX size={18} />} label="Disengaged" value={String(disengagedCount)} iconColor="rose" />
-          </div>
         </div>
+      </div>
+
+      {/* Stat cards row */}
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
+        <StatCard icon={<Clock size={18} />} label="Read Time" value={formatTime(summary.totalReadTimeSec)} iconColor="purple" />
+        <StatCard icon={<Users size={18} />} label="Active Users" value={`${summary.uniqueActiveUsers} / ${summary.totalUsersWithCallDiet}`} iconColor="blue" />
+        <StatCard icon={<ExternalLink size={18} />} label="Link Clicks" value={String(summary.totalLinkClicks)} iconColor="indigo" />
+        <StatCard icon={<Download size={18} />} label="Exports" value={String(summary.totalExports)} iconColor="amber" />
+        <StatCard icon={<UserX size={18} />} label="Disengaged" value={String(disengagedCount)} iconColor="rose" />
       </div>
 
       {/* Filters box */}
@@ -560,11 +570,11 @@ export const AdminNewsActivity: React.FC<AdminNewsActivityProps> = ({ isAdmin })
 // ============================================================================
 
 const STAT_ICON_COLORS: Record<string, string> = {
-  purple: 'text-purple-300',
-  blue:   'text-cyan-300',
-  indigo: 'text-indigo-300',
-  amber:  'text-amber-300',
-  rose:   'text-rose-300',
+  purple: 'text-purple-600',
+  blue:   'text-cyan-600',
+  indigo: 'text-indigo-600',
+  amber:  'text-amber-600',
+  rose:   'text-rose-600',
 };
 
 const StatCard: React.FC<{
@@ -573,12 +583,12 @@ const StatCard: React.FC<{
   value: string;
   iconColor?: string;
 }> = ({ icon, label, value, iconColor = 'blue' }) => (
-  <div className="rounded-xl p-4 backdrop-blur-sm border border-white/10 bg-white/10 hover:bg-white/15 transition-all">
+  <div className="rounded-xl p-4 border border-slate-200 bg-white shadow-sm hover:shadow-md transition-all">
     <div className="flex items-center gap-3">
-      <div className={`p-1.5 rounded-lg bg-white/10 ${STAT_ICON_COLORS[iconColor] || 'text-white/80'}`}>{icon}</div>
+      <div className={`p-1.5 rounded-lg bg-slate-100 ${STAT_ICON_COLORS[iconColor] || 'text-slate-500'}`}>{icon}</div>
       <div>
-        <p className="text-xl font-extrabold text-white tracking-tight">{value}</p>
-        <p className="text-[11px] font-medium mt-0.5 text-white/60">{label}</p>
+        <p className="text-xl font-extrabold text-slate-800 tracking-tight">{value}</p>
+        <p className="text-[11px] font-medium mt-0.5 text-slate-400">{label}</p>
       </div>
     </div>
   </div>

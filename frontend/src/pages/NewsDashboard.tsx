@@ -29,8 +29,10 @@ import {
   Sparkles,
   Pin,
   FileDown,
+  FileText,
   Download,
 } from 'lucide-react';
+import Threads from '../components/Threads';
 import {
   useNewsArticles,
   useNewsTags,
@@ -349,7 +351,7 @@ export const NewsDashboard: React.FC<NewsDashboardProps> = ({ onNavigate, isAdmi
   };
 
   // Handle export with scope: all, pinned, or selected
-  const handleExport = async (format: 'pdf' | 'markdown', scope: 'all' | 'pinned' | 'selected') => {
+  const handleExport = async (format: 'pdf' | 'markdown' | 'docx', scope: 'all' | 'pinned' | 'selected') => {
     try {
       let ids: string[] = [];
       if (scope === 'selected') {
@@ -368,7 +370,7 @@ export const NewsDashboard: React.FC<NewsDashboardProps> = ({ onNavigate, isAdmi
   };
 
   // Handle single article export from detail modal
-  const handleArticleExport = async (articleId: string, format: 'pdf' | 'markdown') => {
+  const handleArticleExport = async (articleId: string, format: 'pdf' | 'markdown' | 'docx') => {
     try {
       await exportArticles(format, [articleId], currentUserId);
     } catch (err) {
@@ -390,23 +392,34 @@ export const NewsDashboard: React.FC<NewsDashboardProps> = ({ onNavigate, isAdmi
   };
 
   return (
-    <div className="space-y-6 animate-in fade-in duration-500">
-      {/* Header with gradient background */}
-      <div className="relative bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 rounded-2xl p-6 shadow-xl">
-        <div className="absolute inset-0 overflow-hidden rounded-2xl bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxnIGZpbGw9IiNmZmYiIGZpbGwtb3BhY2l0eT0iMC4wMyI+PGNpcmNsZSBjeD0iMzAiIGN5PSIzMCIgcj0iMiIvPjwvZz48L2c+PC9zdmc+')] opacity-50"></div>
-        <div className="relative flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div>
-            <div className="flex items-center gap-3 mb-2">
-              <div className="p-2 bg-gradient-to-br from-brand-400 to-brand-600 rounded-xl shadow-lg">
-                <Newspaper className="text-white" size={24} />
-              </div>
-              <h2 className="text-2xl font-bold text-white">News Intelligence</h2>
-            </div>
-            <p className="text-slate-300 ml-12">
-              <span className="text-brand-300 font-semibold">{total}</span> articles from tracked companies and people
+    <div className="space-y-8 animate-in fade-in duration-500">
+      {/* Header with animated background */}
+      <div className="relative rounded-2xl shadow-xl bg-gradient-to-br from-slate-900 via-brand-800 to-brand-700">
+        <div className="absolute inset-0 overflow-hidden rounded-2xl">
+          <Threads
+            color={[1, 1, 1]}
+            amplitude={1.5}
+            distance={0.8}
+            lineWidth={18}
+            enableMouseInteraction
+          />
+        </div>
+        <div className="absolute inset-0 rounded-2xl pointer-events-none" style={{ background: 'radial-gradient(ellipse at 80% 30%, rgba(255,255,255,0.18) 0%, transparent 55%)' }} />
+        <div className="relative z-10 p-10 text-white pointer-events-none flex flex-col justify-between gap-6 min-h-[15rem]">
+          <div className="hidden lg:flex absolute left-[50%] right-0 top-1/2 -translate-y-1/2 items-center justify-center pointer-events-none">
+            <img
+              src="/SAMI_News.png"
+              alt="SAMI"
+              className="h-56 object-contain drop-shadow-[0_4px_12px_rgba(0,0,0,0.4)]"
+            />
+          </div>
+          <div className="max-w-2xl">
+            <h2 className="text-3xl font-bold mb-3">Curated news intelligence, delivered daily.</h2>
+            <p className="text-brand-100 text-lg">
+              <span className="text-white font-semibold">{total}</span> curated articles from your tracked companies and people, refreshed and updated in real time
             </p>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 justify-start pointer-events-auto">
             {/* Selection count */}
             {selectedArticleIds.size > 0 && (
               <div className="flex items-center gap-2">
@@ -425,10 +438,10 @@ export const NewsDashboard: React.FC<NewsDashboardProps> = ({ onNavigate, isAdmi
             <div className="relative" ref={exportMenuRef}>
               <button
                 onClick={() => setShowExportMenu(!showExportMenu)}
-                className="flex items-center gap-2 px-4 py-2.5 rounded-xl transition-all duration-200 font-medium bg-gradient-to-r from-brand-500 to-brand-600 text-white shadow-lg shadow-brand-500/30 hover:from-brand-600 hover:to-brand-700"
+                className="flex items-center gap-2 px-6 py-3 rounded-lg font-semibold bg-white text-brand-700 shadow-lg hover:bg-brand-50 transition-all"
               >
                 <Download size={18} />
-                <span className="hidden sm:inline">Export</span>
+                <span className="hidden sm:inline">Export News</span>
                 <ChevronDown size={14} />
               </button>
               {showExportMenu && (
@@ -448,6 +461,12 @@ export const NewsDashboard: React.FC<NewsDashboardProps> = ({ onNavigate, isAdmi
                     className="w-full flex items-center gap-2 px-4 py-2 text-sm text-slate-700 hover:bg-brand-50 hover:text-brand-700 transition-colors"
                   >
                     <Download size={15} /> Markdown
+                  </button>
+                  <button
+                    onClick={() => handleExport('docx', 'all')}
+                    className="w-full flex items-center gap-2 px-4 py-2 text-sm text-slate-700 hover:bg-brand-50 hover:text-brand-700 transition-colors"
+                  >
+                    <FileText size={15} /> Word (DOCX)
                   </button>
 
                   {/* Pinned Articles */}
@@ -469,30 +488,41 @@ export const NewsDashboard: React.FC<NewsDashboardProps> = ({ onNavigate, isAdmi
                       >
                         <Download size={15} /> Markdown
                       </button>
+                      <button
+                        onClick={() => handleExport('docx', 'pinned')}
+                        className="w-full flex items-center gap-2 px-4 py-2 text-sm text-slate-700 hover:bg-brand-50 hover:text-brand-700 transition-colors"
+                      >
+                        <FileText size={15} /> Word (DOCX)
+                      </button>
                     </>
                   )}
 
-                  {/* Selected Articles */}
-                  {selectedArticleIds.size > 0 && (
-                    <>
-                      <div className="border-t border-slate-100 my-1" />
-                      <div className="px-3 py-1.5">
-                        <p className="text-xs font-semibold text-slate-400 uppercase tracking-wide">Selected ({selectedArticleIds.size})</p>
-                      </div>
-                      <button
-                        onClick={() => handleExport('pdf', 'selected')}
-                        className="w-full flex items-center gap-2 px-4 py-2 text-sm text-slate-700 hover:bg-brand-50 hover:text-brand-700 transition-colors"
-                      >
-                        <FileDown size={15} /> PDF
-                      </button>
-                      <button
-                        onClick={() => handleExport('markdown', 'selected')}
-                        className="w-full flex items-center gap-2 px-4 py-2 text-sm text-slate-700 hover:bg-brand-50 hover:text-brand-700 transition-colors"
-                      >
-                        <Download size={15} /> Markdown
-                      </button>
-                    </>
-                  )}
+                  {/* Selected Articles - always shown */}
+                  <div className="border-t border-slate-100 my-1" />
+                  <div className="px-3 py-1.5">
+                    <p className="text-xs font-semibold text-slate-400 uppercase tracking-wide">Selected ({selectedArticleIds.size})</p>
+                  </div>
+                  <button
+                    onClick={() => handleExport('pdf', 'selected')}
+                    disabled={selectedArticleIds.size === 0}
+                    className={`w-full flex items-center gap-2 px-4 py-2 text-sm transition-colors ${selectedArticleIds.size === 0 ? 'text-slate-300 cursor-not-allowed' : 'text-slate-700 hover:bg-brand-50 hover:text-brand-700'}`}
+                  >
+                    <FileDown size={15} /> PDF
+                  </button>
+                  <button
+                    onClick={() => handleExport('markdown', 'selected')}
+                    disabled={selectedArticleIds.size === 0}
+                    className={`w-full flex items-center gap-2 px-4 py-2 text-sm transition-colors ${selectedArticleIds.size === 0 ? 'text-slate-300 cursor-not-allowed' : 'text-slate-700 hover:bg-brand-50 hover:text-brand-700'}`}
+                  >
+                    <Download size={15} /> Markdown
+                  </button>
+                  <button
+                    onClick={() => handleExport('docx', 'selected')}
+                    disabled={selectedArticleIds.size === 0}
+                    className={`w-full flex items-center gap-2 px-4 py-2 text-sm transition-colors ${selectedArticleIds.size === 0 ? 'text-slate-300 cursor-not-allowed' : 'text-slate-700 hover:bg-brand-50 hover:text-brand-700'}`}
+                  >
+                    <FileText size={15} /> Word (DOCX)
+                  </button>
                 </div>
               )}
             </div>
@@ -508,28 +538,6 @@ export const NewsDashboard: React.FC<NewsDashboardProps> = ({ onNavigate, isAdmi
               </button>
             )}
 
-            {/* Admin-only: time period select and refresh */}
-            {isAdmin && (
-              <div className="flex items-center gap-2">
-                <select
-                  value={refreshDays}
-                  onChange={(e) => setRefreshDays(Number(e.target.value))}
-                  className="px-3 py-2.5 bg-white/10 border border-white/20 text-white rounded-xl outline-none focus:ring-2 focus:ring-brand-400/50 transition-all backdrop-blur-sm cursor-pointer text-sm font-medium"
-                >
-                  {timePeriodOptions.map(opt => (
-                    <option key={opt.value} value={opt.value} className="text-slate-800">{opt.label}</option>
-                  ))}
-                </select>
-                <button
-                  onClick={handleRefresh}
-                  disabled={refreshing}
-                  className="flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-brand-500 to-brand-600 text-white rounded-xl hover:from-brand-600 hover:to-brand-700 disabled:opacity-50 transition-all duration-200 shadow-lg shadow-brand-500/30 hover:shadow-xl hover:shadow-brand-500/40 font-medium"
-                >
-                  <RefreshCw size={18} className={refreshing ? 'animate-spin' : ''} />
-                  <span className="hidden sm:inline">{refreshing ? 'Refreshing...' : 'Refresh News'}</span>
-                </button>
-              </div>
-            )}
           </div>
         </div>
       </div>

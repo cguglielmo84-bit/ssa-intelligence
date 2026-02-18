@@ -1,36 +1,67 @@
 /**
- * PDF Export Service
- * Generates professional SSAMI-branded PDF digests of news articles using PDFKit
+ * News PDF Export Service
+ * Generates branded PDF digests using Playwright with SSA branding
+ * (cover page, wave footer, Avenir font) matching research PDF export.
  */
 
-import PDFDocument from 'pdfkit';
-import { readFileSync } from 'fs';
+import fs from 'fs';
+import path from 'path';
 import { fileURLToPath } from 'url';
-import { dirname, join } from 'path';
+import { PDFDocument } from 'pdf-lib';
+import { chromium } from 'playwright';
 import { prisma } from '../lib/prisma.js';
 
 const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
+const __dirname = path.dirname(__filename);
+const assetsDir = fs.existsSync(path.resolve(__dirname, '../../assets'))
+  ? path.resolve(__dirname, '../../assets')
+  : path.resolve(__dirname, '../../../assets');
 
-// SSA Brand Colors
-const BRAND = {
-  primary: '#003399',    // brand-600
-  dark: '#002366',       // brand-800
-  medium: '#2a56c2',     // brand-500
-  light: '#e8eef9',      // brand-50
-  accent: '#4f72cf',     // brand-400
-  text: '#1e293b',       // slate-800
-  muted: '#64748b',      // slate-500
-  divider: '#cbd5e1',    // slate-300
-};
+// ── SSA brand constants ─────────────────────────────────────────────
+const BRAND_BLUE = '#003399';
+const BRAND_DK2 = '#336179';
+const BODY_COLOR = '#111827';
+const FONT_STACK = '"Avenir Next LT Pro", "Helvetica Neue", Arial, sans-serif';
 
-// Load logo from disk
-let logoBuffer: Buffer | null = null;
-try {
-  logoBuffer = readFileSync(join(__dirname, '../../assets/ssa-logo.png'));
-} catch {
-  // Logo file not found — will skip logo in PDF
+// ── Load assets as base64 data URIs (once at module init) ───────────
+function loadDataUri(filename: string, mime: string): string {
+  return `data:${mime};base64,${fs.readFileSync(path.join(assetsDir, filename)).toString('base64')}`;
 }
+
+let headerLogoDataUri = '';
+try { headerLogoDataUri = loadDataUri('ssa-header-logo.jpg', 'image/jpeg'); } catch { /* no logo */ }
+
+let footerWaveDataUri = '';
+try { footerWaveDataUri = loadDataUri('ssa-footer-logo.png', 'image/png'); } catch { /* no wave */ }
+
+let samiDataUri = '';
+try { samiDataUri = loadDataUri('SAMI_News.png', 'image/png'); } catch { /* no mascot */ }
+
+// ── Playwright header template (pages 2+ only; page 1 uses empty) ───
+const pdfHeaderTemplate = headerLogoDataUri
+  ? `<div style="width:100%;text-align:center;padding:10px 0 0 0;">
+       <img src="${headerLogoDataUri}" style="height:28px;" />
+     </div>`
+  : `<div style="width:100%;text-align:center;padding:10px 32px 0 32px;font-size:12px;font-family:'Avenir Next LT Pro','Helvetica Neue',Arial,sans-serif;font-weight:700;color:${BRAND_BLUE};">
+       SSA &amp; Company
+     </div>`;
+
+const emptyHeaderTemplate = '<div></div>';
+
+// ── Playwright footer template (wave background + text) ─────────────
+const footerTextHtml = `
+  <div style="position:absolute;top:50%;left:0;right:0;transform:translateY(-50%);z-index:1;text-align:center;font-family:'Avenir Next LT Pro','Helvetica Neue',Arial,sans-serif;font-size:9px;color:${BRAND_BLUE};line-height:1.4;">
+    SSA &amp; Company &#x2022; 685 Third Ave., 22<sup style="font-size:6px;">nd</sup> Floor &#x2022; New York, NY 10017 &#x2022; Tel. (212) 332-3790 &#x2022; <a href="http://www.ssaandco.com" style="color:${BRAND_BLUE};text-decoration:none;">www.ssaandco.com</a>
+  </div>`;
+
+const pdfFooterTemplate = footerWaveDataUri
+  ? `<div style="position:relative;width:100%;height:100%;overflow:hidden;-webkit-print-color-adjust:exact;margin-bottom:-20px;">
+       <img src="${footerWaveDataUri}" style="position:absolute;bottom:0;left:-32px;width:calc(100% + 64px);height:auto;z-index:0;" />
+       ${footerTextHtml}
+     </div>`
+  : `<div style="position:relative;width:100%;height:100%;">
+       ${footerTextHtml}
+     </div>`;
 
 interface ExportOptions {
   userId?: string;
@@ -45,12 +76,8 @@ export async function generateNewsDigestPDF(options: ExportOptions): Promise<Buf
   let userName = 'User';
 
   if (userId) {
-    const user = await prisma.user.findUnique({
-      where: { id: userId },
-    });
-    if (!user) {
-      throw new Error('User not found');
-    }
+    const user = await prisma.user.findUnique({ where: { id: userId } });
+    if (!user) throw new Error('User not found');
     userName = user.name || user.email;
   }
 
@@ -67,7 +94,6 @@ export async function generateNewsDigestPDF(options: ExportOptions): Promise<Buf
       articleUsers: { some: { userId } },
       isArchived: false,
     };
-    // Only apply date filters if explicitly provided
     if (dateFrom || dateTo) {
       where.publishedAt = {};
       if (dateFrom) where.publishedAt.gte = dateFrom;
@@ -82,91 +108,7 @@ export async function generateNewsDigestPDF(options: ExportOptions): Promise<Buf
     throw new Error('Either userId or articleIds must be provided');
   }
 
-  const pageWidth = 595.28; // A4
-  const pageHeight = 841.89;
-  const marginLeft = 50;
-  const marginRight = 50;
-  const contentWidth = pageWidth - marginLeft - marginRight;
-  const maxContentY = 760; // stop content here to leave room for footer
-
-  const doc = new PDFDocument({
-    size: 'A4',
-    margins: { top: 50, bottom: 50, left: marginLeft, right: marginRight },
-    bufferPages: true,
-    autoFirstPage: true,
-    info: {
-      Title: `SSAMI News Digest - ${userName}`,
-      Author: 'SSA & Company',
-      CreationDate: new Date(),
-    },
-  });
-
-  const chunks: Buffer[] = [];
-  doc.on('data', (chunk) => chunks.push(chunk));
-
-  // Helper: ensure enough room on page, add new page if needed
-  const ensureSpace = (needed: number) => {
-    if (doc.y + needed > maxContentY) {
-      doc.addPage();
-      doc.y = 50;
-    }
-  };
-
-  // Helper: estimate height of a text block
-  const textHeight = (text: string, fontSize: number, font: string, width: number): number => {
-    doc.fontSize(fontSize).font(font);
-    return doc.heightOfString(text, { width });
-  };
-
-  // === HEADER ===
-
-  // Logo in top-left corner
-  if (logoBuffer) {
-    doc.image(logoBuffer, marginLeft, 50, { width: 36, height: 36 });
-  }
-
-  // Centered title
-  doc.fontSize(18)
-     .font('Helvetica-Bold')
-     .fillColor(BRAND.primary)
-     .text('SSAMI News Digest', marginLeft, 58, {
-       width: contentWidth,
-       align: 'center',
-       lineBreak: false,
-     });
-
-  // Brand divider below header
-  doc.rect(marginLeft, 82, contentWidth, 2).fill(BRAND.primary);
-
-  // Metadata
-  const dateStr = new Date().toLocaleDateString('en-US', {
-    weekday: 'long', year: 'numeric', month: 'long', day: 'numeric',
-  });
-
-  doc.y = 92;
-  doc.fontSize(9)
-     .font('Helvetica')
-     .fillColor(BRAND.text)
-     .text('Prepared for: ', marginLeft, 92, { continued: true })
-     .font('Helvetica-Bold')
-     .text(userName, { continued: false });
-
-  doc.fontSize(9)
-     .font('Helvetica')
-     .fillColor(BRAND.muted)
-     .text(`${dateStr}  |  ${articles.length} article${articles.length !== 1 ? 's' : ''}`, marginLeft);
-
-  // Thin divider
-  const metaDivY = doc.y + 6;
-  doc.moveTo(marginLeft, metaDivY)
-     .lineTo(marginLeft + contentWidth, metaDivY)
-     .lineWidth(0.5)
-     .stroke(BRAND.divider);
-
-  doc.y = metaDivY + 10;
-
-  // === ARTICLES GROUPED BY COMPANY ===
-
+  // Group articles by company
   const grouped: Record<string, typeof articles> = {};
   for (const article of articles) {
     const companyName = article.company?.name || 'Other';
@@ -180,151 +122,224 @@ export async function generateNewsDigestPDF(options: ExportOptions): Promise<Buf
     return a.localeCompare(b);
   });
 
+  const dateStr = new Date().toLocaleDateString('en-US', {
+    weekday: 'long', year: 'numeric', month: 'long', day: 'numeric',
+  });
+
+  // Build article body HTML
+  let bodyHtml = '';
   for (const companyName of companyNames) {
     const companyArticles = grouped[companyName];
 
-    // Ensure room for company header + at least some article content
-    ensureSpace(100);
-
-    // Company header bar
-    const hdrY = doc.y;
-    doc.rect(marginLeft, hdrY, contentWidth, 22).fill(BRAND.primary);
-    doc.fontSize(10)
-       .font('Helvetica-Bold')
-       .fillColor('#ffffff')
-       .text(companyName.toUpperCase(), marginLeft + 10, hdrY + 6, {
-         width: contentWidth - 20,
-         lineBreak: false,
-       });
-
-    doc.fillColor(BRAND.text);
-    doc.y = hdrY + 30;
+    bodyHtml += `<div class="company-group">`;
+    bodyHtml += `<div class="company-header">${escapeHtml(companyName).toUpperCase()}</div>`;
 
     for (let i = 0; i < companyArticles.length; i++) {
       const article = companyArticles[i];
 
-      // Estimate total height for this article
-      let estimatedHeight = 0;
-      if (article.tag?.name) estimatedHeight += 14;
-      estimatedHeight += textHeight(article.headline, 10.5, 'Helvetica-Bold', contentWidth) + 6;
-      if (article.summary) {
-        estimatedHeight += textHeight(article.summary, 9, 'Helvetica', contentWidth) + 6;
-      }
-      if (article.whyItMatters) {
-        estimatedHeight += textHeight(`Why It Matters: ${article.whyItMatters}`, 9, 'Helvetica-Oblique', contentWidth) + 6;
-      }
-      estimatedHeight += 20; // source line + separator
+      bodyHtml += `<div class="article">`;
 
-      ensureSpace(estimatedHeight);
-
-      // Tag badge
       if (article.tag?.name) {
-        doc.fontSize(7)
-           .font('Helvetica-Bold')
-           .fillColor(BRAND.medium)
-           .text(article.tag.name.toUpperCase(), marginLeft, doc.y);
-        doc.y += 2;
+        bodyHtml += `<div class="tag-badge">${escapeHtml(article.tag.name.toUpperCase())}</div>`;
       }
 
-      // Headline
-      doc.fontSize(10.5)
-         .font('Helvetica-Bold')
-         .fillColor(BRAND.text)
-         .text(article.headline, marginLeft, doc.y, { width: contentWidth });
+      bodyHtml += `<h3 class="headline">${escapeHtml(article.headline)}</h3>`;
 
-      doc.y += 4;
-
-      // Summary
-      if (article.summary) {
-        ensureSpace(textHeight(article.summary, 9, 'Helvetica', contentWidth) + 6);
-        doc.fontSize(9)
-           .font('Helvetica')
-           .fillColor(BRAND.text)
-           .text(article.summary, marginLeft, doc.y, { width: contentWidth });
-        doc.y += 4;
+      const summaryText = article.longSummary || article.shortSummary || article.summary;
+      if (summaryText) {
+        bodyHtml += `<p class="summary">${escapeHtml(summaryText)}</p>`;
       }
 
-      // Why It Matters
       if (article.whyItMatters) {
-        const witm = `Why It Matters: ${article.whyItMatters}`;
-        ensureSpace(textHeight(witm, 9, 'Helvetica-Oblique', contentWidth) + 6);
-        doc.fontSize(9)
-           .font('Helvetica-Oblique')
-           .fillColor(BRAND.primary)
-           .text(witm, marginLeft, doc.y, { width: contentWidth });
-        doc.y += 4;
+        bodyHtml += `<p class="why-it-matters"><strong>Why It Matters:</strong> ${escapeHtml(article.whyItMatters)}</p>`;
       }
 
-      // Source + Link to Article
       const pubDate = article.publishedAt
         ? new Date(article.publishedAt).toLocaleDateString('en-US', {
             month: 'short', day: 'numeric', year: 'numeric',
           })
         : 'Unknown date';
-      const sourceLine = `${article.sourceName || 'Unknown source'}  |  ${pubDate}`;
 
-      doc.fontSize(8)
-         .font('Helvetica')
-         .fillColor(BRAND.muted)
-         .text(sourceLine, marginLeft, doc.y, {
-           width: contentWidth,
-           continued: !!article.sourceUrl,
-         });
-
+      let sourceLine = `${escapeHtml(article.sourceName || 'Unknown source')}  |  ${pubDate}`;
       if (article.sourceUrl) {
-        doc.text('  |  ', { continued: true })
-           .fillColor(BRAND.primary)
-           .text('Link to Article', {
-             link: article.sourceUrl,
-             underline: true,
-             continued: false,
-           });
+        sourceLine += `  |  <a href="${escapeHtml(article.sourceUrl)}" class="source-link">Link to Article</a>`;
+      }
+      bodyHtml += `<div class="source-line">${sourceLine}</div>`;
+
+      if (i < companyArticles.length - 1) {
+        bodyHtml += `<hr class="article-sep" />`;
       }
 
-      // Separator between articles
-      if (i < companyArticles.length - 1) {
-        doc.y += 6;
-        const sepY = doc.y;
-        doc.moveTo(marginLeft + 10, sepY)
-           .lineTo(marginLeft + contentWidth - 10, sepY)
-           .lineWidth(0.3)
-           .stroke(BRAND.divider);
-        doc.y = sepY + 8;
-      }
+      bodyHtml += `</div>`;
     }
 
-    // Space between company sections
-    doc.y += 14;
+    bodyHtml += `</div>`;
   }
 
-  // === FOOTER on every page (absolute positioning, no page break) ===
-  const pageCount = doc.bufferedPageRange().count;
-  for (let i = 0; i < pageCount; i++) {
-    doc.switchToPage(i);
+  const html = `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <style>
+    body {
+      font-family: ${FONT_STACK};
+      color: ${BODY_COLOR};
+      margin: 0;
+      -webkit-print-color-adjust: exact;
+    }
+    h1 { font-size: 28px; margin: 0 0 8px 0; color: ${BRAND_BLUE}; }
+    h2 { font-size: 20px; margin: 24px 0 8px 0; color: ${BRAND_DK2}; font-weight: 700; }
+    h3 { font-size: 14px; margin: 12px 0 4px 0; color: ${BODY_COLOR}; font-weight: 700; }
+    p, li { font-size: 11pt; line-height: 1.5; color: ${BODY_COLOR}; }
+    .meta { color: #4b5563; font-size: 11px; line-height: 1.4; margin: 0 0 4px 0; }
+    .cover-page {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      text-align: center;
+      page-break-after: always;
+    }
+    .cover-logo { width: 350px; margin-bottom: 32px; }
+    .cover-page h1 { font-size: 36px; margin-bottom: 16px; color: ${BRAND_BLUE}; }
+    .cover-page .meta { font-size: 13px; }
+    .company-group { margin-bottom: 18px; }
+    .company-header {
+      background: ${BRAND_BLUE};
+      color: #ffffff;
+      font-size: 12px;
+      font-weight: 700;
+      padding: 6px 10px;
+      margin-bottom: 8px;
+      letter-spacing: 0.5px;
+      -webkit-print-color-adjust: exact;
+    }
+    .article { margin-bottom: 6px; }
+    .tag-badge {
+      font-size: 8px;
+      font-weight: 700;
+      color: ${BRAND_DK2};
+      letter-spacing: 0.5px;
+      margin-bottom: 2px;
+    }
+    .headline {
+      font-size: 13px;
+      font-weight: 700;
+      color: ${BODY_COLOR};
+      margin: 2px 0 4px 0;
+    }
+    .summary {
+      font-size: 11px;
+      line-height: 1.5;
+      color: ${BODY_COLOR};
+      margin: 0 0 4px 0;
+    }
+    .why-it-matters {
+      font-size: 11px;
+      font-style: italic;
+      color: ${BRAND_BLUE};
+      line-height: 1.5;
+      margin: 0 0 4px 0;
+    }
+    .source-line {
+      font-size: 9px;
+      color: #64748b;
+      margin-bottom: 6px;
+    }
+    .source-link {
+      color: ${BRAND_BLUE};
+      text-decoration: underline;
+    }
+    .article-sep {
+      border: none;
+      border-top: 0.3px solid #cbd5e1;
+      margin: 8px 10px;
+    }
+  </style>
+</head>
+<body>
+  <div class="cover-page">
+    ${samiDataUri ? `<img src="${samiDataUri}" alt="SAMI" style="width:250px;margin-bottom:24px;" />` : ''}
+    ${headerLogoDataUri ? `<img class="cover-logo" src="${headerLogoDataUri}" alt="SSA &amp; Company" />` : ''}
+    <h1>SAMI News Digest</h1>
+    <div class="meta">Prepared for: ${escapeHtml(userName)}</div>
+    <div class="meta">${escapeHtml(dateStr)}</div>
+    <div class="meta">${articles.length} article${articles.length !== 1 ? 's' : ''}</div>
+  </div>
+  ${bodyHtml}
+</body>
+</html>
+`;
 
-    const footY = pageHeight - 35;
-
-    // Footer divider
-    doc.save();
-    doc.moveTo(marginLeft, footY - 5)
-       .lineTo(marginLeft + contentWidth, footY - 5)
-       .lineWidth(0.5)
-       .stroke(BRAND.divider);
-
-    doc.fontSize(7)
-       .font('Helvetica')
-       .fillColor(BRAND.muted)
-       .text(
-         `SSAMI News Digest  |  SSA & Company  |  Page ${i + 1} of ${pageCount}`,
-         marginLeft, footY,
-         { align: 'center', width: contentWidth, lineBreak: false }
-       );
-    doc.restore();
-  }
-
-  doc.end();
-
-  return new Promise((resolve) => {
-    doc.on('end', () => resolve(Buffer.concat(chunks)));
+  // Render with Playwright
+  const browser = await chromium.launch({
+    headless: true,
+    args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage'],
   });
+
+  try {
+    const page = await browser.newPage({ viewport: { width: 1200, height: 1800 } });
+    await page.setContent(html, { waitUntil: 'networkidle', timeout: 30000 });
+
+    const sharedOpts = {
+      format: 'Letter' as const,
+      displayHeaderFooter: true,
+      footerTemplate: pdfFooterTemplate,
+      margin: { top: '80px', bottom: '0.75in', left: '32px', right: '32px' },
+      printBackground: true,
+      timeout: 30000,
+    };
+
+    // Two-pass render: page 1 (no header) + pages 2+ (with header)
+    const coverBytes = await page.pdf({
+      ...sharedOpts,
+      headerTemplate: emptyHeaderTemplate,
+      pageRanges: '1',
+    });
+
+    let bodyBytes: Buffer | null = null;
+    try {
+      const raw = await page.pdf({
+        ...sharedOpts,
+        headerTemplate: pdfHeaderTemplate,
+        pageRanges: '2-',
+      });
+      const check = await PDFDocument.load(raw);
+      if (check.getPageCount() > 0) bodyBytes = raw;
+    } catch {
+      // Single-page document — no body pages
+    }
+
+    let pdfBuffer: Buffer;
+    if (bodyBytes) {
+      const merged = await PDFDocument.create();
+      const coverDoc = await PDFDocument.load(coverBytes);
+      const bodyDoc = await PDFDocument.load(bodyBytes);
+
+      for (const p of await merged.copyPages(coverDoc, coverDoc.getPageIndices())) {
+        merged.addPage(p);
+      }
+      for (const p of await merged.copyPages(bodyDoc, bodyDoc.getPageIndices())) {
+        merged.addPage(p);
+      }
+
+      pdfBuffer = Buffer.from(await merged.save());
+    } else {
+      pdfBuffer = coverBytes;
+    }
+
+    return pdfBuffer;
+  } finally {
+    await browser.close();
+  }
+}
+
+function escapeHtml(text: string): string {
+  return text
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
 }

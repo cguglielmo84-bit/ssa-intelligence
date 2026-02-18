@@ -21,7 +21,7 @@ interface ArticleDetailModalProps {
   article: NewsArticle;
   onClose: () => void;
   onArchive: (articleId: string) => void;
-  onExport?: (articleId: string, format: 'pdf' | 'markdown') => void;
+  onExport?: (articleId: string, format: 'pdf' | 'markdown' | 'docx') => void;
   isPinned?: boolean;
   onTogglePin?: (articleId: string) => void;
 }
@@ -218,6 +218,13 @@ export const ArticleDetailModal: React.FC<ArticleDetailModalProps> = ({
                 >
                   <FileDown size={16} />
                   Markdown
+                </button>
+                <button
+                  onClick={() => onExport(article.id, 'docx')}
+                  className="flex items-center gap-2 px-4 py-2.5 rounded-xl font-medium transition-all bg-slate-500 text-white shadow-md hover:bg-slate-600"
+                >
+                  <FileDown size={16} />
+                  DOCX
                 </button>
               </div>
             )}
