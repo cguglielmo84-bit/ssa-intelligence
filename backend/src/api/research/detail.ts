@@ -155,7 +155,6 @@ export async function getResearchDetail(req: Request, res: Response) {
         updatedAt: job.updatedAt,
         completedAt: job.completedAt
       },
-      thumbnailUrl: job.thumbnailUrl || null,
       groups: job.jobGroups.map((entry) => entry.group),
       foundation: job.foundation,
       sections,

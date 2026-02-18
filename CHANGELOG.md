@@ -7,7 +7,13 @@ The format is based on Keep a Changelog and this project adheres to Semantic Ver
 ## [Unreleased]
 
 ### Added
+- Architecture report (`docs/architecture-report.md`) and Mermaid architecture diagram.
 - SAMI mascot image on News Activity header (cropped from SSAMI_Admin asset).
+
+### Removed
+- Remove thumbnail generation service and S3 storage dependency (`@aws-sdk/client-s3`).
+- Drop `thumbnailUrl` column from `ResearchJob` schema (migration included).
+- Remove `THUMBNAIL_S3_*` env vars from `.env.example`.
 
 ### Changed
 - Move header bar action buttons to bottom-left on Research, News, and Activity pages.

@@ -74,8 +74,6 @@ model ResearchJob {
   promptTokens      Int       @default(0)
   completionTokens  Int       @default(0)
   costUsd           Float     @default(0)
-  thumbnailUrl      String?
-
   // Cost events relation
   costEvents        CostEvent[]
 

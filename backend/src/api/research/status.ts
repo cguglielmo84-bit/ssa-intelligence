@@ -76,7 +76,6 @@ export async function getJobStatus(req: Request, res: Response) {
       companyName: job.companyName,
       geography: job.geography,
       domain: job.domain || null,
-      thumbnailUrl: job.thumbnailUrl || null,
       reportType: job.reportType,
       visibilityScope: job.visibilityScope,
       selectedSections: job.selectedSections,
