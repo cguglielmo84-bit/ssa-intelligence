@@ -8,8 +8,8 @@
 | **Purpose** | AI-powered research brief and news intelligence platform. Generates structured company research reports using Claude and delivers curated news digests. Multi-tenant with group-based visibility. |
 | **Primary Users** | Internal consulting analysts at SSA & Company |
 | **Access Scope** | Internal only (behind oauth2-proxy, restricted to @ssaandco.com domain) |
-| **Built By / Maintained By** | *[Needs manual input]* |
-| **First Deployed** | *[Needs manual input]* |
+| **Built By / Maintained By** | *Emory Wise, Patryk Mazinski* |
+| **First Deployed** | *Jan 5, 2026* |
 | **Current Status** | Active (regular commits, CI passing, production deployment on Render) |
 
 ---
