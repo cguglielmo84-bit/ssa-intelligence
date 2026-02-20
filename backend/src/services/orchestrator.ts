@@ -1632,11 +1632,54 @@ export class ResearchOrchestrator {
     if (Array.isArray(candidate) && candidate.length === 1 && typeof candidate[0] === 'object') {
       candidate = candidate[0];
     }
+
+    // Foundation: clamp negative sentinel values to 0 before validation
+    if (stageId === 'foundation') {
+      candidate = this.sanitizeFoundationOutput(candidate);
+    }
+
     const result = validationSchema.safeParse(candidate);
     if (!result.success) {
       throw new Error(`Schema validation failed: ${result.error.message}`);
     }
     return result.data;
+  }
+
+  /**
+   * Clamp negative sentinel values (e.g. -1) to 0 in foundation output.
+   * LLMs sometimes use -1 as "unknown" instead of the instructed "–" string.
+   * This is a temporary patch — the long-term fix is better prompt enforcement.
+   */
+  private sanitizeFoundationOutput(output: any): any {
+    if (!output || typeof output !== 'object') return output;
+
+    const numericFields = [
+      ['company_basics', 'global_revenue_usd'],
+      ['company_basics', 'global_employees'],
+      ['geography_specifics', 'regional_revenue_usd'],
+      ['geography_specifics', 'regional_revenue_pct'],
+      ['geography_specifics', 'regional_employees'],
+    ];
+
+    for (const [section, field] of numericFields) {
+      const val = output?.[section]?.[field];
+      if (typeof val === 'number' && val < 0) {
+        console.warn(`[sanitize] foundation: clamped ${section}.${field} from ${val} to 0`);
+        output[section][field] = 0;
+      }
+    }
+
+    // Clamp negative segment revenue_pct values
+    if (Array.isArray(output?.segment_structure)) {
+      for (const seg of output.segment_structure) {
+        if (typeof seg?.revenue_pct === 'number' && seg.revenue_pct < 0) {
+          console.warn(`[sanitize] foundation: clamped segment_structure[${seg.name}].revenue_pct from ${seg.revenue_pct} to 0`);
+          seg.revenue_pct = 0;
+        }
+      }
+    }
+
+    return output;
   }
 
   private normalizeFinancialSnapshotOutput(output: any) {

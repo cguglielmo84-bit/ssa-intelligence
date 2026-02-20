@@ -82,6 +82,24 @@ describe('foundation revenue validation', () => {
     });
     expect(result.success).toBe(false);
   });
+
+  it('accepts zero employees for undisclosed private companies', () => {
+    const result = companyBasicsSchema.safeParse({
+      ...validBasics,
+      global_revenue_usd: 0,
+      global_employees: 0
+    });
+    expect(result.success).toBe(true);
+  });
+
+  it('rejects negative employees', () => {
+    const result = companyBasicsSchema.safeParse({
+      ...validBasics,
+      global_revenue_usd: 1000,
+      global_employees: -1
+    });
+    expect(result.success).toBe(false);
+  });
 });
 
 // =============================================================================

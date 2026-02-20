@@ -109,7 +109,7 @@ export const companyBasicsSchema = z.object({
   ownership: z.enum(['Public', 'Private', 'Subsidiary']),
   headquarters: z.string(),
   global_revenue_usd: nonNegativeNumberOrString,
-  global_employees: positiveInt,
+  global_employees: nonNegativeInt,
   fiscal_year_end: z.string()
 });
 
