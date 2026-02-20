@@ -6,6 +6,12 @@ The format is based on Keep a Changelog and this project adheres to Semantic Ver
 
 ## [Unreleased]
 
+### Fixed
+- Allow zero revenue in foundation schema for pre-revenue companies (Vyne Dental bug).
+- Add S# source format instructions to peer benchmarking prompt and sanitizer (Imperial Oil bug).
+- Align `validation.js` runtime with `validation.ts` (add `coerceNumber` preprocessor and string union for revenue fields).
+- Fix `segmentAnalysisOutputSchema` to enforce S# regex on `sources_used` (was allowing any string).
+
 ### Added
 - Architecture report (`docs/architecture-report.md`) and Mermaid architecture diagram.
 - SAMI mascot image on News Activity header (cropped from SSAMI_Admin asset).
