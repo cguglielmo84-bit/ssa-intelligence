@@ -8,6 +8,8 @@ The format is based on Keep a Changelog and this project adheres to Semantic Ver
 
 ### Fixed
 - Allow zero revenue in foundation schema for pre-revenue companies (Vyne Dental bug).
+- Allow zero employees in foundation schema for undisclosed private companies (Vyne Dental bug).
+- Add foundation sanitizer to clamp negative sentinel values (e.g. -1) to 0 before validation.
 - Add S# source format instructions to peer benchmarking prompt and sanitizer (Imperial Oil bug).
 - Align `validation.js` runtime with `validation.ts` (add `coerceNumber` preprocessor and string union for revenue fields).
 - Fix `segmentAnalysisOutputSchema` to enforce S# regex on `sources_used` (was allowing any string).
