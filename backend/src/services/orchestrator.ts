@@ -1396,15 +1396,22 @@ export class ResearchOrchestrator {
     };
   }
 
+  private cleanSourceIds(sources: unknown[], stageId?: string): string[] {
+    const raw = Array.isArray(sources) ? sources : [];
+    const all = raw.map((s: any) => (typeof s === 'string' ? s.trim() : String(s ?? '').trim()));
+    const cleaned = Array.from(new Set(all.filter((s: string) => /^S\d+$/.test(s))));
+    const dropped = all.filter((s: string) => s.length > 0 && !/^S\d+$/.test(s));
+    if (dropped.length > 0) {
+      console.warn(
+        `[sanitize] ${stageId ?? 'unknown'}: dropped ${dropped.length} non-S# source(s):`,
+        dropped.slice(0, 3)
+      );
+    }
+    return cleaned;
+  }
+
   private sanitizeSegmentAnalysis(output: any) {
-    const rawSources = Array.isArray(output?.sources_used) ? output.sources_used : [];
-    const cleanedSources = Array.from(
-      new Set(
-        rawSources
-          .map((s: any) => (typeof s === 'string' ? s.trim() : String(s ?? '').trim()))
-          .filter((s: string) => /^S\d+$/.test(s))
-      )
-    );
+    const cleanedSources = this.cleanSourceIds(output?.sources_used, 'segment_analysis');
 
     const segments = Array.isArray(output?.segments) ? output.segments.map((seg: any) => {
       const comp = Array.isArray(seg?.competitive_landscape?.competitors)
@@ -1437,12 +1444,15 @@ export class ResearchOrchestrator {
       geography_presence: typeof peer?.geography_presence === 'string' ? peer.geography_presence.trim() : ''
     }));
 
+    const cleanedSources = this.cleanSourceIds(output?.sources_used, 'peer_benchmarking');
+
     return {
       ...output,
       peer_comparison_table: {
         ...table,
         peers
-      }
+      },
+      sources_used: cleanedSources
     };
   }
 

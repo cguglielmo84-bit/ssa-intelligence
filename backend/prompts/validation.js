@@ -1,4 +1,12 @@
 import { z } from 'zod';
+const coerceNumber = (value) => {
+    if (typeof value !== 'string') return value;
+    const cleaned = value.replace(/[^0-9.+-]/g, '').trim();
+    if (!cleaned) return value;
+    const num = Number(cleaned);
+    return Number.isFinite(num) ? num : value;
+};
+const nonNegativeNumberOrString = z.preprocess(coerceNumber, z.union([z.number().nonnegative(), z.string()]));
 export const confidenceLevelSchema = z.enum(['HIGH', 'MEDIUM', 'LOW']);
 export const confidenceSchema = z.object({
     level: confidenceLevelSchema,
@@ -65,12 +73,12 @@ export const companyBasicsSchema = z.object({
     ticker: z.string().optional(),
     ownership: z.enum(['Public', 'Private', 'Subsidiary']),
     headquarters: z.string(),
-    global_revenue_usd: z.number().positive(),
+    global_revenue_usd: nonNegativeNumberOrString,
     global_employees: z.number().int().positive(),
     fiscal_year_end: z.string()
 });
 export const geographySpecificsSchema = z.object({
-    regional_revenue_usd: z.number().positive(),
+    regional_revenue_usd: nonNegativeNumberOrString,
     regional_revenue_pct: z.number().min(0).max(100),
     regional_employees: z.number().int().nonnegative(),
     facilities: z.array(facilityInfoSchema),
@@ -210,7 +218,7 @@ export const segmentAnalysisOutputSchema = z.object({
     confidence: confidenceSchema,
     overview: z.string().min(100),
     segments: z.array(segmentAnalysisSchema).min(1),
-    sources_used: z.array(z.string())
+    sources_used: z.array(z.string().regex(/^S\d+$/))
 });
 export const trendBaseSchema = z.object({
     trend: z.string(),

@@ -139,9 +139,18 @@ interface Section6Output {
     competitive_positioning: string;
   };
   
-  sources_used: string[];
+  sources_used: string[]; // ["S1", "S3", "S7"] - S# IDs only, from source_catalog
 }
 \`\`\`
+
+---
+
+## SOURCE FORMATTING (STRICT)
+
+- Every entry in \`sources_used\` must be an S# string (e.g., "S1", "S2").
+- Do NOT include URLs, citations, or free text in \`sources_used\`.
+- Only reference source IDs from the foundation source_catalog.
+- Example: \`"sources_used": ["S1", "S3", "S8"]\`
 
 ---
 

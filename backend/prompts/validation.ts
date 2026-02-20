@@ -98,6 +98,7 @@ const coerceNumber = (value: unknown) => {
 
 const positiveNumber = z.preprocess(coerceNumber, z.number().positive());
 const positiveNumberOrString = z.preprocess(coerceNumber, z.union([z.number().positive(), z.string()]));
+const nonNegativeNumberOrString = z.preprocess(coerceNumber, z.union([z.number().nonnegative(), z.string()]));
 const positiveInt = z.preprocess(coerceNumber, z.number().int().positive());
 const nonNegativeInt = z.preprocess(coerceNumber, z.number().int().nonnegative());
 const percentNumber = z.preprocess(coerceNumber, z.number().min(0).max(100));
@@ -107,13 +108,13 @@ export const companyBasicsSchema = z.object({
   ticker: z.string().optional(),
   ownership: z.enum(['Public', 'Private', 'Subsidiary']),
   headquarters: z.string(),
-  global_revenue_usd: positiveNumberOrString,
+  global_revenue_usd: nonNegativeNumberOrString,
   global_employees: positiveInt,
   fiscal_year_end: z.string()
 });
 
 export const geographySpecificsSchema = z.object({
-  regional_revenue_usd: positiveNumberOrString,
+  regional_revenue_usd: nonNegativeNumberOrString,
   regional_revenue_pct: percentNumber,
   regional_employees: nonNegativeInt,
   facilities: z.array(facilityInfoSchema),
@@ -289,7 +290,7 @@ export const segmentAnalysisOutputSchema = z.object({
   confidence: confidenceSchema,
   overview: z.string().min(100),
   segments: z.array(segmentAnalysisSchema).min(1),
-  sources_used: z.array(z.string())
+  sources_used: z.array(z.string().regex(/^S\d+$/))
 });
 
 // ============================================================================
