@@ -159,24 +159,10 @@ describe('sources_used S# regex validation', () => {
   });
 
   it('enforces S# regex on segment analysis sources_used', () => {
-    // Verify segmentAnalysisOutputSchema also requires S# format
-    const schema = segmentAnalysisOutputSchema;
-    // Just test the sources_used field shape — full output is complex
-    const partialResult = schema.safeParse({
-      confidence: { level: 'MEDIUM', reason: 'test' },
-      overview: 'A'.repeat(100),
-      segments: [{
-        name: 'Segment A',
-        revenue_pct: 60,
-        description: 'Primary segment',
-        geographic_split: { summary: 'Global', regions: [] },
-        financial_metrics: [],
-        competitive_landscape: { summary: 'Competitive', competitors: [], market_position: 'Leader' },
-        trends: [],
-        sources: ['S1']
-      }],
-      sources_used: ['not-a-source-id']
-    });
-    expect(partialResult.success).toBe(false);
+    // Test the sources_used field shape directly via schema introspection
+    const sourcesSchema = segmentAnalysisOutputSchema.shape.sources_used;
+    expect(sourcesSchema.safeParse(['S1', 'S12']).success).toBe(true);
+    expect(sourcesSchema.safeParse(['not-a-source-id']).success).toBe(false);
+    expect(sourcesSchema.safeParse(['S1 - Annual Report']).success).toBe(false);
   });
 });
